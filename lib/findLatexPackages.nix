@@ -20,6 +20,6 @@
   packageNames = builtins.filter (x: x != null) (builtins.map lineToPackageName lines);
   dbg = builtins.trace (toString packageNames) packageNames;
   texPackages = (genAttrs dbg (name: attrByPath [name] null pkgs.texlive));
-  dbg2 = builtins.trace (toString (builtins.attrNames texPackages)) texPackages;
-  dbg3 = builtins.trace (toString (map (x: if (x == null) then "null" else "not-null") (builtins.attrValues texPackages))) dbg2;
-in filterAttrs (y: x: x != null) dbg3
+  # dbg2 = builtins.trace (toString (builtins.attrNames texPackages)) texPackages;
+  # dbg3 = builtins.trace (toString (map (x: if (x == null) then "null" else "not-null") (builtins.attrValues texPackages))) dbg2;
+in filterAttrs (y: x: x != null) texPackages
