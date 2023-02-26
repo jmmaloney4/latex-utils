@@ -1,22 +1,30 @@
-{
-  pkgs
+{ pkgs
+  , lib
+  , ...
 }:
 args@{
   name
   , src
-  , inputPath ? "main.tex"
+  , workingDirectory ? "."
+  , inputFile ? "main.tex"
   , outputPath ? "output.pdf"
   , texPackages ? {}
+  , scheme ? pkgs.texlive.scheme-basic
   , ...
 }:
 let
   chosenStdenv = args.stdenv or pkgs.stdenvNoCC;
+
+  discoveredPackages = lib.findLatexPackages { fileContents = (builtins.readFile "${src}/${workingDirectory}/${inputFile}"); };
   texEnvironment = pkgs.texlive.combine ({
+    inherit scheme;
     inherit (pkgs.texlive)
-    scheme-minimal
     latex-bin
-    latexmk;
-  } // texPackages);
+    latexmk
+    biblatex
+    biber
+    ;
+  } // discoveredPackages // texPackages);
 
 in chosenStdenv.mkDerivation rec {
   inherit name src;
@@ -30,12 +38,13 @@ in chosenStdenv.mkDerivation rec {
   buildPhase = args.buildPhase or ''
     export PATH="${pkgs.lib.makeBinPath nativeBuildInputs}";
     mkdir -p .cache/texmf-var
+    cd ${workingDirectory}
     echo $PWD
     ls $PWD
     env TEXMFHOME=.cache TEXMFVAR=.cache/texmf-var \
       latexmk -f -interaction=nonstopmode -pdf -lualatex -bibtex \
       -jobname=output \
-      ${inputPath}
+      ${inputFile}
   '';
   installPhase = args.installPhase or ''
     mkdir -p $out
