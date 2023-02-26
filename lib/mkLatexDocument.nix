@@ -34,12 +34,12 @@ in chosenStdenv.mkDerivation rec {
     ls $PWD
     env TEXMFHOME=.cache TEXMFVAR=.cache/texmf-var \
       latexmk -f -interaction=nonstopmode -pdf -lualatex -bibtex \
-      -jobname=${outputPath} \
+      -jobname=output \
       ${inputPath}
   '';
   installPhase = args.installPhase or ''
     mkdir -p $out
-    cp ${outputPath} $out/
+    cp output.pdf $out/${outputPath}
   '';
 }
 
