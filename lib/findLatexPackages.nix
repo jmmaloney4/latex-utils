@@ -8,10 +8,10 @@
   # This is pretty naive at the moment.
   lineToPackageName = (line:
     let
-      exact = builtins.match ''^\\usepackage\{([a-zA-Z0-9]*)\}$'' line;
-      comment = builtins.match ''^\\usepackage.*\{([a-zA-Z0-9]*)\}[[:space:]]%[[:space:]]CTAN:[[:space:]]([a-zA-Z0-9]*)$'' line;
+      exact = builtins.match ''\\usepackage\{([A-Za-z0-9_]*).*'' line;
+      comment = builtins.match ''^\\usepackage.*% CTAN: ([A-Za-z0-9]*)$'' line;
     in 
-      if (comment != null) then (elemAt comment 1) else
+      if (comment != null) then (elemAt comment 0) else
       if (exact != null) then (elemAt exact 0) else
       null
   );
