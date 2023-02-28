@@ -2,9 +2,8 @@
   , lib
   , ...
 }:
-{
-  fileContents
-}: with pkgs.lib.attrsets; with pkgs.lib.strings; let
+{ fileContents }: 
+  with pkgs.lib.attrsets; with pkgs.lib.strings; let
   # This is pretty naive at the moment.
   lineToPackageName = (line:
     let
@@ -18,8 +17,5 @@
 
   lines = splitString "\n" fileContents;
   packageNames = builtins.filter (x: x != null) (builtins.map lineToPackageName lines);
-  dbg = builtins.trace (toString packageNames) packageNames;
-  texPackages = (genAttrs dbg (name: attrByPath [name] null pkgs.texlive));
-  # dbg2 = builtins.trace (toString (builtins.attrNames texPackages)) texPackages;
-  # dbg3 = builtins.trace (toString (map (x: if (x == null) then "null" else "not-null") (builtins.attrValues texPackages))) dbg2;
-in filterAttrs (y: x: x != null) texPackages
+  texPackages = filterAttrs (y: x: x != null) (genAttrs packageNames (name: attrByPath [name] null pkgs.texlive));
+in texPackages
