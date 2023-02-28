@@ -19,10 +19,14 @@ let
   texEnvironment = pkgs.texlive.combine ({
     inherit scheme;
     inherit (pkgs.texlive)
+    # basic latex
     latex-bin
     latexmk
+
+    # bibtex stuff
     biblatex
     biber
+    csquotes
     ;
   } // discoveredPackages // texPackages);
 

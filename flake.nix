@@ -9,5 +9,9 @@
       pkgs = import nixpkgs { inherit system; };
     in {
       lib = import ./lib { inherit pkgs; }; 
-    });
+    }) // {
+      templates.default = {
+        path = ./template;
+      };
+    };
 }
