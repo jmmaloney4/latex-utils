@@ -10,17 +10,18 @@ args@{
   , outputPath ? "output.pdf"
   , texPackages ? {}
   , scheme ? pkgs.texlive.scheme-basic
+  , silent ? false
   , ...
-}: with pkgs.lib.debug; with pkgs.lib.attrsets; 
+}: with pkgs.lib.attrsets; 
 let
   chosenStdenv = args.stdenv or pkgs.stdenvNoCC;
 
-  searchPaths = traceVal (lib.findLatexFiles { basePath = "${src}/${workingDirectory}"; });
+  searchPaths = lib.findLatexFiles { basePath = "${src}/${workingDirectory}"; };
   discoveredPackages = let
     eachFile = map (path: (lib.findLatexPackages { fileContents = (builtins.readFile "${src}/${workingDirectory}/${path}"); })) searchPaths;
-    eachFile' = traceVal eachFile;
-  in traceVal (builtins.foldl' (a: b: a // b) {} eachFile');
-
+    together = builtins.foldl' (a: b: a // b) {} eachFile;
+  in if silent then together else builtins.trace "Successfully identified packages: ${toString (attrNames together)}" together;
+  
   allPackages = {
     inherit scheme;
     inherit (pkgs.texlive)
@@ -33,8 +34,8 @@ let
     biber
     csquotes
     ;
-  } // traceVal discoveredPackages // texPackages;
-  texEnvironment = pkgs.texlive.combine (traceVal allPackages);
+  } // discoveredPackages // texPackages;
+  texEnvironment = pkgs.texlive.combine allPackages;
 
 in chosenStdenv.mkDerivation rec {
   inherit name src;
