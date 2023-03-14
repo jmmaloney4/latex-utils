@@ -11,12 +11,17 @@ args@{
   , texPackages ? {}
   , scheme ? pkgs.texlive.scheme-basic
   , ...
-}:
+}: with pkgs.lib.debug; with pkgs.lib.attrsets; 
 let
   chosenStdenv = args.stdenv or pkgs.stdenvNoCC;
 
-  discoveredPackages = lib.findLatexPackages { fileContents = (builtins.readFile "${src}/${workingDirectory}/${inputFile}"); };
-  texEnvironment = pkgs.texlive.combine ({
+  searchPaths = traceVal (lib.findLatexFiles { basePath = "${src}/${workingDirectory}"; });
+  discoveredPackages = let
+    eachFile = map (path: (lib.findLatexPackages { fileContents = (builtins.readFile "${src}/${workingDirectory}/${path}"); })) searchPaths;
+    eachFile' = traceVal eachFile;
+  in traceVal (builtins.foldl' (a: b: a // b) {} eachFile');
+
+  allPackages = {
     inherit scheme;
     inherit (pkgs.texlive)
     # basic latex
@@ -28,7 +33,8 @@ let
     biber
     csquotes
     ;
-  } // discoveredPackages // texPackages);
+  } // traceVal discoveredPackages // texPackages;
+  texEnvironment = pkgs.texlive.combine (traceVal allPackages);
 
 in chosenStdenv.mkDerivation rec {
   inherit name src;

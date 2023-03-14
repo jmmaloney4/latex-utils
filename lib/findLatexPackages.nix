@@ -16,6 +16,6 @@
   );
 
   lines = splitString "\n" fileContents;
-  packageNames = builtins.filter (x: x != null) (builtins.map lineToPackageName lines);
+  packageNames = pkgs.lib.debug.traceVal (builtins.filter (x: x != null) (builtins.map lineToPackageName lines));
   texPackages = filterAttrs (y: x: x != null) (genAttrs packageNames (name: attrByPath [name] null pkgs.texlive));
 in texPackages
