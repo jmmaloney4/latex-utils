@@ -20,7 +20,7 @@ let
   discoveredPackages = let
     eachFile = map (path: (lib.findLatexPackages { fileContents = (builtins.readFile "${src}/${workingDirectory}/${path}"); })) searchPaths;
     together = builtins.foldl' (a: b: a // b) {} eachFile;
-  in if silent then together else builtins.trace "Successfully identified packages: ${toString (attrNames together)}" together;
+  in if silent then together else builtins.trace "identified packages (add more with argument 'texPackages'): ${toString (attrNames together)}" together;
   
   allPackages = {
     inherit scheme;
