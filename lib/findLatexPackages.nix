@@ -7,7 +7,7 @@ let
 in
 { fileContents }: with pkgs.lib.attrsets; with pkgs.lib.strings; let
   buildCTANRegex = n: let 
-    prefix = ''^\\usepackage\{([A-Za-z0-9_]*).*% CTAN: '';
+    prefix = ''^\\usepackage.*\{([A-Za-z0-9_]*).*% CTAN: '';
     packageName = ''([A-Za-z0-9]*)'';
     suffix = ''.*$'';
 
@@ -23,7 +23,7 @@ in
 
   lineToPackageNames = (line:
     let
-      exact = builtins.match ''\\usepackage\{([A-Za-z0-9_]*).*'' line;
+      exact = builtins.match ''\\usepackage.*\{([A-Za-z0-9_]*).*'' line;
       multicomment = processLine line 1;
     in (if exact == null then [] else exact) ++ 
     (if multicomment == null then [] else multicomment)
