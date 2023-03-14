@@ -25,10 +25,8 @@ in
     let
       exact = builtins.match ''\\usepackage\{([A-Za-z0-9_]*).*'' line;
       multicomment = processLine line 1;
-    in
-      if (multicomment != null) then multicomment else
-      if (exact != null) then [(elemAt exact 0)] else
-      null
+    in (if exact == null then [] else exact) ++ 
+    (if multicomment == null then [] else multicomment)
   );
 
   lines = splitString "\n" fileContents;
