@@ -2,21 +2,37 @@
   , lib
   , ...
 }:
-{ fileContents }: 
-  with pkgs.lib.attrsets; with pkgs.lib.strings; let
-  lineToPackageName = (line:
+let
+
+in
+{ fileContents }: with pkgs.lib.attrsets; with pkgs.lib.strings; let
+  buildCTANRegex = n: let 
+    prefix = ''^\\usepackage\{([A-Za-z0-9_]*).*% CTAN: '';
+    packageName = ''([A-Za-z0-9]*)'';
+    suffix = ''.*$'';
+
+    reps = pkgs.lib.lists.replicate n packageName;
+    str = pkgs.lib.strings.concatStringsSep " " reps;
+    in prefix + str + suffix;
+  
+  processLine = line: n: let
+    regex = buildCTANRegex n;
+    matches = (builtins.match regex line);
+    next = if (matches != null) then (processLine line (n + 1)) else null;
+  in if (next != null) then next else matches;
+
+  lineToPackageNames = (line:
     let
       exact = builtins.match ''\\usepackage\{([A-Za-z0-9_]*).*'' line;
-      # squarebrackets = builtins.match ''\\usepackage\\[.*\\]\{(.*)\}.*'' line;
-      comment = builtins.match ''^\\usepackage.*% CTAN: ([A-Za-z0-9]*)$'' line;
+      multicomment = processLine line 1;
     in
-      if (comment != null) then (elemAt comment 0) else
-      # if (squarebrackets != null) then (elemAt squarebrackets 0) else
-      if (exact != null) then (elemAt exact 0) else
+      if (multicomment != null) then multicomment else
+      if (exact != null) then [(elemAt exact 0)] else
       null
   );
 
   lines = splitString "\n" fileContents;
-  packageNames = builtins.filter (x: x != null) (builtins.map lineToPackageName lines);
+  processedLines = builtins.filter (x: x != null) (builtins.map lineToPackageNames lines);
+  packageNames = builtins.concatLists processedLines;
   texPackages = filterAttrs (y: x: x != null) (genAttrs packageNames (name: attrByPath [name] null pkgs.texlive));
 in texPackages
