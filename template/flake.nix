@@ -23,8 +23,8 @@
         name = "mydocument";
         src = self;
         inherit texPackages;
-        inputFile = "main.tex";
-        outputPath = "mydocument.pdf";
+        # inputFile = "main.tex";
+        # outputPath = "mydocument.pdf";
       };
     });
 }
