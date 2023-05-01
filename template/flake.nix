@@ -15,7 +15,7 @@
     let
       pkgs = nixpkgs.legacyPackages.${system};
       texPackages = {
-          inherit (pkgs.texlive) amscls;
+          inherit (pkgs.texlive) amscls beamer;
       };
 
     in {
