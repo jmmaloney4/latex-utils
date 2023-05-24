@@ -14,13 +14,17 @@ args@{
   , ...
 }: with pkgs.lib.attrsets; 
 let
+  # Make sure our derivation ends in .pdf
+  fixedName = if pkgs.lib.strings.hasSuffix ".pdf" name
+    then name
+    else pkgs.lib.strings.concatStrings [name ".pdf"];
   chosenStdenv = args.stdenv or pkgs.stdenvNoCC;
 
   searchPaths = lib.findLatexFiles { basePath = "${src}/${workingDirectory}"; };
   discoveredPackages = let
     eachFile = map (path: (lib.findLatexPackages { fileContents = (builtins.readFile "${src}/${workingDirectory}/${path}"); })) searchPaths;
     together = builtins.foldl' (a: b: a // b) {} eachFile;
-  in if silent then together else builtins.trace "latex-utils: identified packages (add more with argument 'texPackages'): ${toString (attrNames together)}" together;
+  in if silent then together else lib.trace "identified packages (add more with argument 'texPackages'): ${toString (attrNames together)}." together;
   
   allPackages = {
     inherit scheme;
@@ -38,7 +42,8 @@ let
   texEnvironment = pkgs.texlive.combine allPackages;
 
 in chosenStdenv.mkDerivation rec {
-  inherit name src;
+  inherit src;
+  name = fixedName;
   
   nativeBuildInputs = (args.nativeBuildInputs or []) ++ (with pkgs; [
     coreutils
@@ -58,8 +63,7 @@ in chosenStdenv.mkDerivation rec {
       ${inputFile}
   '';
   installPhase = args.installPhase or ''
-    mkdir -p $out
-    cp output.pdf $out/${outputPath}
+    mv output.pdf $out
   '';
 }
 
