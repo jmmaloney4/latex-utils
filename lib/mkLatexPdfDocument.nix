@@ -21,9 +21,9 @@ with pkgs.lib.attrsets; let
     else pkgs.lib.strings.concatStrings [name ".pdf"];
   chosenStdenv = args.stdenv or pkgs.stdenvNoCC;
 
-  searchPaths = lib.findLatexFiles {basePath = "${src}/${workingDirectory}";};
+  searchPaths = lib.findLatexFiles {basePath = "${src}/${workingDirectory}";}; 
   discoveredPackages = let
-    eachFile = map (path: (lib.findLatexPackages {fileContents = builtins.readFile "${src}/${workingDirectory}/${path}";})) searchPaths;
+    eachFile = map (path: (lib.findLatexPackages {fileContents = builtins.readFile path;})) searchPaths;
     together = builtins.foldl' (a: b: a // b) {} eachFile;
   in
     if silent

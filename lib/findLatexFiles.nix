@@ -15,9 +15,10 @@ let
     files = attrNames (filterAttrs (name: type: type == "regular") readDir);
     filesWithExtensions = filter (name: lists.any (ext: strings.hasSuffix ext name) extensions) files;
     fullPaths = map (name: rootPath + "/${name}") filesWithExtensions;
+    
     recuriveFiles = builtins.concatLists (map (name: processDirectory (rootPath + "/${name}") extensions) directories);
   in
-    filesWithExtensions ++ recuriveFiles;
+    fullPaths ++ recuriveFiles;
 in
   {
     basePath,
