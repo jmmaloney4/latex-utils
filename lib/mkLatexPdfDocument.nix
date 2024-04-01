@@ -65,6 +65,10 @@ in
       ]);
 
     phases = args.phases or ["unpackPhase" "buildPhase" "installPhase"];
+    FONTCONFIG_FILE = pkgs.makeFontsConf {
+      fontDirectories = 
+        args.fonts or [];
+    };
 
     buildPhase =
       args.buildPhase
