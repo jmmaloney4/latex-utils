@@ -31,9 +31,12 @@ with pkgs.lib.attrsets; let
   in
     if silent || (undetectTexPacks== {})
     then detectTexPacks
-    else pkgs.lib.warn 
+    else 
+      pkgs.lib.trace 
+      "detect package: ${toString (attrNames detectTexPacks)}."
+      (pkgs.lib.warn 
       "identified packages (add more with argument 'texPackages'): ${toString (attrNames undetectTexPacks)}." 
-      detectTexPacks;
+      detectTexPacks);
 
   allPackages =
     {
@@ -56,6 +59,8 @@ in
   chosenStdenv.mkDerivation rec {
     inherit src;
     name = fixedName;
+
+    paths = searchPaths;
 
     nativeBuildInputs =
       args.nativeBuildInputs or []
