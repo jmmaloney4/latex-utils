@@ -23,12 +23,20 @@ with pkgs.lib.attrsets; let
 
   searchPaths = lib.findLatexFiles {basePath = "${src}/${workingDirectory}";}; 
   discoveredPackages = let
-    eachFile = map (path: (lib.findLatexPackages {fileContents = builtins.readFile path;})) searchPaths;
-    together = builtins.foldl' (a: b: a // b) {} eachFile;
+    gainPackFromPath = (path: (lib.findLatexPackages {fileContents = builtins.readFile path;}));
+    eachFile = map gainPackFromPath searchPaths; # List[File:List[PackName:str]]
+    packNames = builtins.concatLists (builtins.concatLists eachFile); # List[PackName:str]
+    detectTexPacks = filterAttrs (y: x: x != null) (genAttrs packNames (name: attrByPath [name] null pkgs.texlive)); # Set[PackName:Derivation]
+    undetectTexPacks = filterAttrs (y: x: x == null) (genAttrs packNames (name: attrByPath [name] null pkgs.texlive)); # Set[PackName:Derivation]
   in
-    if silent
-    then together
-    else lib.trace "identified packages (add more with argument 'texPackages'): ${toString (attrNames together)}." together;
+    if silent || (undetectTexPacks== {})
+    then detectTexPacks
+    else 
+      pkgs.lib.trace 
+      "detect package: ${toString (attrNames detectTexPacks)}."
+      (pkgs.lib.warn 
+      "identified packages (add more with argument 'texPackages'): ${toString (attrNames undetectTexPacks)}." 
+      detectTexPacks);
 
   allPackages =
     {
@@ -52,14 +60,20 @@ in
     inherit src;
     name = fixedName;
 
+    paths = searchPaths;
+
     nativeBuildInputs =
-      (args.nativeBuildInputs or [])
+      args.nativeBuildInputs or []
       ++ (with pkgs; [
         coreutils
         texEnvironment
       ]);
 
     phases = args.phases or ["unpackPhase" "buildPhase" "installPhase"];
+    FONTCONFIG_FILE = pkgs.makeFontsConf {
+      fontDirectories = 
+        args.fonts or [];
+    };
 
     buildPhase =
       args.buildPhase
