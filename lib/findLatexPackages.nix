@@ -25,7 +25,7 @@
       # texPackages = filterAttrs (y: x: x != null) processedPackages (genAttrs processedPackages (name: attrByPath [name] null pkgs.texlive));
 
       isPackageLines = line: let # str -> Bool
-        res = builtins.match ''\\(usepackage|Requirepackage).*'' line;
+        res = builtins.match ''\\(usepackage|RequirePackage).*'' line;
       in res != null;
 
       gainPackageNameFromLine = line: let # str -> List[str]
