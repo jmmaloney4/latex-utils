@@ -42,6 +42,8 @@ with pkgs.lib.attrsets; let
         biblatex
         biber
         csquotes
+        # font loading for luaLaTeX
+        luaotfload
         ;
     }
     // discoveredPackages
