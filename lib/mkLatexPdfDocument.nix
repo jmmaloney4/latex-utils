@@ -13,73 +13,91 @@
   silent ? false,
   ...
 }:
-with pkgs.lib.attrsets; let
-  # Make sure our derivation ends in .pdf
-  fixedName =
-    if pkgs.lib.strings.hasSuffix ".pdf" name
-    then name
-    else pkgs.lib.strings.concatStrings [name ".pdf"];
+
+with lib; let
+  fixedName = if pkgs.lib.strings.hasSuffix ".pdf" name then name else "${name}.pdf";
   chosenStdenv = args.stdenv or pkgs.stdenvNoCC;
 
-  searchPaths = lib.findLatexFiles {basePath = "${src}/${workingDirectory}";}; 
-  discoveredPackages = let
-    eachFile = map (path: (lib.findLatexPackages {fileContents = builtins.readFile path;})) searchPaths;
-    together = builtins.foldl' (a: b: a // b) {} eachFile;
-  in
-    if silent
-    then together
-    else lib.trace "identified packages (add more with argument 'texPackages'): ${toString (attrNames together)}." together;
+  # scan sources for \usepackage{…}
+  searchPaths = lib.findLatexFiles { basePath = "${src}/${workingDirectory}"; };
+  discovered = builtins.foldl' (a: b: a // b)
+               {}
+               (map (p: lib.findLatexPackages { fileContents = builtins.readFile p; }) searchPaths);
 
   allPackages =
     {
       inherit scheme;
-      inherit
-        (pkgs.texlive)
-        # basic latex
-        latex-bin
-        latexmk
-        # bibtex stuff
-        biblatex
-        biber
-        csquotes
-        # font loading for luaLaTeX
-        luaotfload
-        ;
+      inherit (pkgs.texlive)
+        latex-bin latexmk biblatex biber csquotes luaotfload fontspec;
     }
-    // discoveredPackages
+    // discovered
     // texPackages;
-  texEnvironment = pkgs.texlive.combine allPackages;
-in
-  chosenStdenv.mkDerivation rec {
-    inherit src;
-    name = fixedName;
 
-    nativeBuildInputs =
-      (args.nativeBuildInputs or [])
-      ++ (with pkgs; [
-        coreutils
-        texEnvironment
-      ]);
+  texEnv = pkgs.texlive.combine allPackages;
 
-    phases = args.phases or ["unpackPhase" "buildPhase" "installPhase"];
+  raleway = pkgs.raleway;
+  dejavu  = pkgs.dejavu_fonts;
 
-    buildPhase =
-      args.buildPhase
-      or ''
-        export PATH="${pkgs.lib.makeBinPath nativeBuildInputs}";
-        mkdir -p .cache/texmf-var
-        cd ${workingDirectory}
-        echo $PWD
-        ls $PWD
-        env TEXMFHOME=.cache TEXMFVAR=.cache/texmf-var \
-          latexmk -f -interaction=nonstopmode -pdf -lualatex -bibtex \
-          -jobname=output \
-          ${inputFile}
-      '';
+  getExe = pkgs.lib.getExe;
+  getExe' = pkgs.lib.getExe';
 
-    installPhase =
-      args.installPhase
-      or ''
-        mv output.pdf $out
-      '';
-  }
+in chosenStdenv.mkDerivation {
+  inherit src; name = fixedName;
+
+  nativeBuildInputs =
+    (args.nativeBuildInputs or []) ++ [
+      texEnv
+      pkgs.fontconfig
+      raleway
+      dejavu
+    ];
+
+  phases = args.phases or [ "unpackPhase" "buildPhase" "installPhase" ];
+
+  buildPhase = args.buildPhase or ''
+    ls -al
+    echo $(pwd)
+
+    # --- writable caches for LuaLaTeX ------------------------------
+    export HOME=$(pwd)
+    export XDG_CACHE_HOME="$HOME/.cache"
+    export TEXMFCACHE="$XDG_CACHE_HOME/texmf-cache"
+    export TEXMFVAR="$XDG_CACHE_HOME/texmf-var"
+    export TEXMFCONFIG="$XDG_CACHE_HOME/texmf-config"
+    export TEXMFHOME="$XDG_CACHE_HOME/texmf-home" # User-specific TeX files cache
+    mkdir -p "$TEXMFCACHE" "$TEXMFVAR" "$TEXMFCONFIG" "$TEXMFHOME"
+
+    # --- make fonts visible ----------------------------------------
+    # Set fontconfig cache dir inside build dir
+    export FONTCONFIG_CACHE_DIR="$XDG_CACHE_HOME/fontconfig"
+    mkdir -p "$FONTCONFIG_CACHE_DIR"
+
+    # Explicitly point fontconfig to its configuration file
+    export FONTCONFIG_FILE="${pkgs.fontconfig.out}/etc/fonts/fonts.conf"
+
+    # Run fc-cache
+    # Note: OSFONTDIR is usually used by fontconfig itself, but explicitly
+    # calling fc-cache with the paths might be more robust here.
+    ${getExe' pkgs.fontconfig "fc-cache"} -fv \
+      "${raleway}/share/fonts/truetype" \
+      "${dejavu}/share/fonts/truetype"
+
+    # --- build ------------------------------------------------------
+    cd ${workingDirectory}
+
+    # Make fonts visible to LuaLaTeX
+    export OSFONTDIR="${raleway}/share/fonts/truetype:${dejavu}/share/fonts/truetype"
+
+    env
+
+    ${getExe' texEnv "latexmk"} \
+      -f -interaction=nonstopmode \
+      -pdf -lualatex -bibtex \
+      -jobname=output \
+      ${inputFile}
+  '';
+
+  installPhase = args.installPhase or ''
+    mv output.pdf $out
+  '';
+}

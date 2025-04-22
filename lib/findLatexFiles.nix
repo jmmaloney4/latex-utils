@@ -5,8 +5,7 @@
 }:
 with pkgs.lib.attrsets;
 with pkgs.lib;
-with pkgs.lib.debug; 
-let
+with pkgs.lib.debug; let
   processDirectory = rootPath: extensions: let
     readDir = builtins.readDir rootPath;
 
@@ -15,7 +14,7 @@ let
     files = attrNames (filterAttrs (name: type: type == "regular") readDir);
     filesWithExtensions = filter (name: lists.any (ext: strings.hasSuffix ext name) extensions) files;
     fullPaths = map (name: rootPath + "/${name}") filesWithExtensions;
-    
+
     recuriveFiles = builtins.concatLists (map (name: processDirectory (rootPath + "/${name}") extensions) directories);
   in
     fullPaths ++ recuriveFiles;

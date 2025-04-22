@@ -1,5 +1,4 @@
-{pkgs}: 
-let
+{pkgs}: let
   lib = rec {
     trace = message: value: builtins.trace (pkgs.lib.strings.concatStrings ["latex-utils: " message]) value;
 
