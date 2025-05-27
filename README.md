@@ -70,6 +70,19 @@
 
 You can extend this with more options as needed (see `mkLatexPdfDocument.nix`).
 
+## Font Loading and Fontconfig Caching
+
+LaTeX engines like LuaLaTeX and XeLaTeX require a font cache (managed by fontconfig) to find and use system fonts. In Nix builds, this can be slow and unreliable if the cache is rebuilt every time or if the build environment is sandboxed.
+
+To ensure fast, reliable, and reproducible font discovery for LuaLaTeX and XeLaTeX, **latex-utils** prebuilds the fontconfig cache in a separate Nix derivation using all fonts available in your TeX environment. This prebuilt cache is then reused in every document build, eliminating the need to regenerate the cache each time and ensuring that all fonts available to your TeX Live environment are also available to fontconfig. This approach avoids repeated slow cache generation, works seamlessly in Nix's sandboxed builds, and guarantees that any changes to your font set will automatically trigger a cache rebuild.
+
+**If you add more fonts to your TeX environment, the cache will be automatically rebuilt.**
+
+**Why:**
+- This avoids repeated, slow font cache generation in every build.
+- It ensures all fonts available to your document are also available to fontconfig.
+- It makes builds more reliable in Nix's sandboxed, immutable environment.
+
 ---
 
 ## Example: Full flake.nix
