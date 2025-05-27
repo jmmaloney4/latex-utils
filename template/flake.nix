@@ -1,33 +1,27 @@
 {
   inputs = {
     nixpkgs.url = github:NixOS/nixpkgs/nixos-unstable;
-    flake-utils.url = github:numtide/flake-utils;
+    flake-parts.url = github:hercules-ci/flake-parts;
     latex-utils = {
       url = "github:jmmaloney4/latex-utils";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        flake-utils.follows = "flake-utils";
-      };
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-parts.follows = "flake-parts";
     };
   };
-  outputs = {
-    self,
-    nixpkgs,
-    flake-utils,
-    latex-utils,
-  }:
-    with flake-utils.lib;
-      eachSystem allSystems (system: let
-        pkgs = import nixpkgs {inherit system;};
-        texPackages = {
-          inherit (pkgs.texlive) amscls beamer;
-        };
-      in {
-        packages.default = latex-utils.lib.${system}.mkLatexPdfDocument {
+  outputs = inputs@{ nixpkgs, flake-parts, latex-utils, ... }:
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = [ "x86_64-linux" ];
+      imports = [ inputs.latex-utils.modules.latex-utils ];
+      latex-utils.enable = true;
+      perSystem = { pkgs, config, ... }: {
+        packages.default = config.mkLatexPdfDocument {
           name = "mydocument";
-          src = self;
-          inherit texPackages;
+          src = ./.;
+          texPackages = {
+            inherit (pkgs.texlive) amscls beamer;
+          };
           # inputFile = "main.tex";
         };
-      });
+      };
+    };
 }

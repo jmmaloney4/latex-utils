@@ -9,7 +9,7 @@
   inputFile ? "main.tex",
   outputPath ? "output.pdf",
   texPackages ? {},
-  scheme ? pkgs.texlive.scheme-basic,
+  scheme ? pkgs.texlive.scheme-medium,
   silent ? false,
   ...
 }:
@@ -18,28 +18,35 @@ with lib; let
   fixedName = if pkgs.lib.strings.hasSuffix ".pdf" name then name else "${name}.pdf";
   chosenStdenv = args.stdenv or pkgs.stdenvNoCC;
 
+  # Import helpers
+  findLatexFiles = import ../lib/findLatexFiles.nix { inherit pkgs lib; };
+  findLatexPackages = import ../lib/findLatexPackages.nix { inherit pkgs lib; };
+
   # scan sources for \usepackage{…}
-  searchPaths = lib.findLatexFiles { basePath = "${src}/${workingDirectory}"; };
+  searchPaths = findLatexFiles { basePath = "${src}/${workingDirectory}"; };
   discovered = builtins.foldl' (a: b: a // b)
                {}
-               (map (p: lib.findLatexPackages { fileContents = builtins.readFile p; }) searchPaths);
+               (map (
+                 p: if (builtins.pathExists p) then findLatexPackages { fileContents = builtins.readFile p; } else {}
+               ) (pkgs.lib.lists.unique searchPaths));
 
   allPackages =
     {
       inherit scheme;
       inherit (pkgs.texlive)
-        latex-bin latexmk biblatex biber csquotes luaotfload fontspec;
+        latex-bin latexmk biblatex biber csquotes luaotfload fontspec lm cm ec tex-gyre;
     }
     // discovered
     // texPackages;
 
   texEnv = pkgs.texlive.combine allPackages;
 
-  raleway = pkgs.raleway;
-  dejavu  = pkgs.dejavu_fonts;
-
   getExe = pkgs.lib.getExe;
   getExe' = pkgs.lib.getExe';
+
+  # Prebuild fontconfig cache
+  mkFontconfigCache = import ../lib/mkFontconfigCache.nix;
+  fontconfigCache = mkFontconfigCache { inherit pkgs; fonts = [ texEnv ]; };
 
 in chosenStdenv.mkDerivation {
   inherit src; name = fixedName;
@@ -48,8 +55,7 @@ in chosenStdenv.mkDerivation {
     (args.nativeBuildInputs or []) ++ [
       texEnv
       pkgs.fontconfig
-      raleway
-      dejavu
+      fontconfigCache
     ];
 
   phases = args.phases or [ "unpackPhase" "buildPhase" "installPhase" ];
@@ -58,37 +64,31 @@ in chosenStdenv.mkDerivation {
     ls -al
     echo $(pwd)
 
-    # --- writable caches for LuaLaTeX ------------------------------
     export HOME=$(pwd)
     export XDG_CACHE_HOME="$HOME/.cache"
-    export TEXMFCACHE="$XDG_CACHE_HOME/texmf-cache"
     export TEXMFVAR="$XDG_CACHE_HOME/texmf-var"
+    export TEXMFCACHE="$XDG_CACHE_HOME/texmf-var"
     export TEXMFCONFIG="$XDG_CACHE_HOME/texmf-config"
-    export TEXMFHOME="$XDG_CACHE_HOME/texmf-home" # User-specific TeX files cache
-    mkdir -p "$TEXMFCACHE" "$TEXMFVAR" "$TEXMFCONFIG" "$TEXMFHOME"
-
-    # --- make fonts visible ----------------------------------------
-    # Set fontconfig cache dir inside build dir
-    export FONTCONFIG_CACHE_DIR="$XDG_CACHE_HOME/fontconfig"
-    mkdir -p "$FONTCONFIG_CACHE_DIR"
-
-    # Explicitly point fontconfig to its configuration file
+    export TEXMFHOME="$XDG_CACHE_HOME/texmf-home"
+    export FONTCONFIG_CACHE_DIR="${fontconfigCache}/fontconfig"
     export FONTCONFIG_FILE="${pkgs.fontconfig.out}/etc/fonts/fonts.conf"
 
-    # Run fc-cache
-    # Note: OSFONTDIR is usually used by fontconfig itself, but explicitly
-    # calling fc-cache with the paths might be more robust here.
-    ${getExe' pkgs.fontconfig "fc-cache"} -fv \
-      "${raleway}/share/fonts/truetype" \
-      "${dejavu}/share/fonts/truetype"
+    mkdir -p "$TEXMFCACHE" "$TEXMFVAR" "$TEXMFCONFIG" "$TEXMFHOME" "$FONTCONFIG_CACHE_DIR"
+    mkdir -p "$HOME/.texlive2024/texmf-var"
 
-    # --- build ------------------------------------------------------
+    echo "==== ENVIRONMENT ===="
+    env | grep TEXMF || true
+    env | grep XDG_ || true
+    env | grep FONT || true
+    echo "==== Directory listings ===="
+    ls -al "$TEXMFVAR" || true
+    ls -al "$TEXMFCACHE" || true
+    ls -al "$HOME/.texlive2024/texmf-var" || true
+    ls -al "$FONTCONFIG_CACHE_DIR" || true
+
     cd ${workingDirectory}
 
-    # Make fonts visible to LuaLaTeX
-    export OSFONTDIR="${raleway}/share/fonts/truetype:${dejavu}/share/fonts/truetype"
-
-    env
+    ${getExe' texEnv "luaotfload-tool"} --update --force
 
     ${getExe' texEnv "latexmk"} \
       -f -interaction=nonstopmode \
