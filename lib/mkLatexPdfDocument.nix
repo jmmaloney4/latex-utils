@@ -9,7 +9,7 @@
   inputFile ? "main.tex",
   outputPath ? "output.pdf",
   texPackages ? {},
-  scheme ? pkgs.texlive.scheme-basic,
+  scheme ? pkgs.texlive.scheme-medium,
   silent ? false,
   ...
 }:
@@ -18,17 +18,23 @@ with lib; let
   fixedName = if pkgs.lib.strings.hasSuffix ".pdf" name then name else "${name}.pdf";
   chosenStdenv = args.stdenv or pkgs.stdenvNoCC;
 
+  # Import helpers
+  findLatexFiles = import ../lib/findLatexFiles.nix { inherit pkgs lib; };
+  findLatexPackages = import ../lib/findLatexPackages.nix { inherit pkgs lib; };
+
   # scan sources for \usepackage{…}
-  searchPaths = lib.findLatexFiles { basePath = "${src}/${workingDirectory}"; };
+  searchPaths = findLatexFiles { basePath = "${src}/${workingDirectory}"; };
   discovered = builtins.foldl' (a: b: a // b)
                {}
-               (map (p: lib.findLatexPackages { fileContents = builtins.readFile p; }) searchPaths);
+               (map (
+                 p: if (builtins.pathExists p) then findLatexPackages { fileContents = builtins.readFile p; } else {}
+               ) (pkgs.lib.lists.unique searchPaths));
 
   allPackages =
     {
       inherit scheme;
       inherit (pkgs.texlive)
-        latex-bin latexmk biblatex biber csquotes luaotfload fontspec;
+        latex-bin latexmk biblatex biber csquotes luaotfload fontspec lm;
     }
     // discovered
     // texPackages;

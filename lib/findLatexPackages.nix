@@ -6,12 +6,12 @@
 in
   {fileContents}:
     with pkgs.lib.attrsets;
-    with pkgs.lib.strings; let
+    with pkgs.lib.strings;
+    let
       buildCTANRegex = n: let
         prefix = ''^\\usepackage.*\{(.*)\}.*% CTAN: '';
         packageName = ''(.*)'';
         suffix = ''.*$'';
-
         reps = pkgs.lib.lists.replicate n packageName;
         str = pkgs.lib.strings.concatStringsSep " " reps;
       in
@@ -46,9 +46,9 @@ in
           )
       );
 
-      lines = splitString "\n" fileContents;
+      lines = builtins.filter (x: x != null && x != "") (splitString "\n" fileContents);
       processedLines = builtins.filter (x: x != null) (builtins.map lineToPackageNames lines);
-      packageNames = builtins.concatLists processedLines;
+      packageNames = pkgs.lib.lists.unique (builtins.concatLists processedLines);
       texPackages = filterAttrs (y: x: x != null) (genAttrs packageNames (name: attrByPath [name] null pkgs.texlive));
     in
       texPackages
