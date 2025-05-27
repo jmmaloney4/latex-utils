@@ -41,11 +41,12 @@ with lib; let
 
   texEnv = pkgs.texlive.combine allPackages;
 
-  raleway = pkgs.raleway;
-  dejavu  = pkgs.dejavu_fonts;
-
   getExe = pkgs.lib.getExe;
   getExe' = pkgs.lib.getExe';
+
+  # Prebuild fontconfig cache
+  mkFontconfigCache = import ../lib/mkFontconfigCache.nix;
+  fontconfigCache = mkFontconfigCache { inherit pkgs; fonts = [ texEnv ]; };
 
 in chosenStdenv.mkDerivation {
   inherit src; name = fixedName;
@@ -54,8 +55,7 @@ in chosenStdenv.mkDerivation {
     (args.nativeBuildInputs or []) ++ [
       texEnv
       pkgs.fontconfig
-      raleway
-      dejavu
+      fontconfigCache
     ];
 
   phases = args.phases or [ "unpackPhase" "buildPhase" "installPhase" ];
@@ -70,8 +70,7 @@ in chosenStdenv.mkDerivation {
     export TEXMFCACHE="$XDG_CACHE_HOME/texmf-var"
     export TEXMFCONFIG="$XDG_CACHE_HOME/texmf-config"
     export TEXMFHOME="$XDG_CACHE_HOME/texmf-home"
-    export OSFONTDIR="${raleway}/share/fonts/truetype:${dejavu}/share/fonts/truetype"
-    export FONTCONFIG_CACHE_DIR="$XDG_CACHE_HOME/fontconfig"
+    export FONTCONFIG_CACHE_DIR="${fontconfigCache}/fontconfig"
     export FONTCONFIG_FILE="${pkgs.fontconfig.out}/etc/fonts/fonts.conf"
 
     mkdir -p "$TEXMFCACHE" "$TEXMFVAR" "$TEXMFCONFIG" "$TEXMFHOME" "$FONTCONFIG_CACHE_DIR"
@@ -86,10 +85,6 @@ in chosenStdenv.mkDerivation {
     ls -al "$TEXMFCACHE" || true
     ls -al "$HOME/.texlive2024/texmf-var" || true
     ls -al "$FONTCONFIG_CACHE_DIR" || true
-
-    ${getExe' pkgs.fontconfig "fc-cache"} -fv \
-      "${raleway}/share/fonts/truetype" \
-      "${dejavu}/share/fonts/truetype"
 
     cd ${workingDirectory}
 
