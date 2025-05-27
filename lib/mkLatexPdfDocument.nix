@@ -34,7 +34,7 @@ with lib; let
     {
       inherit scheme;
       inherit (pkgs.texlive)
-        latex-bin latexmk biblatex biber csquotes luaotfload fontspec lm;
+        latex-bin latexmk biblatex biber csquotes luaotfload fontspec lm cm ec tex-gyre;
     }
     // discovered
     // texPackages;
@@ -64,37 +64,36 @@ in chosenStdenv.mkDerivation {
     ls -al
     echo $(pwd)
 
-    # --- writable caches for LuaLaTeX ------------------------------
     export HOME=$(pwd)
     export XDG_CACHE_HOME="$HOME/.cache"
-    export TEXMFCACHE="$XDG_CACHE_HOME/texmf-cache"
     export TEXMFVAR="$XDG_CACHE_HOME/texmf-var"
+    export TEXMFCACHE="$XDG_CACHE_HOME/texmf-var"
     export TEXMFCONFIG="$XDG_CACHE_HOME/texmf-config"
-    export TEXMFHOME="$XDG_CACHE_HOME/texmf-home" # User-specific TeX files cache
-    mkdir -p "$TEXMFCACHE" "$TEXMFVAR" "$TEXMFCONFIG" "$TEXMFHOME"
-
-    # --- make fonts visible ----------------------------------------
-    # Set fontconfig cache dir inside build dir
+    export TEXMFHOME="$XDG_CACHE_HOME/texmf-home"
+    export OSFONTDIR="${raleway}/share/fonts/truetype:${dejavu}/share/fonts/truetype"
     export FONTCONFIG_CACHE_DIR="$XDG_CACHE_HOME/fontconfig"
-    mkdir -p "$FONTCONFIG_CACHE_DIR"
-
-    # Explicitly point fontconfig to its configuration file
     export FONTCONFIG_FILE="${pkgs.fontconfig.out}/etc/fonts/fonts.conf"
 
-    # Run fc-cache
-    # Note: OSFONTDIR is usually used by fontconfig itself, but explicitly
-    # calling fc-cache with the paths might be more robust here.
+    mkdir -p "$TEXMFCACHE" "$TEXMFVAR" "$TEXMFCONFIG" "$TEXMFHOME" "$FONTCONFIG_CACHE_DIR"
+    mkdir -p "$HOME/.texlive2024/texmf-var"
+
+    echo "==== ENVIRONMENT ===="
+    env | grep TEXMF || true
+    env | grep XDG_ || true
+    env | grep FONT || true
+    echo "==== Directory listings ===="
+    ls -al "$TEXMFVAR" || true
+    ls -al "$TEXMFCACHE" || true
+    ls -al "$HOME/.texlive2024/texmf-var" || true
+    ls -al "$FONTCONFIG_CACHE_DIR" || true
+
     ${getExe' pkgs.fontconfig "fc-cache"} -fv \
       "${raleway}/share/fonts/truetype" \
       "${dejavu}/share/fonts/truetype"
 
-    # --- build ------------------------------------------------------
     cd ${workingDirectory}
 
-    # Make fonts visible to LuaLaTeX
-    export OSFONTDIR="${raleway}/share/fonts/truetype:${dejavu}/share/fonts/truetype"
-
-    env
+    ${getExe' texEnv "luaotfload-tool"} --update --force
 
     ${getExe' texEnv "latexmk"} \
       -f -interaction=nonstopmode \
