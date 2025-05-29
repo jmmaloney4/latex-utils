@@ -6,8 +6,7 @@
 in
   {fileContents}:
     with pkgs.lib.attrsets;
-    with pkgs.lib.strings;
-    let
+    with pkgs.lib.strings; let
       buildCTANRegex = n: let
         prefix = ''^\\usepackage.*\{(.*)\}.*% CTAN: '';
         packageName = ''(.*)'';

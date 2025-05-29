@@ -1,5 +1,8 @@
-{ config, lib, ... }:
-let
+{
+  config,
+  lib,
+  ...
+}: let
   docType = lib.types.submodule {
     options = {
       name = lib.mkOption {
@@ -23,8 +26,7 @@ let
   };
   documents = config.latex-utils.documents;
   # perSystem logic will be injected below
-in
-{
+in {
   options.latex-utils = {
     documents = lib.mkOption {
       type = lib.types.listOf docType;
@@ -34,20 +36,32 @@ in
   };
 
   config = {
-    perSystem = { config, pkgs, lib, ... }: lib.mkMerge [
-      (let
-        mkDoc = doc: (pkgs.callPackage ../lib/mkLatexPdfDocument.nix {}) doc;
-        docPkgs = builtins.listToAttrs (map (doc: {
-          name = lib.removeSuffix ".pdf" doc.name;
-          value = mkDoc doc;
-        }) documents);
-        defaultPkg = if documents == [] then null else mkDoc (builtins.head documents);
-      in {
-        packages = docPkgs // {
-          default = defaultPkg;
-        };
-      })
-      # Other modules can extend perSystem here
-    ];
+    perSystem = {
+      config,
+      pkgs,
+      lib,
+      ...
+    }:
+      lib.mkMerge [
+        (let
+          mkDoc = doc: (pkgs.callPackage ../lib/mkLatexPdfDocument.nix {}) doc;
+          docPkgs = builtins.listToAttrs (map (doc: {
+              name = lib.removeSuffix ".pdf" doc.name;
+              value = mkDoc doc;
+            })
+            documents);
+          defaultPkg =
+            if documents == []
+            then null
+            else mkDoc (builtins.head documents);
+        in {
+          packages =
+            docPkgs
+            // {
+              default = defaultPkg;
+            };
+        })
+        # Other modules can extend perSystem here
+      ];
   };
-} 
+}

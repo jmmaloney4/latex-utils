@@ -8,20 +8,21 @@
       inputs.flake-parts.follows = "flake-parts";
     };
   };
-  outputs = inputs@{ nixpkgs, flake-parts, latex-utils, ... }:
-    flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = [ "x86_64-linux" ];
-      imports = [ inputs.latex-utils.modules.latex-utils ];
-      latex-utils.enable = true;
-      perSystem = { pkgs, config, ... }: {
-        packages.default = config.mkLatexPdfDocument {
-          name = "mydocument";
+  outputs = inputs @ {
+    flake-parts,
+    latex-utils,
+    ...
+  }:
+    flake-parts.lib.mkFlake {inherit inputs;} {
+      systems = ["x86_64-linux"];
+      imports = [inputs.latex-utils.modules.latex-utils];
+      latex-utils.documents = [
+        {
+          name = "mydocument.pdf";
           src = ./.;
-          texPackages = {
-            inherit (pkgs.texlive) amscls beamer;
-          };
           # inputFile = "main.tex";
-        };
-      };
+          # texPackages = { inherit (inputs.nixpkgs.legacyPackages.x86_64-linux.texlive) amscls beamer; };
+        }
+      ];
     };
 }
