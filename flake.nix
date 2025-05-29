@@ -27,9 +27,12 @@
         system,
         ...
       }: {
-        nix-unit.tests.findLatexPackages = import ./tests/findLatexPackages.nix {
-          inherit pkgs lib;
-          findLatexPackages = import ./lib/findLatexPackages.nix {inherit pkgs lib;};
+        nix-unit = {
+          allowNetwork = true;
+          tests.findLatexPackages = import ./tests/findLatexPackages.nix {
+            inherit pkgs lib;
+            findLatexPackages = import ./lib/findLatexPackages.nix {inherit pkgs lib;};
+          };
         };
       };
       flake = {
