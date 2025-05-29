@@ -4,15 +4,37 @@
   inputs = {
     nixpkgs.url = github:NixOS/nixpkgs/nixos-unstable;
     flake-parts.url = github:hercules-ci/flake-parts;
+    systems.url = "github:nix-systems/default";
+    nix-unit.url = github:nix-community/nix-unit;
   };
 
-  outputs = inputs @ {flake-parts, ...}:
+  outputs = inputs @ {
+    flake-parts,
+    nix-unit,
+    systems,
+    ...
+  }:
     flake-parts.lib.mkFlake {inherit inputs;} {
-      systems = ["x86_64-linux" "aarch64-linux"];
-      imports = [./modules/latex-utils.nix];
-    }
-    // {
-      flakeModule = import ./modules/latex-utils.nix;
-      modules.latex-utils = import ./modules/latex-utils.nix;
+      systems = import systems;
+      imports = [
+        ./modules/latex-utils.nix
+        inputs.nix-unit.modules.flake.default
+      ];
+      perSystem = {
+        config,
+        pkgs,
+        lib,
+        system,
+        ...
+      }: {
+        nix-unit.tests.findLatexPackages = import ./tests/findLatexPackages.nix {
+          inherit pkgs lib;
+          findLatexPackages = import ./lib/findLatexPackages.nix {inherit pkgs lib;};
+        };
+      };
+      flake = {
+        flakeModule = import ./modules/latex-utils.nix;
+        modules.latex-utils = import ./modules/latex-utils.nix;
+      };
     };
 }

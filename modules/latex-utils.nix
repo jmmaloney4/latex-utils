@@ -50,16 +50,11 @@ in {
               value = mkDoc doc;
             })
             documents);
-          defaultPkg =
-            if documents == []
-            then null
-            else mkDoc (builtins.head documents);
         in {
           packages =
-            docPkgs
-            // {
-              default = defaultPkg;
-            };
+            if documents == []
+            then docPkgs
+            else docPkgs // {default = mkDoc (builtins.head documents);};
         })
         # Other modules can extend perSystem here
       ];
