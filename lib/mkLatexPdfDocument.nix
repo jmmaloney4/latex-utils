@@ -9,7 +9,7 @@
   inputFile ? "main.tex",
   outputPath ? "output.pdf",
   texPackages ? {},
-  scheme ? pkgs.texlive.scheme-medium,
+  scheme ? pkgs.texlive.scheme-basic,
   silent ? false,
   ...
 }:
