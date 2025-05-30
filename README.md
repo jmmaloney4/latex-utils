@@ -2,6 +2,20 @@
 
 **latex-utils** is a Nix flake module for building LaTeX documents as reproducible Nix packages.
 
+[➡️ **Full Option Reference (generated)**](docs/options.md)
+
+---
+
+## Table of Contents
+- [Features](#features)
+- [Quickstart](#quickstart)
+- [Usage Details](#usage-details)
+- [Font Loading and Fontconfig Caching](#font-loading-and-fontconfig-caching)
+- [Library Functions](#library-functions)
+- [Usage Examples (Tests)](#usage-examples-tests)
+- [Full flake.nix Example](#example-full-flakenix)
+- [Regenerating Documentation](#regenerating-documentation)
+
 ---
 
 ## 🚀 Features
@@ -129,5 +143,40 @@ To ensure fast, reliable, and reproducible font discovery for LuaLaTeX and XeLaT
     };
 }
 ```
+
+---
+
+## Library Functions
+
+The following utility functions are available in the `lib/` directory. See [docs/library.md](docs/library.md) for full details and advanced usage.
+
+| Function                | Description |
+|-------------------------|-------------|
+| `findLatexFiles`        | Recursively finds all LaTeX source files (.tex, .cls, etc.) in a directory tree. |
+| `findLatexPackages`     | Parses LaTeX source files to extract required TeX Live package names from `\usepackage` lines. |
+| `mkLatexPdfDocument`    | Builds a LaTeX document as a Nix derivation, automatically including required and extra TeX Live packages. |
+| `mkFontconfigCache`     | Prebuilds a fontconfig cache for use in sandboxed LaTeX builds, ensuring reliable font discovery. |
+
+See [docs/library.md](docs/library.md) for arguments, return values, and advanced usage.
+
+---
+
+## Usage Examples (Tests)
+
+The `tests/` directory contains real-world usage examples and regression tests for the library functions and module options. See:
+- `tests/extraTexPackages.nix`: Examples of using `extraTexPackages` and building multiple documents.
+- `tests/findLatexPackages.nix`: Examples of parsing LaTeX files for required packages.
+
+---
+
+## Regenerating Documentation
+
+Documentation for module options is generated automatically using [nixdoc](https://github.com/nix-community/nixdoc) via the [flake-parts-nixdoc](https://github.com/figsoda/flake-parts-nixdoc) module. To regenerate docs/options.md:
+
+```sh
+nix build .#nixdoc
+```
+
+The output will be in `docs/options.md`.
 
 ---
