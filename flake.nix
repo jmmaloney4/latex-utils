@@ -6,6 +6,10 @@
     flake-parts.url = github:hercules-ci/flake-parts;
     systems.url = "github:nix-systems/default";
     nix-unit.url = github:nix-community/nix-unit;
+    treefmt-nix.url = "github:numtide/treefmt-nix";
+    mission-control.url = "github:Platonic-Systems/mission-control";
+    flake-root.url = "github:srid/flake-root";
+    git-hooks-nix.url = "github:cachix/git-hooks.nix";
   };
 
   outputs = inputs @ {
@@ -19,6 +23,10 @@
       imports = [
         ./modules/latex-utils.nix
         inputs.nix-unit.modules.flake.default
+        inputs.treefmt-nix.flakeModule
+        inputs.mission-control.flakeModule
+        inputs.flake-root.flakeModule
+        inputs.git-hooks-nix.flakeModule
       ];
       perSystem = {
         config,
@@ -27,6 +35,9 @@
         system,
         ...
       }: {
+        flake-root = {
+          projectRootFile = "flake.nix";
+        };
         nix-unit = {
           allowNetwork = true;
           tests.findLatexPackages = import ./tests/findLatexPackages.nix {
@@ -35,6 +46,39 @@
           };
           tests.extraTexPackages = import ./tests/extraTexPackages.nix {
             inherit pkgs lib;
+          };
+        };
+        treefmt = {
+          config = {
+            package = pkgs.treefmt;
+            programs.alejandra.enable = true;
+            programs.latexindent.enable = true;
+          };
+        };
+        mission-control = {
+          scripts = {
+            fmt = {
+              description = "Format all Nix files";
+              exec = "${lib.getExe pkgs.alejandra} .";
+              category = "Tools";
+            };
+          };
+        };
+        devShells = {
+          default = pkgs.mkShell {
+            inputsFrom = [
+              config.mission-control.devShell
+              config.treefmt.build.devShell
+            ];
+          };
+        };
+        pre-commit = {
+          check.enable = true;
+          settings = {
+            hooks.treefmt = {
+              enable = true;
+              package = config.treefmt.build.wrapper;
+            };
           };
         };
       };
