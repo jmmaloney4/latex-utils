@@ -68,4 +68,24 @@ in {
     expr = getSortedNames ''\\usepackage[options]{foo, bar, baz}'';
     expected = ["bar" "baz" "foo"];
   };
+
+  ctanSingle = {
+    expr = getSortedNames ''\\usepackage{tikz} % CTAN: pgf'';
+    expected = ["pgf" "tikz"];
+  };
+
+  ctanMultiple = {
+    expr = getSortedNames ''\\usepackage{somepackage} % CTAN: ctanpackage1, ctanpackage2'';
+    expected = ["ctanpackage1" "ctanpackage2" "somepackage"];
+  };
+
+  ctanMultiUseAndCTAN = {
+    expr = getSortedNames ''\\usepackage{foo, bar} % CTAN: baz, qux'';
+    expected = ["bar" "baz" "foo" "qux"];
+  };
+
+  ctanDedupWhitespace = {
+    expr = getSortedNames ''\\usepackage{foo} % CTAN: foo, bar  ,   baz'';
+    expected = ["bar" "baz" "foo"];
+  };
 }

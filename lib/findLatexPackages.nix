@@ -51,41 +51,36 @@ in
   {fileContents}:
     with pkgs.lib.attrsets;
     with pkgs.lib.strings; let
-      buildCTANRegex = n: let
-        prefix = ''^\\usepackage.*[{](.*)[}].*% CTAN: '';
-        packageName = ''(.*)'';
-        suffix = ''.*$'';
-
-        reps = pkgs.lib.lists.replicate n packageName;
-        str = pkgs.lib.strings.concatStringsSep " " reps;
-      in
-        prefix + str + suffix;
-
-      processLine = line: n: let
-        regex = buildCTANRegex n;
-        matches = builtins.match regex line;
-        next =
-          if (matches != null)
-          then (processLine line (n + 1))
-          else null;
-      in
-        if (next != null)
-        then next
-        else matches;
-
       # Extracts package names from lines like:
       #   \usepackage{foo, bar}
       #   \usepackage[options]{foo, bar}
-      # Returns a list of trimmed package names.
+      #   \usepackage{tikz} % CTAN: pgf
+      #   \usepackage{somepackage} % CTAN: ctanpackage1, ctanpackage2
+      # Returns a list of trimmed package names (from both sources).
       lineToPackageNames = (
         line: let
+          # Extract from \usepackage
           m = builtins.match ''^.*\\usepackage([[][^]]*[]])?[ ]*[{]([^}]*)[}].*$'' line;
+          usepkgNames =
+            if m == null
+            then []
+            else
+              map (pkg: pkgs.lib.strings.trim pkg)
+              (pkgs.lib.strings.splitString "," (builtins.elemAt m 1));
+
+          # Extract from % CTAN: ...
+          ctanMatch = builtins.match ".*% CTAN:[ ]*([^%#]*)" line;
+          ctanNames =
+            if ctanMatch == null
+            then []
+            else
+              map (pkg: pkgs.lib.strings.trim pkg)
+              (pkgs.lib.strings.splitString "," (builtins.elemAt ctanMatch 0));
+
+          # Union of both sources, remove duplicates
+          allNames = pkgs.lib.lists.unique (usepkgNames ++ ctanNames);
         in
-          if m == null
-          then []
-          else
-            map (pkg: pkgs.lib.strings.trim pkg)
-            (pkgs.lib.strings.splitString "," (builtins.elemAt m 1))
+          allNames
       );
 
       lines = splitString "\n" fileContents;
