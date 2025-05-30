@@ -8,7 +8,7 @@ in
     with pkgs.lib.attrsets;
     with pkgs.lib.strings; let
       buildCTANRegex = n: let
-        prefix = ''^\\usepackage.*\{(.*)\}.*% CTAN: '';
+        prefix = ''^\\usepackage.*[{](.*)[}].*% CTAN: '';
         packageName = ''(.*)'';
         suffix = ''.*$'';
 
@@ -31,7 +31,7 @@ in
 
       lineToPackageNames = (
         line: let
-          exact = builtins.match ''\\usepackage.*\{(.*)\}.*'' line;
+          exact = builtins.match ''\\usepackage.*[{](.*)[}].*'' line;
           multicomment = processLine line 1;
         in
           (
