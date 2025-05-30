@@ -11,6 +11,7 @@ in
         prefix = ''^\\usepackage.*\{(.*)\}.*% CTAN: '';
         packageName = ''(.*)'';
         suffix = ''.*$'';
+
         reps = pkgs.lib.lists.replicate n packageName;
         str = pkgs.lib.strings.concatStringsSep " " reps;
       in
@@ -30,7 +31,7 @@ in
 
       lineToPackageNames = (
         line: let
-          exact = builtins.match ''^\\usepackage.*\{([^}]*)\}'' line;
+          exact = builtins.match ''\\usepackage.*\{(.*)\}.*'' line;
           multicomment = processLine line 1;
         in
           (
@@ -45,9 +46,9 @@ in
           )
       );
 
-      lines = builtins.filter (x: x != null && x != "") (splitString "\n" fileContents);
+      lines = splitString "\n" fileContents;
       processedLines = builtins.filter (x: x != null) (builtins.map lineToPackageNames lines);
-      packageNames = pkgs.lib.lists.unique (builtins.concatLists processedLines);
+      packageNames = builtins.concatLists processedLines;
       texPackages = filterAttrs (y: x: x != null) (genAttrs packageNames (name: attrByPath [name] null pkgs.texlive));
     in
       texPackages
