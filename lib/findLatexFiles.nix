@@ -9,6 +9,13 @@ with pkgs.lib.debug; let
   processDirectory = rootPath: extensions: let
     readDir =
       builtins.tryEval (builtins.readDir rootPath);
+    warnIfFile =
+      if !readDir.success && builtins.pathExists rootPath && !(builtins.tryEval (builtins.readDir (builtins.dirOf rootPath))).success
+      then
+        builtins.trace "[findLatexFiles WARNING] basePath '${rootPath}' is not a directory. This will fail on Darwin."
+        null
+      else null;
+    _ = warnIfFile;
     directories =
       if readDir.success
       then attrNames (filterAttrs (name: type: type == "directory") readDir.value)
