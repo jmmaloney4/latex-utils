@@ -21,6 +21,15 @@
         description = "Main .tex file (relative to src)";
         example = "main.tex";
       };
+      extraTexPackages = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [];
+        description = ''
+          Extra TeX Live packages (by name, as in pkgs.texlive) to include for this document.
+          See: https://nixos.wiki/wiki/TexLive#Customizing_TeX_Live_environments
+        '';
+        example = ["mathrsfs" "xcolor"];
+      };
       # Add more mkLatexPdfDocument options as needed, with types and descriptions
     };
   };

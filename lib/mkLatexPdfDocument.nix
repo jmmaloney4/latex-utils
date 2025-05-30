@@ -36,6 +36,14 @@ with lib; let
         else {}
     ) (pkgs.lib.lists.unique searchPaths));
 
+  # Convert extraTexPackages (list of strings) to an attrset of pkgs.texlive derivations
+  extraTexPackagesAttrs = builtins.listToAttrs (
+    map (name: {
+      name = name;
+      value = pkgs.texlive.${name};
+    }) (args.extraTexPackages or [])
+  );
+
   allPackages =
     {
       inherit scheme;
@@ -55,7 +63,8 @@ with lib; let
         ;
     }
     // discovered
-    // texPackages;
+    // texPackages
+    // extraTexPackagesAttrs;
 
   texEnv = pkgs.texlive.combine allPackages;
 

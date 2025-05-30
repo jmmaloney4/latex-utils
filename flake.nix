@@ -33,6 +33,9 @@
             inherit pkgs lib;
             findLatexPackages = import ./lib/findLatexPackages.nix {inherit pkgs lib;};
           };
+          tests.extraTexPackages = import ./tests/extraTexPackages.nix {
+            inherit pkgs lib;
+          };
         };
       };
       flake = {

@@ -62,13 +62,31 @@
 
 ### Document Options
 
-| Option      | Type   | Default     | Description                        |
-|-------------|--------|-------------|------------------------------------|
-| `name`      | string | *(required)*| Output PDF/package name            |
-| `src`       | path   | *(required)*| Source directory for your LaTeX    |
-| `inputFile` | string | `main.tex`  | Main .tex file to build            |
+| Option            | Type   | Default     | Description                        |
+|-------------------|--------|-------------|------------------------------------|
+| `name`            | string | *(required)*| Output PDF/package name            |
+| `src`             | path   | *(required)*| Source directory for your LaTeX    |
+| `inputFile`       | string | `main.tex`  | Main .tex file to build            |
+| `extraTexPackages`| list   | `[]`        | Extra TeX Live packages (by name)  |
 
 You can extend this with more options as needed (see `mkLatexPdfDocument.nix`).
+
+### Per-document extra TeX Live packages
+
+You can add extra TeX Live packages for each document:
+
+```nix
+latex-utils.documents = [
+  {
+    name = "mydoc.pdf";
+    src = ./.;
+    extraTexPackages = [ "mathrsfs" "xcolor" ];
+  }
+];
+```
+
+These should be TeX Live package names as found in `pkgs.texlive`.
+See: [NixOS Wiki: TeX Live](https://nixos.wiki/wiki/TexLive)
 
 ## Font Loading and Fontconfig Caching
 
