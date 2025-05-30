@@ -58,4 +58,14 @@ in {
     expr = getSortedNames "";
     expected = [];
   };
+
+  multiPackage = {
+    expr = getSortedNames ''\\usepackage{amsmath, amsthm, amssymb, mathrsfs, mathtools}'';
+    expected = ["amsmath" "amssymb" "amsthm" "mathrsfs" "mathtools"];
+  };
+
+  multiPackageWithOptions = {
+    expr = getSortedNames ''\\usepackage[options]{foo, bar, baz}'';
+    expected = ["bar" "baz" "foo"];
+  };
 }
