@@ -142,11 +142,124 @@ in {
               exec ${lib.getExe' unifiedTexEnv "latexmk"} "$@"
             '';
           };
+
+          # VSCode integration
+          vscodeIntegration = lib.optionalAttrs (documents != []) (let
+            # Function to generate VSCode settings with custom overrides
+            mkVSCodeSettings = overrides: let
+              defaultSettings = {
+                "ltex.language" = "en-US";
+                "ltex.enabled" = true;
+                "ltex.server.path" = "${pkgs.ltex-ls}/bin/ltex-ls";
+
+                # LaTeX Workshop configuration using unified environment
+                "latex-workshop.latex.toolchain" = [
+                  {
+                    command = "${unifiedTexEnv}/bin/latexmk";
+                    args = [
+                      # Core compilation options
+                      "-pdf" # Generate PDF output
+                      "-interaction=nonstopmode" # Don't stop on errors (good for IDE)
+                      "-file-line-error" # Error format: file:line:error (IDE-friendly)
+                      "-synctex=1" # Enable SyncTeX for editor-PDF sync
+
+                      # Build organization
+                      "-output-directory=.latex-build" # Put ALL build artifacts in .latex-build/
+
+                      # Enhanced IDE experience
+                      "-recorder" # Create .fls file for dependency tracking
+                      "-silent" # Quieter output (less noise in IDE)
+                      "-bibtex" # Ensure bibliography processing
+
+                      # Document placeholder
+                      "%DOC%"
+                    ];
+                  }
+                ];
+
+                # Auto-build configuration
+                "latex-workshop.latex.autoBuild.run" = "onFileChange";
+
+                # Output and cleanup configuration
+                "latex-workshop.latex.outDir" = ".latex-build";
+                "latex-workshop.latex.autoClean.run" = "onBuilt";
+                "latex-workshop.latex.clean.fileTypes" = [
+                  "*.aux"
+                  "*.bbl"
+                  "*.blg"
+                  "*.idx"
+                  "*.ind"
+                  "*.lof"
+                  "*.lot"
+                  "*.out"
+                  "*.toc"
+                  "*.acn"
+                  "*.acr"
+                  "*.alg"
+                  "*.glg"
+                  "*.glo"
+                  "*.gls"
+                  "*.ist"
+                  "*.fls"
+                  "*.log"
+                  "*.fdb_latexmk"
+                  "*.synctex.gz"
+                ];
+
+                # PDF viewer configuration
+                "latex-workshop.view.pdf.viewer" = "tab";
+                "latex-workshop.view.pdf.internal.synctex.keybinding" = "double-click";
+
+                # Forward search configuration (editor -> PDF)
+                "latex-workshop.synctex.afterBuild.enabled" = true;
+              };
+              settings = defaultSettings // overrides;
+            in
+              builtins.toJSON settings;
+
+            # Default VSCode settings package
+            vscodeSettings = pkgs.writeTextFile {
+              name = "vscode-settings";
+              destination = "/.vscode/settings.json";
+              text = mkVSCodeSettings {};
+            };
+
+            # VSCode settings function for custom overrides
+            vscodeSettingsWithOverrides = overrides:
+              pkgs.writeTextFile {
+                name = "vscode-settings-custom";
+                destination = "/.vscode/settings.json";
+                text = mkVSCodeSettings overrides;
+              };
+
+            # Helper dev shell that sets up VSCode integration
+            vscodeDevShell = pkgs.mkShell {
+              buildInputs = [
+                unifiedTexEnv
+                pkgs.ltex-ls
+              ];
+              shellHook = ''
+                echo "🔧 Setting up VSCode LaTeX integration..."
+                mkdir -p .vscode
+                ln -sf "${vscodeSettings}/.vscode/settings.json" .vscode/settings.json
+                echo "✅ VSCode settings linked successfully!"
+                echo "📦 Using unified TeX Live environment with all document packages"
+              '';
+            };
+          in {
+            vscode-settings = vscodeSettings;
+            vscode-settings-with-overrides = vscodeSettingsWithOverrides;
+            vscode-devshell = vscodeDevShell;
+          });
         in {
           packages =
             if documents == []
             then {}
-            else docPkgs // unifiedPackages // {default = mkDoc (builtins.head documents);};
+            else docPkgs // unifiedPackages // vscodeIntegration // {default = mkDoc (builtins.head documents);};
+
+          devShells = lib.optionalAttrs (documents != []) {
+            vscode = vscodeIntegration.vscode-devshell;
+          };
         })
         # Other modules can extend perSystem here
       ];

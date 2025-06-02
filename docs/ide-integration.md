@@ -4,6 +4,97 @@
 
 The latex-utils flake-parts module creates a **unified TeX Live environment** that contains all packages needed by all LaTeX documents defined in your flake. This solves the problem of having separate TeX environments for each document and provides a single installation for IDE integration.
 
+## Automatic VSCode Integration
+
+For **Visual Studio Code** users, latex-utils automatically provides pre-configured settings and development environments:
+
+### Available VSCode Packages
+
+- **`vscode-settings`**: Pre-configured VSCode settings using the unified TeX Live environment
+- **`vscode-settings-with-overrides`**: Function to create custom VSCode settings with your overrides
+- **`vscode-devshell`**: Ready-to-use development shell with VSCode integration
+
+### Quick VSCode Setup
+
+**Option 1: Use the ready-made dev shell**
+```nix
+{
+  imports = [ inputs.latex-utils.modules.latex-utils ];
+  latex-utils.documents = [ /* your documents */ ];
+  
+  perSystem = { self', ... }: {
+    devShells.default = self'.devShells.vscode;  # Uses latex-utils VSCode shell
+  };
+}
+```
+
+**Option 2: Integrate with your existing dev shell**
+```nix
+perSystem = { self', pkgs, ... }: {
+  devShells.default = pkgs.mkShell {
+    inputsFrom = [
+      self'.devShells.vscode  # Get VSCode integration from latex-utils
+      # your other shells
+    ];
+    buildInputs = [
+      # your additional tools
+    ];
+  };
+};
+```
+
+**Option 3: Manual VSCode settings**
+```nix
+perSystem = { self', pkgs, ... }: {
+  devShells.default = pkgs.mkShell {
+    buildInputs = [
+      self'.packages.texlive-unified
+    ];
+    shellHook = ''
+      # Link VSCode settings
+      mkdir -p .vscode
+      ln -sf "${self'.packages.vscode-settings}/.vscode/settings.json" .vscode/settings.json
+    '';
+  };
+};
+```
+
+### Custom VSCode Settings
+
+You can override the default settings:
+
+```nix
+perSystem = { self', pkgs, ... }: {
+  packages.my-vscode-settings = self'.packages.vscode-settings-with-overrides {
+    "ltex.language" = "en-GB";  # British English
+    "latex-workshop.latex.autoBuild.run" = "never";  # Disable auto-build
+  };
+  
+  devShells.default = pkgs.mkShell {
+    shellHook = ''
+      mkdir -p .vscode
+      ln -sf "${self'.packages.my-vscode-settings}/.vscode/settings.json" .vscode/settings.json
+    '';
+  };
+};
+```
+
+## Manual IDE Integration Setup
+
+For other IDEs or custom setups, include the unified packages in your development shell:
+
+```nix
+perSystem = { self', pkgs, ... }: {
+  devShells.default = pkgs.mkShell {
+    buildInputs = [
+      # Include the unified TeX Live environment for your IDE
+      self'.packages.texlive-unified
+      self'.packages.latexmk-unified
+    ];
+  };
+};
+```
+
 ## How It Works
 
 ### Package Collection Logic
@@ -19,21 +110,6 @@ The module creates a single TeX Live environment containing all packages from al
 
 - **`texlive-unified`**: Complete TeX Live installation with all packages
 - **`latexmk-unified`**: Wrapper script for latexmk using the unified environment
-
-## IDE Integration Setup
-
-Include the unified packages in your development shell:
-
-```nix
-perSystem = { self', pkgs, ... }: {
-  devShells.default = pkgs.mkShell {
-    buildInputs = [
-      self'.packages.texlive-unified
-      self'.packages.latexmk-unified
-    ];
-  };
-};
-```
 
 ## Complete Example
 
@@ -58,12 +134,14 @@ perSystem = { self', pkgs, ... }: {
     ];
     
     perSystem = { self', pkgs, ... }: {
-      devShells.default = pkgs.mkShell {
-        buildInputs = [
-          self'.packages.texlive-unified    # Complete TeX Live
-          self'.packages.latexmk-unified    # latexmk wrapper
-        ];
-      };
+      # Option A: Use the provided VSCode dev shell
+      devShells.default = self'.devShells.vscode;
+      
+      # Option B: Integrate with your existing setup
+      # devShells.default = pkgs.mkShell {
+      #   inputsFrom = [ self'.devShells.vscode ];
+      #   buildInputs = [ /* your other tools */ ];
+      # };
     };
   };
 }
@@ -85,6 +163,7 @@ Point your IDE's LaTeX configuration to use the executables from the dev shell e
 3. **Efficient**: Packages are deduplicated and combined into a single derivation
 4. **Consistent**: All documents use the same package versions
 5. **Backwards Compatible**: Existing document definitions continue to work unchanged
+6. **Zero Configuration**: VSCode integration works out of the box
 
 ## Package Discovery
 

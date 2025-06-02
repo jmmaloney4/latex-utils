@@ -28,6 +28,7 @@
 - **flake-parts native**: Modern, idiomatic, and future-proof.
 - **Extensible**: Add more options as needed.
 - **Unified TeX Live environment**: Single TeX installation with all packages for IDE integration.
+- **VSCode integration**: Automatic LaTeX Workshop and LTeX-LS configuration.
 
 ---
 
@@ -111,6 +112,14 @@ When you define multiple LaTeX documents with different package requirements, la
 
 ### Quick Setup
 
+**For VSCode users (zero configuration):**
+```nix
+perSystem = { self', ... }: {
+  devShells.default = self'.devShells.vscode;  # Complete VSCode + TeX Live setup
+};
+```
+
+**For other IDEs or custom setups:**
 ```nix
 perSystem = { self', pkgs, ... }: {
   devShells.default = pkgs.mkShell {
@@ -126,6 +135,8 @@ perSystem = { self', pkgs, ... }: {
 **Available packages:**
 - `texlive-unified`: Complete TeX Live installation with all packages from all documents
 - `latexmk-unified`: latexmk wrapper using the unified environment
+- `vscode-settings`: Pre-configured VSCode settings for LaTeX Workshop + LTeX-LS
+- `vscode-devshell`: Ready-to-use development shell with VSCode integration
 
 After entering the dev shell (`nix develop`), point your IDE's LaTeX configuration to use the executables from the environment. All packages from all your documents will be available.
 
@@ -226,5 +237,6 @@ The output will be in `docs/options.md`.
 - **[Full Option Reference (generated)](docs/options.md)** - Complete module options documentation
 - **[Library Functions](docs/library.md)** - Detailed library function reference  
 - **[IDE Integration Guide](docs/ide-integration.md)** - Complete guide for IDE setup with unified TeX Live environments
+- **[Consumer Flake Example](docs/consumer-flake-example.md)** - Before/after example showing VSCode integration simplification
 
 ---
