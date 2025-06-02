@@ -15,7 +15,24 @@
     '';
   # Helper to check if a derivation builds
   builds = drv: drv.drvPath != null;
+
+  # Resolve potentially problematic packages at the top level
+  resolvedAmstex = pkgs.texlive.amsfonts;
+  resolvedAmsrefs = pkgs.texlive.amsrefs;
 in {
+  directDerivationCheck = {
+    expr = let
+      isAmstexDrv = lib.isDerivation resolvedAmstex;
+      isAmsrefsDrv = lib.isDerivation resolvedAmsrefs;
+      _traceAmstexType = builtins.trace "TRACE resolvedAmstex.type: ${toString (resolvedAmstex.type or "TYPE_ATTR_MISSING")}" true;
+      _traceAmsrefsType = builtins.trace "TRACE resolvedAmsrefs.type: ${toString (resolvedAmsrefs.type or "TYPE_ATTR_MISSING")}" true;
+      _traceAmstexIsDrv = builtins.trace "TRACE isAmstexDrv: ${toString isAmstexDrv}" true;
+      _traceAmsrefsIsDrv = builtins.trace "TRACE isAmsrefsDrv: ${toString isAmsrefsDrv}" true;
+    in
+      isAmstexDrv && isAmsrefsDrv;
+    expected = true;
+  };
+
   singleExtra = {
     expr = builds (mkDoc {
       name = "test.pdf";
@@ -97,51 +114,43 @@ in {
     expected = true;
   };
 
-  # # Test new functionality: List of derivations
-  # listOfDerivations = {
-  #   expr = builds (mkDoc {
-  #     name = "test.pdf";
-  #     src = minimalTex "listOfDerivations" "\\usepackage{xcolor}";
-  #     extraTexPackages = [pkgs.texlive.xcolor pkgs.texlive.mathrsfs];
-  #   });
-  #   expected = true;
-  # };
+  # Test new functionality: List of derivations
+  listOfDerivations = {
+    expr = builds (mkDoc {
+      name = "test.pdf";
+      src = minimalTex "listOfDerivations" "\\usepackage{xcolor}\\usepackage{mathrsfs} % CTAN: rsfs"; # rsfs is mathrsfs
+      extraTexPackages = [pkgs.texlive.xcolor pkgs.texlive.rsfs]; # Use derivations
+    });
+    expected = true;
+  };
 
-  # # Test new functionality: Mixed list of strings and derivations
-  # mixedList = {
-  #   expr = builds (mkDoc {
-  #     name = "test.pdf";
-  #     src = minimalTex "mixedList" "\\usepackage{xcolor}\\usepackage{mathrsfs} % CTAN: rsfs";
-  #     extraTexPackages = ["xcolor" pkgs.texlive.rsfs];
-  #   });
-  #   expected = true;
-  # };
+  # Test new functionality: Function returning derivations
+  functionReturningDerivations = {
+    expr = builds (mkDoc {
+      name = "test.pdf";
+      src = minimalTex "functionReturningDerivations" "\\usepackage{amsmath}";
+      extraTexPackages = discovered:
+        if builtins.hasAttr "amsmath" discovered
+        then let
+          # Trace the raw values from top-level
+          _tracedFontRaw = builtins.trace "TRACE resolvedAmstex (in function): ${builtins.toString resolvedAmstex}" resolvedAmstex;
+          _tracedRefsRaw = builtins.trace "TRACE resolvedAmsrefs (in function): ${builtins.toString resolvedAmsrefs}" resolvedAmsrefs;
 
-  # # Test new functionality: Function returning strings
-  # functionReturningStrings = {
-  #   expr = builds (mkDoc {
-  #     name = "test.pdf";
-  #     src = minimalTex "functionReturningStrings" "\\usepackage{tikz} % CTAN: pgf";
-  #     extraTexPackages = discovered:
-  #       if builtins.hasAttr "pgf" discovered
-  #       then ["pgfplots"]
-  #       else ["standalone"];
-  #   });
-  #   expected = true;
-  # };
+          # Assert drvPath presence and access it
+          # This will fail if resolvedAmstex/Refs are not derivations or don't have drvPath
+          fontDrvPath = assert (resolvedAmstex ? drvPath); resolvedAmstex.drvPath;
+          refsDrvPath = assert (resolvedAmsrefs ? drvPath); resolvedAmsrefs.drvPath;
 
-  # # Test new functionality: Function returning derivations
-  # functionReturningDerivations = {
-  #   expr = builds (mkDoc {
-  #     name = "test.pdf";
-  #     src = minimalTex "functionReturningDerivations" "\\usepackage{amsmath}";
-  #     extraTexPackages = discovered:
-  #       if builtins.hasAttr "amsmath" discovered
-  #       then [pkgs.texlive.amsfonts pkgs.texlive.amsrefs]
-  #       else [];
-  #   });
-  #   expected = true;
-  # };
+          # Use the packages after asserting drvPath. The primary purpose of the above is to see if it errors.
+          fontPkg = resolvedAmstex;
+          refsPkg = resolvedAmsrefs;
+
+          _finalTrace = builtins.trace "TRACE fontPkg (in function after .drvPath access): ${builtins.toString fontPkg}, refsPkg: ${builtins.toString refsPkg}" true;
+        in [fontPkg refsPkg]
+        else [];
+    });
+    expected = true;
+  };
 
   # # Test new functionality: Function with conditional logic
   # functionConditional = {

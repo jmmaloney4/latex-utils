@@ -74,6 +74,7 @@ Builds a LaTeX document as a Nix derivation, automatically including required an
 mkLatexPdfDocument {
   name = "my-paper.pdf";
   src = ./my-paper;
+  inputFile = "main.tex";
   extraTexPackages = [ "xcolor" ];
 }
 ```
@@ -117,41 +118,41 @@ mkFontconfigCache {
 Normalizes different input formats for `extraTexPackages` to a consistent attrset of derivations.
 
 **Arguments:**
-- `extraTexPackages` (list or function): The extraTexPackages input in any supported format.
-- `discoveredPackages` (attrset): Attrset of discovered packages (used when extraTexPackages is a function).
+- `extraTexPackages` (list or function): The extraTexPackages input. 
+  - List of package name strings (e.g., `["mathrsfs" "xcolor"]`)
+  - List of derivations (e.g., `[pkgs.texlive.mathrsfs pkgs.texlive.xcolor]`)
+  - Function returning a list of derivations (e.g., `discovered: if builtins.hasAttr "tikz" discovered then [pkgs.texlive.pgfplots] else []`)
+- `discoveredPackages` (attrset): Attrset of discovered packages (used when `extraTexPackages` is a function).
 
 **Return:**
 - Attribute set mapping package names to their corresponding derivations.
 
-**Supported Input Formats:**
-1. **List of strings**: Package names from `pkgs.texlive`
-2. **List of derivations**: Direct derivation references
-3. **Mixed list**: Combination of strings and derivations
-4. **Function**: Takes discovered packages and returns a list (strings or derivations)
-
-**Example:**
+**Example Usage:**
 ```nix
-# List of strings
 normalizeExtraTexPackages {
-  extraTexPackages = ["mathrsfs" "xcolor"];
-  discoveredPackages = {};
+  extraTexPackages = ["mathrsfs" "xcolor"]; # List of strings
+  discoveredPackages = {}; # Not used for list input
 }
-# => { mathrsfs = pkgs.texlive.mathrsfs; xcolor = pkgs.texlive.xcolor; }
+# => { mathrsfs = <derivation>; xcolor = <derivation>; }
 
-# Function
 normalizeExtraTexPackages {
-  extraTexPackages = discovered: 
-    if builtins.hasAttr "tikz" discovered 
-    then ["pgfplots"] 
-    else [];
-  discoveredPackages = { tikz = pkgs.texlive.pgf; };
+  extraTexPackages = [pkgs.texlive.mathrsfs pkgs.texlive.xcolor]; # List of derivations
+  discoveredPackages = {}; # Not used for list input
 }
-# => { pgfplots = pkgs.texlive.pgfplots; }
+# => { mathrsfs = <derivation>; xcolor = <derivation>; }
+
+normalizeExtraTexPackages {
+  extraTexPackages = discovered:
+    if builtins.hasAttr "tikz" discovered
+    then [pkgs.texlive.pgfplots pkgs.texlive.circuitikz]
+    else [];
+  discoveredPackages = { tikz = pkgs.texlive.pgf; }; # Example discovered packages
+}
+# => { pgfplots = <derivation>; circuitikz = <derivation>; } (if tikz is discovered)
 ```
 
-**Notes:**
-- Used internally by both the module and `mkLatexPdfDocument`.
-- Enables powerful conditional package selection based on discovered dependencies.
+For more detailed examples, refer to the test cases:
+- See `tests/extraTexPackages.nix` for usage examples within `mkLatexPdfDocument`.
 - See `tests/normalizeExtraTexPackages.nix` for comprehensive examples.
 
 --- 

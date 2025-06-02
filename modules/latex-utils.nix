@@ -6,8 +6,10 @@
   # Define custom types for extraTexPackages
   extraTexPackagesType =
     lib.types.either
-    (lib.types.listOf (lib.types.either lib.types.str lib.types.package))
-    lib.types.functionTo (lib.types.listOf (lib.types.either lib.types.str lib.types.package));
+    (lib.types.either
+      (lib.types.listOf lib.types.str)
+      (lib.types.listOf lib.types.package))
+    (lib.types.functionTo (lib.types.listOf lib.types.package));
 
   docType = lib.types.submodule {
     options = {
@@ -39,14 +41,17 @@
         description = ''
           Extra TeX Live packages to include for this document.
           Can be:
-          - List of strings (package names from pkgs.texlive): ["mathrsfs" "xcolor"]
+          - List of package names (strings): ["mathrsfs" "xcolor"]
           - List of derivations: [pkgs.texlive.mathrsfs pkgs.myCustomTexPackage]
-          - Function from discovered packages to list of derivations: (discovered: [pkgs.texlive.xcolor])
+          - Function returning derivation list: (discovered: [pkgs.texlive.xcolor])
+
+          Note: Lists must be homogeneous (all strings OR all derivations).
+          Functions must return lists of derivations.
 
           See: https://nixos.wiki/wiki/TexLive#Customizing_TeX_Live_environments
         '';
         example = lib.literalExpression ''
-          # List of strings (current behavior)
+          # List of package name strings
           ["mathrsfs" "xcolor"]
 
           # List of derivations

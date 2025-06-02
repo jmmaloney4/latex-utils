@@ -101,8 +101,11 @@ perSystem = { self', pkgs, ... }: {
 
 - Scans all documents for `\usepackage` commands using `findLatexPackages`
 - Collects all `extraTexPackages` from all documents
-- Deduplicates packages across documents
-- Combines with base packages (latex-bin, latexmk, biblatex, etc.)
+  - Accepts lists of package name strings (e.g., `["foo", "bar"]`)
+  - Accepts lists of derivations (e.g., `[pkgs.texlive.foo, pkgs.texlive.bar]`)
+  - Accepts functions returning lists of derivations (e.g., `discovered: [pkgs.texlive.foo]`).
+  - **Note**: Lists must be homogeneous (all strings or all derivations).
+- Combines discovered and extra packages into a single `texlive.combined` derivation.
 
 ### Unified Environment Creation
 
@@ -122,14 +125,24 @@ The module creates a single TeX Live environment containing all packages from al
     
     latex-utils.documents = [
       {
-        name = "paper1.pdf";
-        src = ./.;
-        extraTexPackages = [ "rsfs" "jknapltx" "xcolor" ];
+        name = "document1.pdf";
+        src = ./doc1;
+        extraTexPackages = [ "rsfs" "jknapltx" "xcolor" ]; # List of strings
       }
       {
-        name = "paper2.pdf"; 
-        src = ./paper2;
-        extraTexPackages = [ "pgf" "amsmath" ];
+        name = "document2.pdf";
+        src = ./doc2;
+        # List of derivations
+        extraTexPackages = [ pkgs.texlive.pgf pkgs.texlive.amsmath ]; 
+      }
+      {
+        name = "document3.pdf";
+        src = ./doc3;
+        # Function returning list of derivations
+        extraTexPackages = discovered: 
+          if builtins.hasAttr "biblatex" discovered 
+          then [ pkgs.texlive.biblatex-apa ] 
+          else [];
       }
     ];
     
@@ -171,7 +184,7 @@ The system automatically discovers packages from:
 
 - `\usepackage{packagename}` commands in LaTeX source files
 - `extraTexPackages` lists in document configurations
-- Comments like `% CTAN: actualpackagename` for package name mapping
+- Discovered packages from `\usepackage` and `\RequirePackage`
 
 ## Common Package Mapping Issues
 
@@ -182,4 +195,10 @@ Some LaTeX packages require specific nixpkgs package names:
 | `\usepackage{mathrsfs}` | `rsfs` + `jknapltx` | Need both font and interface |
 | `\usepackage{tikz}` | `pgf` | TikZ is part of PGF package |
 
-The unified environment handles these mappings automatically when specified in `extraTexPackages`. 
+The unified environment handles these mappings automatically when specified in `extraTexPackages`.
+
+## Package Name to Derivation Mapping
+
+The unified environment handles these mappings automatically when specified in `extraTexPackages` as strings.
+
+Common mappings include: 

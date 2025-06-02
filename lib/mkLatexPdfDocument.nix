@@ -39,19 +39,21 @@ with lib; let
 
   # Handle extraTexPackages - could be an attrset (already normalized) or the original formats
   extraTexPackagesAttrs =
+    # Check if it's already a non-empty attrset of derivations (pre-normalized)
     if
       builtins.isAttrs (args.extraTexPackages or {})
       && (args.extraTexPackages or {}) != {}
       && builtins.all (name: lib.isDerivation (args.extraTexPackages.${name})) (builtins.attrNames (args.extraTexPackages or {}))
     then
-      # Already normalized by the module (attrset of derivations)
+      # Already normalized, use as is
       args.extraTexPackages or {}
     else
       # Original format (list of strings/derivations or function) - normalize it
-      normalizeHelpers.normalizeExtraTexPackages {
+      lib.addErrorContext "while normalizing extraTexPackages for document '${args.name}' (src: ${toString args.src})"
+      (normalizeHelpers.normalizeExtraTexPackages {
         extraTexPackages = args.extraTexPackages or [];
         discoveredPackages = discovered;
-      };
+      });
 
   allPackages =
     {

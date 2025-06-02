@@ -41,31 +41,43 @@ in {
     expected = ["mathrsfs" "xcolor"];
   };
 
-  # Test mixed list of strings and derivations
-  mixedList = {
+  # Test list of TeX Live package objects (NEW)
+  listOfTexLivePackageObjects = {
     expr = let
       result = normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = ["mathrsfs" pkgs.texlive.xcolor];
+        extraTexPackages = [pkgs.texlive.amsfonts pkgs.texlive.amssymb];
         discoveredPackages = {};
       };
     in
       getSortedNames result;
-    expected = ["mathrsfs" "xcolor"];
+    expected = ["amsfonts" "amssymb"];
   };
 
-  # Test function that returns list of strings
-  functionReturningStrings = {
+  # Test error handling: mixed list (no longer supported)
+  mixedListError = {
     expr = let
-      result = normalizeHelpers.normalizeExtraTexPackages {
+      shouldFail = builtins.tryEval (normalizeHelpers.normalizeExtraTexPackages {
+        extraTexPackages = ["mathrsfs" pkgs.texlive.xcolor]; # mixed types
+        discoveredPackages = {};
+      });
+    in
+      shouldFail.success;
+    expected = false;
+  };
+
+  # Test function that returns list of strings (no longer directly supported, functions must return derivations or TeX Live package objects)
+  functionReturningStringsError = {
+    expr = let
+      shouldFail = builtins.tryEval (normalizeHelpers.normalizeExtraTexPackages {
         extraTexPackages = discovered:
           if builtins.hasAttr "tikz" discovered
-          then ["pgfplots"]
+          then ["pgfplots"] # strings not allowed from function
           else ["standalone"];
         discoveredPackages = testDiscovered;
-      };
+      });
     in
-      getSortedNames result;
-    expected = ["pgfplots"];
+      shouldFail.success;
+    expected = false;
   };
 
   # Test function that returns list of derivations
@@ -83,13 +95,43 @@ in {
     expected = ["amsfonts"];
   };
 
-  # Test function that returns mixed list
-  functionReturningMixed = {
+  # Test function that returns list of TeX Live package objects (NEW)
+  functionReturningTexLivePackageObjects = {
+    expr = let
+      result = normalizeHelpers.normalizeExtraTexPackages {
+        extraTexPackages = discovered:
+          if builtins.hasAttr "amsmath" discovered
+          then [pkgs.texlive.amsfonts pkgs.texlive.amssymb]
+          else [pkgs.texlive.mathtools];
+        discoveredPackages = testDiscovered;
+      };
+    in
+      getSortedNames result;
+    expected = ["amsfonts" "amssymb"];
+  };
+
+  # Test error: function returning mixed types (no longer supported)
+  functionReturningMixedError = {
+    expr = let
+      shouldFail = builtins.tryEval (normalizeHelpers.normalizeExtraTexPackages {
+        extraTexPackages = discovered:
+          if builtins.hasAttr "xcolor" discovered
+          then [pkgs.texlive.colortbl "xspace"] # mixed types not allowed
+          else [];
+        discoveredPackages = testDiscovered;
+      });
+    in
+      shouldFail.success;
+    expected = false;
+  };
+
+  # Test function that returns list of derivations (formerly functionReturningMixed)
+  functionReturningDerivationsNew = {
     expr = let
       result = normalizeHelpers.normalizeExtraTexPackages {
         extraTexPackages = discovered:
           if builtins.hasAttr "xcolor" discovered
-          then ["colortbl" pkgs.texlive.xspace]
+          then [pkgs.texlive.colortbl pkgs.texlive.xspace]
           else [];
         discoveredPackages = testDiscovered;
       };
@@ -122,11 +164,11 @@ in {
     expected = [];
   };
 
-  # Test that all derivations in result are valid
-  derivationsAreValid = {
+  # Test that all derivations in result are valid (using listOfStrings now)
+  derivationsAreValidFromStrings = {
     expr = let
       result = normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = ["mathrsfs" pkgs.texlive.xcolor];
+        extraTexPackages = ["mathrsfs" "xcolor"]; # Use list of strings
         discoveredPackages = {};
       };
       allValid = lib.lists.all (name: builds result.${name}) (builtins.attrNames result);
@@ -135,7 +177,38 @@ in {
     expected = true;
   };
 
-  # Test error handling: invalid list item type
+  # Test that all derivations in result are valid (using listOfDerivations)
+  derivationsAreValidFromDerivations = {
+    expr = let
+      result = normalizeHelpers.normalizeExtraTexPackages {
+        extraTexPackages = [pkgs.texlive.mathrsfs pkgs.texlive.xcolor]; # Use list of derivations
+        discoveredPackages = {};
+      };
+      allValid = lib.lists.all (name: builds result.${name}) (builtins.attrNames result);
+    in
+      allValid;
+    expected = true;
+  };
+
+  # Test that all TeX Live package objects in result are valid (NEW)
+  texLivePackageObjectsAreValid = {
+    expr = let
+      result = normalizeHelpers.normalizeExtraTexPackages {
+        extraTexPackages = [pkgs.texlive.amsfonts pkgs.texlive.amssymb]; # Use list of TeX Live package objects
+        discoveredPackages = {};
+      };
+      allValid = lib.lists.all (
+        name: let
+          item = result.${name};
+        in
+          (builtins.isAttrs item) && (item ? pkgs) && (builtins.isList item.pkgs)
+      ) (builtins.attrNames result);
+    in
+      allValid;
+    expected = true;
+  };
+
+  # Test error handling: invalid list item type (e.g. string in a list of derivations if not all strings)
   invalidListItemError = {
     expr = let
       shouldFail = builtins.tryEval (normalizeHelpers.normalizeExtraTexPackages {
