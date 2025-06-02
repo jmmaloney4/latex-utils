@@ -2,20 +2,18 @@
 
 **latex-utils** is a Nix flake module for building LaTeX documents as reproducible Nix packages.
 
-[➡️ **Full Option Reference (generated)**](docs/options.md)
-
 ---
 
 ## Table of Contents
 - [Features](#features)
 - [Quickstart](#quickstart)
+- [Automatic Package Discovery](#automatic-package-discovery)
 - [Usage Details](#usage-details)
 - [Unified TeX Live Environment for IDE Integration](#unified-tex-live-environment-for-ide-integration)
 - [Font Loading and Fontconfig Caching](#font-loading-and-fontconfig-caching)
 - [Library Functions](#library-functions)
 - [Usage Examples (Tests)](#usage-examples-tests)
 - [Full flake.nix Example](#example-full-flakenix)
-- [Regenerating Documentation](#regenerating-documentation)
 - [Documentation](#documentation)
 
 ---
@@ -24,6 +22,8 @@
 
 - **Batch build** multiple LaTeX documents—just list them in your configuration.
 - **Reproducible**: Get the same PDF every time, on any machine.
+- **Automatic package discovery**: Scans your LaTeX source files for `\usepackage{...}` commands and automatically includes the required TeX Live packages—no manual package management needed.
+- **Smart CTAN mapping**: Use `% CTAN: packagename` comments when nixpkgs and CTAN package names differ.
 - **Minimal boilerplate**: No need to repeat build logic.
 - **flake-parts native**: Modern, idiomatic, and future-proof.
 - **Extensible**: Add more options as needed.
@@ -51,6 +51,7 @@
          name = "paper.pdf";
          src = ./.;
          # inputFile = "main.tex"; # optional, defaults to main.tex
+         # extraTexPackages = []; # optional, for packages not auto-detected
        }
        {
          name = "slides.pdf";
@@ -68,6 +69,130 @@
    nix build .#slides
    nix build .#default  # builds the first document in your list
    ```
+
+   **That's it!** latex-utils automatically scans your `.tex` files for `\usepackage{...}` commands and includes the required TeX Live packages. No manual package management needed.
+
+---
+
+## Automatic Package Discovery
+
+latex-utils automatically identifies and includes the TeX Live packages your documents need by scanning your LaTeX source files. This eliminates the need to manually specify most package dependencies.
+
+### How It Works
+
+When you build a document, latex-utils:
+
+1. **Recursively scans** your source directory for LaTeX files (`.tex` and `.cls` files by default)
+2. **Parses each file** to extract package names from `\usepackage{...}` commands
+3. **Automatically includes** the corresponding TeX Live packages in your build environment
+4. **Combines** discovered packages with any manually specified `extraTexPackages`
+
+### Supported Package Declaration Formats
+
+latex-utils recognizes several `\usepackage` formats:
+
+```latex
+% Single package
+\usepackage{amsmath}
+
+% Multiple packages in one command
+\usepackage{amsmath, amssymb, amsthm}
+
+% Packages with options
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+
+% Packages with complex options
+\usepackage[backend=biber, style=alphabetic]{biblatex}
+```
+
+### CTAN Package Name Mapping
+
+Sometimes the package name used in `\usepackage{...}` doesn't match the nixpkgs TeX Live package name. For these cases, use a `% CTAN:` comment to specify the correct package name:
+
+```latex
+% When the LaTeX package name differs from the nixpkgs name
+\usepackage{tikz}      % CTAN: pgf
+\usepackage{beamer}    % CTAN: beamer
+\usepackage{algorithm} % CTAN: algorithms
+
+% Multiple CTAN packages for one \usepackage command
+\usepackage{somepackage} % CTAN: ctanpkg1, ctanpkg2
+```
+
+The `% CTAN:` comment tells latex-utils to include the `pgf`, `beamer`, `algorithms`, `ctanpkg1`, and `ctanpkg2` packages from nixpkgs instead of (or in addition to) looking for packages with the exact names used in `\usepackage`.
+
+### Which Files Are Searched
+
+latex-utils searches for LaTeX files in your document's source directory:
+
+- **File types**: `.tex` and `.cls` files by default
+- **Search scope**: Recursive search through all subdirectories
+- **Search location**: The `workingDirectory` (defaults to the root of your `src`)
+
+This means you can organize your LaTeX project with subdirectories, custom classes, and included files—latex-utils will find and analyze them all:
+
+```
+my-thesis/
+├── main.tex              # Found and scanned
+├── chapters/
+│   ├── intro.tex         # Found and scanned  
+│   └── conclusion.tex    # Found and scanned
+├── mystyle.cls           # Found and scanned
+└── figures/
+    └── diagram.pdf       # Ignored (not .tex/.cls)
+```
+
+### Manual Package Override
+
+For packages that aren't automatically detected or when you need additional packages:
+
+```nix
+latex-utils.documents = [
+  {
+    name = "mydoc.pdf";
+    src = ./.;
+    extraTexPackages = [ 
+      "mathrsfs"     # Additional package not used via \usepackage
+      "xcolor"       # Override if auto-detection missed it
+    ];
+  }
+];
+```
+
+### Example: Complex Document Structure
+
+Consider this LaTeX project structure:
+
+```latex
+% main.tex
+\documentclass{article}
+\usepackage{amsmath, amssymb}
+\usepackage{tikz}           % CTAN: pgf
+\usepackage[backend=biber]{biblatex}
+\input{chapters/intro}
+\begin{document}
+% ...
+\end{document}
+
+% chapters/intro.tex  
+\usepackage{algorithm}      % CTAN: algorithms
+\usepackage{listings}
+```
+
+latex-utils will automatically detect and include: `amsmath`, `amssymb`, `pgf` (via CTAN comment), `biblatex`, `algorithms` (via CTAN comment), and `listings`.
+
+The resulting Nix configuration is simply:
+
+```nix
+latex-utils.documents = [
+  {
+    name = "paper.pdf";
+    src = ./.;
+    # No extraTexPackages needed - everything auto-detected!
+  }
+];
+```
 
 ---
 
@@ -195,7 +320,7 @@ The following utility functions are available in the `lib/` directory. See [docs
 | `findLatexFiles`        | Recursively finds all LaTeX source files (.tex, .cls, etc.) in a directory tree. |
 | `findLatexPackages`     | Parses LaTeX source files to extract required TeX Live package names from `\usepackage` lines. |
 | `mkLatexPdfDocument`    | Builds a LaTeX document as a Nix derivation, automatically including required and extra TeX Live packages. |
-| `mkFontconfigCache`     | Prebuilds a fontconfig cache for use in sandboxed LaTeX builds, ensuring reliable font discovery. |
+| `mkFontconfigCache`     | Prebuilds the fontconfig cache for LuaLaTeX and XeLaTeX, using all fonts available in your TeX environment. |
 
 See [docs/library.md](docs/library.md) for arguments, return values, and advanced usage.
 
@@ -220,21 +345,8 @@ nix build .#checks.$(nix eval --raw --impure --expr builtins.currentSystem).nix-
 
 ---
 
-## Regenerating Documentation
-
-Documentation for module options is generated automatically using [nixdoc](https://github.com/nix-community/nixdoc) via the [flake-parts-nixdoc](https://github.com/figsoda/flake-parts-nixdoc) module. To regenerate docs/options.md:
-
-```sh
-nix build .#nixdoc
-```
-
-The output will be in `docs/options.md`.
-
----
-
 ## Documentation
 
-- **[Full Option Reference (generated)](docs/options.md)** - Complete module options documentation
 - **[Library Functions](docs/library.md)** - Detailed library function reference  
 - **[IDE Integration Guide](docs/ide-integration.md)** - Complete guide for IDE setup with unified TeX Live environments
 - **[Consumer Flake Example](docs/consumer-flake-example.md)** - Before/after example showing VSCode integration simplification
