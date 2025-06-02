@@ -417,6 +417,7 @@ nix build .#checks.$(nix eval --raw --impure --expr builtins.currentSystem).nix-
 ## Documentation
 
 - **[Library Functions](docs/library.md)** - Detailed library function reference  
+- **[TeX Live Integration](docs/texlive-integration.md)** - Comprehensive guide to TeX Live package structure and the `normalizeExtraTexPackages` function
 - **[IDE Integration Guide](docs/ide-integration.md)** - Complete guide for IDE setup with unified TeX Live environments
 - **[Consumer Flake Example](docs/consumer-flake-example.md)** - Before/after example showing VSCode integration simplification
 
