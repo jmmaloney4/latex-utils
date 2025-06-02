@@ -10,11 +10,13 @@
 - [Features](#features)
 - [Quickstart](#quickstart)
 - [Usage Details](#usage-details)
+- [Unified TeX Live Environment for IDE Integration](#unified-tex-live-environment-for-ide-integration)
 - [Font Loading and Fontconfig Caching](#font-loading-and-fontconfig-caching)
 - [Library Functions](#library-functions)
 - [Usage Examples (Tests)](#usage-examples-tests)
 - [Full flake.nix Example](#example-full-flakenix)
 - [Regenerating Documentation](#regenerating-documentation)
+- [Documentation](#documentation)
 
 ---
 
@@ -25,6 +27,7 @@
 - **Minimal boilerplate**: No need to repeat build logic.
 - **flake-parts native**: Modern, idiomatic, and future-proof.
 - **Extensible**: Add more options as needed.
+- **Unified TeX Live environment**: Single TeX installation with all packages for IDE integration.
 
 ---
 
@@ -102,6 +105,32 @@ latex-utils.documents = [
 These should be TeX Live package names as found in `pkgs.texlive`.
 See: [NixOS Wiki: TeX Live](https://nixos.wiki/wiki/TexLive)
 
+## Unified TeX Live Environment for IDE Integration
+
+When you define multiple LaTeX documents with different package requirements, latex-utils automatically creates a **unified TeX Live environment** containing all packages needed by all your documents. This environment is exposed as additional packages that you can use for IDE integration.
+
+### Quick Setup
+
+```nix
+perSystem = { self', pkgs, ... }: {
+  devShells.default = pkgs.mkShell {
+    buildInputs = [
+      # Include the unified TeX Live environment for your IDE
+      self'.packages.texlive-unified
+      self'.packages.latexmk-unified
+    ];
+  };
+};
+```
+
+**Available packages:**
+- `texlive-unified`: Complete TeX Live installation with all packages from all documents
+- `latexmk-unified`: latexmk wrapper using the unified environment
+
+After entering the dev shell (`nix develop`), point your IDE's LaTeX configuration to use the executables from the environment. All packages from all your documents will be available.
+
+**➡️ [Full IDE Integration Guide](docs/ide-integration.md)**
+
 ## Font Loading and Fontconfig Caching
 
 LaTeX engines like LuaLaTeX and XeLaTeX require a font cache (managed by fontconfig) to find and use system fonts. In Nix builds, this can be slow and unreliable if the cache is rebuilt every time or if the build environment is sandboxed.
@@ -166,6 +195,17 @@ See [docs/library.md](docs/library.md) for arguments, return values, and advance
 The `tests/` directory contains real-world usage examples and regression tests for the library functions and module options. See:
 - `tests/extraTexPackages.nix`: Examples of using `extraTexPackages` and building multiple documents.
 - `tests/findLatexPackages.nix`: Examples of parsing LaTeX files for required packages.
+- `tests/unifiedTexLive.nix`: Comprehensive tests for the unified TeX Live environment functionality.
+
+Run all tests with:
+```sh
+nix flake check
+```
+
+Or run just the nix-unit tests:
+```sh
+nix build .#checks.$(nix eval --raw --impure --expr builtins.currentSystem).nix-unit
+```
 
 ---
 
@@ -178,5 +218,13 @@ nix build .#nixdoc
 ```
 
 The output will be in `docs/options.md`.
+
+---
+
+## Documentation
+
+- **[Full Option Reference (generated)](docs/options.md)** - Complete module options documentation
+- **[Library Functions](docs/library.md)** - Detailed library function reference  
+- **[IDE Integration Guide](docs/ide-integration.md)** - Complete guide for IDE setup with unified TeX Live environments
 
 ---
