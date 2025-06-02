@@ -23,6 +23,7 @@ with lib; let
   # Import helpers
   findLatexFiles = import ../lib/findLatexFiles.nix {inherit pkgs lib;};
   findLatexPackages = import ../lib/findLatexPackages.nix {inherit pkgs lib;};
+  normalizeHelpers = import ../lib/normalizeExtraTexPackages.nix {inherit pkgs lib;};
 
   # scan sources for \usepackage{…}
   searchPaths = findLatexFiles {basePath = "${src}/${workingDirectory}";};
@@ -36,13 +37,21 @@ with lib; let
         else {}
     ) (pkgs.lib.lists.unique searchPaths));
 
-  # Convert extraTexPackages (list of strings) to an attrset of pkgs.texlive derivations
-  extraTexPackagesAttrs = builtins.listToAttrs (
-    map (name: {
-      name = name;
-      value = pkgs.texlive.${name};
-    }) (args.extraTexPackages or [])
-  );
+  # Handle extraTexPackages - could be an attrset (already normalized) or the original formats
+  extraTexPackagesAttrs =
+    if
+      builtins.isAttrs (args.extraTexPackages or {})
+      && (args.extraTexPackages or {}) != {}
+      && builtins.all (name: lib.isDerivation (args.extraTexPackages.${name})) (builtins.attrNames (args.extraTexPackages or {}))
+    then
+      # Already normalized by the module (attrset of derivations)
+      args.extraTexPackages or {}
+    else
+      # Original format (list of strings/derivations or function) - normalize it
+      normalizeHelpers.normalizeExtraTexPackages {
+        extraTexPackages = args.extraTexPackages or [];
+        discoveredPackages = discovered;
+      };
 
   allPackages =
     {

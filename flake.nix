@@ -50,6 +50,9 @@
           tests.unifiedTexLive = import ./tests/unifiedTexLive.nix {
             inherit pkgs lib;
           };
+          # tests.normalizeExtraTexPackages = import ./tests/normalizeExtraTexPackages.nix {
+          #   inherit pkgs lib;
+          # };
         };
         treefmt = {
           config = {

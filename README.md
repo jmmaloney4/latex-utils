@@ -210,14 +210,15 @@ latex-utils.documents = [
 | `name`            | string | *(required)*| Output PDF/package name            |
 | `src`             | path   | *(required)*| Source directory for your LaTeX    |
 | `inputFile`       | string | `main.tex`  | Main .tex file to build            |
-| `extraTexPackages`| list   | `[]`        | Extra TeX Live packages (by name)  |
+| `extraTexPackages`| list or function | `[]`        | Extra TeX Live packages (flexible format)  |
 
 You can extend this with more options as needed (see `mkLatexPdfDocument.nix`).
 
-### Per-document extra TeX Live packages
+### Enhanced extraTexPackages Support
 
-You can add extra TeX Live packages for each document:
+The `extraTexPackages` option now supports multiple input formats for maximum flexibility:
 
+#### 1. List of Strings (Backward Compatible)
 ```nix
 latex-utils.documents = [
   {
@@ -228,8 +229,75 @@ latex-utils.documents = [
 ];
 ```
 
-These should be TeX Live package names as found in `pkgs.texlive`.
-See: [NixOS Wiki: TeX Live](https://nixos.wiki/wiki/TexLive)
+#### 2. List of Derivations
+```nix
+latex-utils.documents = [
+  {
+    name = "mydoc.pdf";
+    src = ./.;
+    extraTexPackages = [ 
+      pkgs.texlive.mathrsfs 
+      pkgs.texlive.xcolor
+      myCustomTexPackage  # Custom derivation
+    ];
+  }
+];
+```
+
+#### 3. Mixed List of Strings and Derivations
+```nix
+latex-utils.documents = [
+  {
+    name = "mydoc.pdf";
+    src = ./.;
+    extraTexPackages = [ 
+      "mathrsfs"              # String
+      pkgs.texlive.xcolor     # Derivation
+      myCustomTexPackage      # Custom derivation
+    ];
+  }
+];
+```
+
+#### 4. Function for Dynamic Package Selection
+```nix
+latex-utils.documents = [
+  {
+    name = "mydoc.pdf";
+    src = ./.;
+    extraTexPackages = discovered: 
+      if builtins.hasAttr "tikz" discovered 
+      then ["pgfplots" "pgfplotstable"]  # Add plotting packages if TikZ is used
+      else ["standalone"];               # Different packages otherwise
+  }
+];
+```
+
+#### 5. Function Returning Mixed Lists
+```nix
+latex-utils.documents = [
+  {
+    name = "mydoc.pdf";
+    src = ./.;
+    extraTexPackages = discovered: [
+      "xcolor"                    # Always include xcolor
+      pkgs.texlive.mathrsfs       # Always include mathrsfs derivation
+    ] ++ (
+      if builtins.hasAttr "amsmath" discovered 
+      then [pkgs.texlive.amssymb pkgs.texlive.amsthm]  # AMS packages if amsmath found
+      else []
+    );
+  }
+];
+```
+
+The function receives an attrset of discovered packages (as derivations) and must return a list of strings or derivations. This enables powerful conditional logic based on what packages your LaTeX code actually uses.
+
+**Use cases for functions:**
+- Add complementary packages when certain packages are detected
+- Include different packages based on document complexity
+- Add custom derivations conditionally
+- Implement package compatibility rules
 
 ## Unified TeX Live Environment for IDE Integration
 
@@ -319,6 +387,7 @@ The following utility functions are available in the `lib/` directory. See [docs
 |-------------------------|-------------|
 | `findLatexFiles`        | Recursively finds all LaTeX source files (.tex, .cls, etc.) in a directory tree. |
 | `findLatexPackages`     | Parses LaTeX source files to extract required TeX Live package names from `\usepackage` lines. |
+| `normalizeExtraTexPackages` | Normalizes different input formats for `extraTexPackages` (strings, derivations, functions) to a consistent attrset of derivations. |
 | `mkLatexPdfDocument`    | Builds a LaTeX document as a Nix derivation, automatically including required and extra TeX Live packages. |
 | `mkFontconfigCache`     | Prebuilds the fontconfig cache for LuaLaTeX and XeLaTeX, using all fonts available in your TeX environment. |
 

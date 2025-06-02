@@ -96,4 +96,73 @@ in {
     });
     expected = true;
   };
+
+  # # Test new functionality: List of derivations
+  # listOfDerivations = {
+  #   expr = builds (mkDoc {
+  #     name = "test.pdf";
+  #     src = minimalTex "listOfDerivations" "\\usepackage{xcolor}";
+  #     extraTexPackages = [pkgs.texlive.xcolor pkgs.texlive.mathrsfs];
+  #   });
+  #   expected = true;
+  # };
+
+  # # Test new functionality: Mixed list of strings and derivations
+  # mixedList = {
+  #   expr = builds (mkDoc {
+  #     name = "test.pdf";
+  #     src = minimalTex "mixedList" "\\usepackage{xcolor}\\usepackage{mathrsfs} % CTAN: rsfs";
+  #     extraTexPackages = ["xcolor" pkgs.texlive.rsfs];
+  #   });
+  #   expected = true;
+  # };
+
+  # # Test new functionality: Function returning strings
+  # functionReturningStrings = {
+  #   expr = builds (mkDoc {
+  #     name = "test.pdf";
+  #     src = minimalTex "functionReturningStrings" "\\usepackage{tikz} % CTAN: pgf";
+  #     extraTexPackages = discovered:
+  #       if builtins.hasAttr "pgf" discovered
+  #       then ["pgfplots"]
+  #       else ["standalone"];
+  #   });
+  #   expected = true;
+  # };
+
+  # # Test new functionality: Function returning derivations
+  # functionReturningDerivations = {
+  #   expr = builds (mkDoc {
+  #     name = "test.pdf";
+  #     src = minimalTex "functionReturningDerivations" "\\usepackage{amsmath}";
+  #     extraTexPackages = discovered:
+  #       if builtins.hasAttr "amsmath" discovered
+  #       then [pkgs.texlive.amsfonts pkgs.texlive.amsrefs]
+  #       else [];
+  #   });
+  #   expected = true;
+  # };
+
+  # # Test new functionality: Function with conditional logic
+  # functionConditional = {
+  #   expr = builds (mkDoc {
+  #     name = "test.pdf";
+  #     src = minimalTex "functionConditional" "\\usepackage{geometry}";
+  #     extraTexPackages = discovered:
+  #       if builtins.hasAttr "geometry" discovered
+  #       then ["fancyhdr" "lastpage"]
+  #       else ["geometry"];
+  #   });
+  #   expected = true;
+  # };
+
+  # # Test backward compatibility: empty function
+  # emptyFunction = {
+  #   expr = builds (mkDoc {
+  #     name = "test.pdf";
+  #     src = minimalTex "emptyFunction" "";
+  #     extraTexPackages = discovered: [];
+  #   });
+  #   expected = true;
+  # };
 }

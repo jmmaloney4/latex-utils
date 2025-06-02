@@ -3,6 +3,12 @@
   lib,
   ...
 }: let
+  # Define custom types for extraTexPackages
+  extraTexPackagesType =
+    lib.types.either
+    (lib.types.listOf (lib.types.either lib.types.str lib.types.package))
+    lib.types.functionTo (lib.types.listOf (lib.types.either lib.types.str lib.types.package));
+
   docType = lib.types.submodule {
     options = {
       name = lib.mkOption {
@@ -28,13 +34,29 @@
         example = ".";
       };
       extraTexPackages = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
+        type = extraTexPackagesType;
         default = [];
         description = ''
-          Extra TeX Live packages (by name, as in pkgs.texlive) to include for this document.
+          Extra TeX Live packages to include for this document.
+          Can be:
+          - List of strings (package names from pkgs.texlive): ["mathrsfs" "xcolor"]
+          - List of derivations: [pkgs.texlive.mathrsfs pkgs.myCustomTexPackage]
+          - Function from discovered packages to list of derivations: (discovered: [pkgs.texlive.xcolor])
+
           See: https://nixos.wiki/wiki/TexLive#Customizing_TeX_Live_environments
         '';
-        example = ["mathrsfs" "xcolor"];
+        example = lib.literalExpression ''
+          # List of strings (current behavior)
+          ["mathrsfs" "xcolor"]
+
+          # List of derivations
+          [pkgs.texlive.mathrsfs pkgs.myCustomTexPackage]
+
+          # Function (for dynamic package selection)
+          (discovered: if builtins.hasAttr "tikz" discovered
+                       then [pkgs.texlive.pgfplots]
+                       else [])
+        '';
       };
       # Add more mkLatexPdfDocument options as needed, with types and descriptions
     };
@@ -62,41 +84,53 @@ in {
           # Import helpers
           findLatexFiles = import ../lib/findLatexFiles.nix {inherit pkgs lib;};
           findLatexPackages = import ../lib/findLatexPackages.nix {inherit pkgs lib;};
+          normalizeHelpers = import ../lib/normalizeExtraTexPackages.nix {inherit pkgs lib;};
 
-          # Collect all extraTexPackages from all documents
-          allExtraTexPackages = lib.lists.unique (
-            lib.lists.flatten (map (doc: doc.extraTexPackages) documents)
-          );
+          # Process each document to get its discovered and extra packages
+          processedDocuments =
+            map (doc: let
+              # Get all LaTeX files for this document
+              searchPaths = findLatexFiles {
+                basePath = "${doc.src}/${doc.workingDirectory}";
+              };
+              # Extract packages from each file
+              discovered =
+                builtins.foldl' (a: b: a // b) {}
+                (map (p:
+                  if (builtins.pathExists p)
+                  then findLatexPackages {fileContents = builtins.readFile p;}
+                  else {})
+                (lib.lists.unique searchPaths));
+
+              # Normalize extraTexPackages using the helper
+              extraNormalized = normalizeHelpers.normalizeExtraTexPackages {
+                extraTexPackages = doc.extraTexPackages;
+                discoveredPackages = discovered;
+              };
+            in {
+              inherit doc discovered;
+              extraNormalized = extraNormalized;
+            })
+            documents;
 
           # Collect all discovered packages from all documents
-          allDiscoveredPackages = lib.lists.foldl (acc: doc: let
-            # Get all LaTeX files for this document
-            searchPaths = findLatexFiles {
-              basePath = "${doc.src}/${doc.workingDirectory}";
-            };
-            # Extract packages from each file
-            discovered =
-              builtins.foldl' (a: b: a // b) {}
-              (map (p:
-                if (builtins.pathExists p)
-                then findLatexPackages {fileContents = builtins.readFile p;}
-                else {})
-              (lib.lists.unique searchPaths));
-          in
-            acc // discovered) {}
-          documents;
+          allDiscoveredPackages =
+            lib.lists.foldl (
+              acc: processedDoc:
+                acc // processedDoc.discovered
+            ) {}
+            processedDocuments;
 
-          # Convert extraTexPackages (list of strings) to an attrset of pkgs.texlive derivations
-          extraTexPackagesAttrs = builtins.listToAttrs (
-            map (name: {
-              name = name;
-              value = pkgs.texlive.${name};
-            })
-            allExtraTexPackages
-          );
+          # Collect all extra packages from all documents
+          allExtraPackagesAttrs =
+            lib.lists.foldl (
+              acc: processedDoc:
+                acc // processedDoc.extraNormalized
+            ) {}
+            processedDocuments;
 
           # Combine discovered and extra packages (excluding base packages)
-          unifiedAdditionalPackages = allDiscoveredPackages // extraTexPackagesAttrs;
+          unifiedAdditionalPackages = allDiscoveredPackages // allExtraPackagesAttrs;
 
           # Create unified TeX Live environment with all packages (including base packages)
           unifiedTexPackages =
@@ -121,11 +155,19 @@ in {
 
           unifiedTexEnv = pkgs.texlive.combine unifiedTexPackages;
 
-          # Modified mkDoc function to use the unified additional packages
-          mkDoc = doc:
+          # Modified mkDoc function to pass normalized extraTexPackages
+          mkDoc = doc: let
+            processedDoc = lib.lists.findFirst (p: p.doc == doc) null processedDocuments;
+            extraPackagesForDoc =
+              if processedDoc != null
+              then processedDoc.extraNormalized
+              else {};
+          in
             (pkgs.callPackage ../lib/mkLatexPdfDocument.nix {}) (doc
               // {
-                # Pass only the additional packages, let mkLatexPdfDocument handle base packages
+                # Pass the normalized extra packages specifically for this document
+                extraTexPackages = extraPackagesForDoc;
+                # Also pass unified additional packages for completeness
                 texPackages = unifiedAdditionalPackages;
               });
 

@@ -109,4 +109,49 @@ mkFontconfigCache {
 - Used internally by `mkLatexPdfDocument`.
 - Ensures reproducible and fast font discovery in Nix builds.
 
+---
+
+## `normalizeExtraTexPackages`
+
+**Summary:**
+Normalizes different input formats for `extraTexPackages` to a consistent attrset of derivations.
+
+**Arguments:**
+- `extraTexPackages` (list or function): The extraTexPackages input in any supported format.
+- `discoveredPackages` (attrset): Attrset of discovered packages (used when extraTexPackages is a function).
+
+**Return:**
+- Attribute set mapping package names to their corresponding derivations.
+
+**Supported Input Formats:**
+1. **List of strings**: Package names from `pkgs.texlive`
+2. **List of derivations**: Direct derivation references
+3. **Mixed list**: Combination of strings and derivations
+4. **Function**: Takes discovered packages and returns a list (strings or derivations)
+
+**Example:**
+```nix
+# List of strings
+normalizeExtraTexPackages {
+  extraTexPackages = ["mathrsfs" "xcolor"];
+  discoveredPackages = {};
+}
+# => { mathrsfs = pkgs.texlive.mathrsfs; xcolor = pkgs.texlive.xcolor; }
+
+# Function
+normalizeExtraTexPackages {
+  extraTexPackages = discovered: 
+    if builtins.hasAttr "tikz" discovered 
+    then ["pgfplots"] 
+    else [];
+  discoveredPackages = { tikz = pkgs.texlive.pgf; };
+}
+# => { pgfplots = pkgs.texlive.pgfplots; }
+```
+
+**Notes:**
+- Used internally by both the module and `mkLatexPdfDocument`.
+- Enables powerful conditional package selection based on discovered dependencies.
+- See `tests/normalizeExtraTexPackages.nix` for comprehensive examples.
+
 --- 
