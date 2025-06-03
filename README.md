@@ -8,6 +8,7 @@
 - [Features](#features)
 - [Quickstart](#quickstart)
 - [Automatic Package Discovery](#automatic-package-discovery)
+- [Module-Level Extra Packages](#module-level-extra-packages)
 - [Usage Details](#usage-details)
 - [Unified TeX Live Environment for IDE Integration](#unified-tex-live-environment-for-ide-integration)
 - [Font Loading and Fontconfig Caching](#font-loading-and-fontconfig-caching)
@@ -24,6 +25,7 @@
 - **Reproducible**: Get the same PDF every time, on any machine.
 - **Automatic package discovery**: Scans your LaTeX source files for `\usepackage{...}` commands and automatically includes the required TeX Live packages—no manual package management needed.
 - **Smart CTAN mapping**: Use `% CTAN: packagename` comments when nixpkgs and CTAN package names differ.
+- **Module-level packages**: Define common packages once for all documents.
 - **Minimal boilerplate**: No need to repeat build logic.
 - **flake-parts native**: Modern, idiomatic, and future-proof.
 - **Extensible**: Add more options as needed.
@@ -196,6 +198,107 @@ latex-utils.documents = [
 
 ---
 
+## Module-Level Extra Packages
+
+You can now specify common TeX Live packages at the module level that will be included for ALL documents, the unified TeX environment, and dev shells.
+
+### Basic Usage
+
+```nix
+{
+  # Define packages once for all documents
+  latex-utils.extraTexPackages = [
+    "amsmath"
+    "amssymb"
+    "mathtools"
+    "geometry"
+    "fancyhdr"
+  ];
+  
+  latex-utils.documents = [
+    {
+      name = "paper1.pdf";
+      src = ./paper1;
+      # This document gets module-level packages PLUS tikz
+      extraTexPackages = ["tikz"];
+    }
+    {
+      name = "paper2.pdf";
+      src = ./paper2;
+      # This document only uses module-level packages
+    }
+  ];
+}
+```
+
+### Advanced Usage with Functions
+
+Module-level `extraTexPackages` supports the same flexible formats as document-level:
+
+```nix
+{
+  # Using derivations
+  latex-utils.extraTexPackages = [
+    pkgs.texlive.amsmath
+    pkgs.texlive.unicode-math
+    myCustomTexPackage
+  ];
+  
+  # Or using a function (discovered will be empty at module level)
+  latex-utils.extraTexPackages = discovered: [
+    "amsmath"
+    "amssymb"
+  ] ++ lib.optionals (pkgs.stdenv.isDarwin) [
+    "darwin-specific-package"
+  ];
+}
+```
+
+### Benefits
+
+1. **DRY (Don't Repeat Yourself)**: Common packages are specified once instead of in each document
+2. **Consistency**: Ensures all documents have access to your standard package set
+3. **Flexibility**: Documents can still add their own specific packages
+4. **Works without documents**: Create a TeX environment with just module-level packages
+
+### Common Use Cases
+
+**Research Group Template**
+```nix
+latex-utils.extraTexPackages = [
+  # Your group's standard packages
+  "amsmath" "amssymb" "mathtools"
+  "natbib" "your-university-style"
+];
+```
+
+**Course Materials**
+```nix
+latex-utils.extraTexPackages = [
+  # Common to all course documents
+  "beamer" "tikz" "listings"
+  "xcolor" "hyperref"
+];
+```
+
+**Book/Thesis Project**
+```nix
+latex-utils.extraTexPackages = [
+  # Core typesetting stack
+  "memoir" "microtype" "fontspec"
+  "unicode-math" "biblatex"
+];
+```
+
+### Precedence Rules
+
+When both module-level and document-level `extraTexPackages` are specified:
+- Both sets of packages are included
+- Document-level packages take precedence if there's a conflict
+- The unified environment includes all packages from all sources
+
+---
+
 ## Usage Details
 
 - **Each document** in `latex-utils.documents` becomes a Nix package.
@@ -362,17 +465,33 @@ To ensure fast, reliable, and reproducible font discovery for LuaLaTeX and XeLaT
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [ "x86_64-linux" ];
       imports = [ inputs.latex-utils.modules.latex-utils ];
+      
+      # Module-level packages for all documents
+      latex-utils.extraTexPackages = [
+        "amsmath"
+        "geometry" 
+        "hyperref"
+      ];
+      
       latex-utils.documents = [
         {
           name = "thesis.pdf";
           src = ./.;
+          # Uses module packages + any discovered packages
         }
         {
           name = "poster.pdf";
           src = ./poster;
           inputFile = "poster.tex";
+          # Add poster-specific packages
+          extraTexPackages = ["tikzposter" "tikz"];
         }
       ];
+      
+      # Use the unified VSCode dev shell
+      perSystem = { self', ... }: {
+        devShells.default = self'.devShells.vscode;
+      };
     };
 }
 ```

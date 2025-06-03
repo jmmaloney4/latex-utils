@@ -37,10 +37,13 @@ with lib; let
         else {}
     ) (pkgs.lib.lists.unique searchPaths));
 
-  # Handle extraTexPackages - could be an attrset (already normalized) or the original formats
+  # Handle extraTexPackages - check for pre-normalized packages first
   extraTexPackagesAttrs =
-    # Check if it's already a non-empty attrset of derivations (pre-normalized)
-    if
+    # Check if we have pre-normalized packages from the module
+    if args ? _preNormalizedExtraPackages
+    then args._preNormalizedExtraPackages
+    # Otherwise, check if it's already a non-empty attrset of derivations (pre-normalized)
+    else if
       builtins.isAttrs (args.extraTexPackages or {})
       && (args.extraTexPackages or {}) != {}
       && builtins.all (name: lib.isDerivation (args.extraTexPackages.${name})) (builtins.attrNames (args.extraTexPackages or {}))

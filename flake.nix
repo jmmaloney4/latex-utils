@@ -50,6 +50,9 @@
           tests.unifiedTexLive = import ./tests/unifiedTexLive.nix {
             inherit pkgs lib;
           };
+          # tests.testModuleLevel = import ./tests/test-module-level.nix {
+          #   inherit pkgs lib;
+          # };
           # tests.normalizeExtraTexPackages = import ./tests/normalizeExtraTexPackages.nix {
           #   inherit pkgs lib;
           # };
@@ -90,7 +93,7 @@
       };
       flake = {
         flakeModule = import ./modules/latex-utils.nix;
-        modules.latex-utils = import ./modules/latex-utils.nix;
+        flakeModules.latex-utils = import ./modules/latex-utils.nix;
       };
     };
 }
