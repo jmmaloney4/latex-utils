@@ -26,5 +26,4 @@ This is a known limitation of Nix on Darwin and cannot be worked around at the N
 - **Cons:**
   - Reduced test coverage on Darwin for code paths involving `findLatexFiles` and recursive directory scanning.
 
-## Supersedes / Dependencies (optional)
-- Depends on: ADR 000 (template) 
+## Supersedes / Dependencies (optional) 

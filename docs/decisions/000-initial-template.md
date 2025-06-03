@@ -24,3 +24,5 @@
 ## Supersedes / Dependencies (optional)
 - supersedes: `<path/to/older-adr-XYZ.md>`  
 - depends on: `<path/to/adr-ABC.md>`
+
+> **Note:** Do not list the template ADR (ADR 000) as a dependency in real ADRs.
