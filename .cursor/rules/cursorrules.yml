@@ -1,0 +1,88 @@
+# ───────────────────────────────────────────────────────────────────────────
+# .cursor/rules/cursorrules.yml
+# Enforce:
+#   1) Reading architecture/ADRs before any LLM writes code.
+#   2) Automatic agent‐log entries for every LLM‐driven change.
+#   3) Folder‐structure hygiene (no orphan modules; keep logs and ADRs in place).
+# ───────────────────────────────────────────────────────────────────────────
+
+rules:
+  # ─────────────────────────────────────────────────────────────────────────
+  # 1) Before any LLM modifies code, it must read ARCHITECTURE.md and ADRs.
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: must-read-arch
+    when: "any LLM plans to modify files matching `lib/**/*.nix`, `modules/**/*.nix`, `flake.nix`, `template/**/*.nix`, `tests/**/*.nix`"
+    then:
+      - "ALWAYS read `docs/ARCHITECTURE.md` and any relevant ADRs under `docs/decisions/` before writing code."
+      - "In your plan or commit message, include a 2–3 bullet summary of how your change aligns with the existing architecture."
+      - "If no `docs/ARCHITECTURE.md` exists, you must raise an issue to request one."
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # 2) Enforce presence of an agent‐log entry on every LLM‐driven change.
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: require-agent-changelog
+    when: "any LLM plans to modify files matching `lib/**/*.nix`, `modules/**/*.nix`, `flake.nix`, `template/**/*.nix`, `tests/**/*.nix`"
+    then:
+      - "BEFORE committing, ensure that `docs/agent_logs/<TIMESTAMP>-<agent_id>.md` exists *or* that `docs/AGENT_CHANGELOG.md` was appended with a valid entry."
+      - "If missing or malformed, the draft will be flagged: `⚠️ Missing or invalid changelog entry. Please create a new file under docs/agent_logs/ or append to docs/AGENT_CHANGELOG.md using the official template.`"
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # 3) Prevent humans from editing agent‐log files directly.
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: prevent-human-changelog-edits
+    when: "user.initiated(change.files) includes `docs/agent_logs/`"
+    then:
+      - "Humans should NOT modify `docs/agent_logs/` files manually. If corrections are needed, open an issue and assign it to the responsible agent."
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # 4) Ban orphan modules: every new Nix file must be exposed in a public index or folder README.
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: ban-orphan-files
+    pattern: "^(lib|modules|template)/.+\\.nix$"
+    message: >
+      "⚠️ Orphan module detected.  
+      Every new Nix file under `lib/`, `modules/`, or `template/` must be exported or documented in a module README or index file.  
+      Please update the corresponding `<component>/README.md` or `<component>/default.nix`."
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # 5) Remind to update ADRs after large‐scale changes
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: remind-adr-update
+    when: "any diff adds or removes more than 200 lines under `lib/`, `modules/`, or `template/`"
+    then:
+      - "⚠️ This commit introduces a large change. If this affects component boundaries or high-level trade-offs, please add or update an ADR in `docs/decisions/`."
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # 6) Ensure `docs/decisions/000-adr-template.md` and `docs/agent_logs/.gitkeep` exist
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: ensure-doc-folders-exist
+    when: "repo state does not contain `docs/decisions/000-adr-template.md` or does not contain `docs/agent_logs/.gitkeep`"
+    then:
+      - "You must initialize `docs/decisions/000-adr-template.md` (an ADR template) and `docs/agent_logs/.gitkeep` before proceeding. See the project's bootstrap instructions."
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # 7) Nix flake hygiene: validate flake.lock is updated when flake.nix changes
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: flake-lock-hygiene
+    when: "any LLM modifies `flake.nix`"
+    then:
+      - "After modifying `flake.nix`, you must run `nix flake update` or `nix flake lock` to update `flake.lock`."
+      - "Include both `flake.nix` and `flake.lock` changes in the same commit."
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # 8) LaTeX utilities specific: ensure templates are tested
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: template-testing
+    when: "any LLM modifies files under `template/`"
+    then:
+      - "When modifying templates, ensure corresponding tests exist under `tests/` directory."
+      - "Templates should be validated to work with common LaTeX distributions."
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # 9) Documentation for library functions
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: document-lib-functions
+    when: "any LLM adds new functions to `lib/**/*.nix`"
+    then:
+      - "New library functions must include docstring comments explaining parameters, return values, and usage examples."
+      - "Consider adding the function to the appropriate section in README or creating usage examples." 

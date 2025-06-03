@@ -6,12 +6,12 @@
   # Import the flake
   testFlake = {
     description = "Test flake for module-level extraTexPackages";
-    
+
     inputs = {
       nixpkgs.follows = "nixpkgs";
       flake-parts.follows = "flake-parts";
     };
-    
+
     outputs = inputs: let
       # Simulate the flake structure
       flakeModule = import ../modules/latex-utils.nix;
@@ -20,16 +20,16 @@
       inherit flakeModule;
     };
   };
-  
+
   # Test configurations
-  minimalTex = srcName: pkgs.writeTextDir "${srcName}/main.tex" ''
-    \documentclass{article}
-    \usepackage{amsmath}
-    \begin{document}
-    Hello, world!
-    \end{document}
-  '';
-  
+  minimalTex = srcName:
+    pkgs.writeTextDir "${srcName}/main.tex" ''
+      \documentclass{article}
+      \usepackage{amsmath}
+      \begin{document}
+      Hello, world!
+      \end{document}
+    '';
 in {
   # Test 1: Module-level packages only, no documents
   moduleOnlyNoDocuments = {
@@ -45,7 +45,7 @@ in {
       config.latex-utils.extraTexPackages != [];
     expected = true;
   };
-  
+
   # Test 2: Module-level + document-level packages
   moduleAndDocumentPackages = {
     expr = let
@@ -63,11 +63,12 @@ in {
       };
     in
       # Both module and document packages should be included
-      config.latex-utils.extraTexPackages != [] && 
-      (builtins.head config.latex-utils.documents).extraTexPackages != [];
+      config.latex-utils.extraTexPackages
+      != []
+      && (builtins.head config.latex-utils.documents).extraTexPackages != [];
     expected = true;
   };
-  
+
   # Test 3: Function-based module-level packages
   moduleFunctionPackages = {
     expr = let
@@ -82,7 +83,7 @@ in {
       builtins.isFunction config.latex-utils.extraTexPackages;
     expected = true;
   };
-  
+
   # Test 4: Pre-normalized packages not double-normalized
   noDoubleNormalization = {
     expr = let
@@ -104,7 +105,7 @@ in {
       lib.isDerivation (builtins.head config.latex-utils.extraTexPackages);
     expected = true;
   };
-  
+
   # Test 5: Empty configuration creates valid devShell
   emptyConfigDevShell = {
     expr = let
@@ -119,4 +120,4 @@ in {
       true; # Would need actual module evaluation to test properly
     expected = true;
   };
-} 
+}
