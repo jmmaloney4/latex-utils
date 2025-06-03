@@ -50,7 +50,7 @@
    # ...
    outputs = { self, flake-parts, latex-utils, nixpkgs }@inputs:
      flake-parts.lib.mkFlake { inherit self inputs; } {
-       systems = [ "x86_64-linux" /* ... other systems ... */ ];
+       systems = [ "x86_4-linux" /* ... other systems ... */ ];
        imports = [
          inputs.latex-utils.flakeModule # Use flakeModule for flake-parts
        ];
@@ -179,6 +179,45 @@ latex-utils.documents = [
 The `mathrsfs.sty` style, used for script letters in math, requires special handling in minimal TeX Live setups. It is part of Jörg Knappen's `jknapltx` bundle, and the glyphs themselves come from the `rsfs` font package.
 
 If you are using a minimal TeX Live scheme (like `scheme-small`) and need `\usepackage{mathrsfs}`, you must ensure both TeX Live packages `jknapltx` and `rsfs` are included in your environment.
+
+**How to ensure mathrsfs works:**
+
+#### Option 1: Use a `% CTAN:` comment in your LaTeX source
+
+Add this line where you load `mathrsfs`:
+
+```latex
+\usepackage{mathrsfs} % CTAN: jknapltx, rsfs
+```
+
+This tells `latex-utils` to include both the `jknapltx` (provides `mathrsfs.sty`) and `rsfs` (provides the fonts) TeX Live packages, even if the package name doesn't match exactly.
+
+#### Option 2: Use `extraTexPackages` in your Nix configuration
+
+If you want to guarantee these packages are included regardless of auto-detection, add them to your Nix configuration:
+
+**At the module level (for all documents):**
+```nix
+latex-utils.extraTexPackages = [ "jknapltx" "rsfs" ];
+```
+
+**Or at the document level:**
+```nix
+latex-utils.documents = [
+  {
+    name = "mydoc.pdf";
+    src = ./.;
+    extraTexPackages = [ "jknapltx" "rsfs" ];
+  }
+];
+```
+
+**Summary Table:**
+
+| Approach                | What to add                                  |
+|-------------------------|----------------------------------------------|
+| In LaTeX source         | `\usepackage{mathrsfs} % CTAN: jknapltx, rsfs` |
+| In Nix configuration    | `extraTexPackages = [ "jknapltx" "rsfs" ];`   |
 
 **How `latex-utils` handles this:**
 
@@ -467,7 +506,7 @@ To use it in your `flake.nix`:
 # ...
 outputs = { self, flake-parts, latex-utils, nixpkgs }@inputs:
   flake-parts.lib.mkFlake { inherit self inputs; } {
-    systems = [ "x86_64-linux" /* ... */ ];
+    systems = [ "x86_4-linux" /* ... */ ];
     imports = [ inputs.latex-utils.flakeModule ];
 
     perSystem = { config, pkgs, system, ... }: {
@@ -549,7 +588,7 @@ To ensure fast, reliable, and reproducible font discovery for LuaLaTeX and XeLaT
 
   outputs = inputs@{ self, flake-parts, latex-utils, nixpkgs }:
     flake-parts.lib.mkFlake { inherit self inputs; } {
-      systems = [ "x86_64-linux" ]; # Add other systems as needed
+      systems = [ "x86_4-linux" ]; # Add other systems as needed
       imports = [ inputs.latex-utils.flakeModule ];
 
       # Module-level configurations are typically placed in perSystem
