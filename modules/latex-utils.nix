@@ -98,6 +98,12 @@ in {
         ["amsmath" "amssymb" "mathtools" "unicode-math"]
       '';
     };
+
+    devShell = lib.mkOption {
+      type = lib.types.package;
+      default = null;
+      description = "A shell fragment (buildInputs+shellHook) exposing the unified TeX environment and VSCode settings";
+    };
   };
 
   config = {
@@ -391,39 +397,10 @@ in {
                 else {}
               );
 
-          devShells = let
-            hasDocuments = documents != [];
-            hasModulePackages = moduleExtraTexPackages != [];
-            hasAnyConfig = hasDocuments || hasModulePackages;
-          in {
-            vscode =
-              if hasAnyConfig && vscodeIntegration ? vscode-devshell
-              then vscodeIntegration.vscode-devshell
-              else
-                pkgs.mkShell {
-                  buildInputs = [
-                    pkgs.texlive.combined.scheme-basic
-                    pkgs.ltex-ls
-                  ];
-                  shellHook = ''
-                    ${
-                      if !hasAnyConfig
-                      then ''
-                        echo "⚠️  No LaTeX documents or module-level packages configured"
-                        echo "📝 Add documents to latex-utils.documents or packages to latex-utils.extraTexPackages"
-                        echo "   to enable full VSCode integration"
-                      ''
-                      else ''
-                        echo "⚠️  VSCode integration failed during processing"
-                        echo "🔍 Check your configurations for errors"
-                      ''
-                    }
-                    echo ""
-                    echo "Available commands:"
-                    echo "  latexmk - Basic LaTeX compilation"
-                    echo "  ltex-ls - Language server (for VSCode/editors)"
-                  '';
-                };
+          devShells = {
+            vscode = pkgs.mkShell {
+              inputsFrom = [ config.latex-utils.devShell ];
+            };
           };
 
           # Make the VSCode settings override function available as a package builder
@@ -435,6 +412,20 @@ in {
               echo "Generated VSCode settings in settings.json"
             ''}";
             meta.description = "Generate custom VSCode settings for LaTeX with your overrides";
+          };
+
+          # Composite devShell fragment for latex-utils
+          config.latex-utils.devShell = pkgs.mkShell {
+            buildInputs = [
+              unifiedTexEnv
+              pkgs.ltex-ls
+            ];
+            shellHook = ''
+              echo "🔧 Setting up LaTeX Workshop + LTeX…"
+              mkdir -p .vscode
+              ln -sf "${vscodeSettings}/.vscode/settings.json" .vscode/settings.json
+              echo "✅ VSCode settings linked!"
+            '';
           };
         })
         # Other modules can extend perSystem here

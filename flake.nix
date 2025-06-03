@@ -80,7 +80,9 @@
           default = pkgs.mkShell {
             inputsFrom = [
               config.mission-control.devShell
+              config.pre-commit.devShell
               config.treefmt.build.devShell
+              config.latex-utils.devShell
             ];
           };
         };
