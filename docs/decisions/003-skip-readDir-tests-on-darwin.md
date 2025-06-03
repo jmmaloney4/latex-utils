@@ -24,6 +24,4 @@ This is a known limitation of Nix on Darwin and cannot be worked around at the N
   - Test suite passes on Darwin without spurious failures.
   - Clear documentation of platform limitations.
 - **Cons:**
-  - Reduced test coverage on Darwin for code paths involving `findLatexFiles` and recursive directory scanning.
-
-## Supersedes / Dependencies (optional) 
+  - Reduced test coverage on Darwin for code paths involving `findLatexFiles` and recursive directory scanning. 
