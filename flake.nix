@@ -53,6 +53,7 @@
           tests.documentLevelPackages = import ./tests/document-level-packages.nix {
             inherit pkgs lib;
           };
+          tests.devShellFragment = import ./tests/devShellFragment.nix { inherit pkgs lib; };
           # tests.testModuleLevel = import ./tests/test-module-level.nix {
           #   inherit pkgs lib;
           # };
