@@ -18,23 +18,27 @@
         description = "Name of the output PDF/package";
         example = "my-paper.pdf";
       };
+
       src = lib.mkOption {
         type = lib.types.path;
         description = "Source directory for the LaTeX document";
         example = ./my-paper;
       };
+
       inputFile = lib.mkOption {
         type = lib.types.str;
         default = "main.tex";
         description = "Main .tex file (relative to src)";
         example = "main.tex";
       };
+
       workingDirectory = lib.mkOption {
         type = lib.types.str;
         default = ".";
         description = "Working directory within src for the LaTeX document";
         example = ".";
       };
+
       extraTexPackages = lib.mkOption {
         type = extraTexPackagesType;
         default = [];
@@ -63,7 +67,6 @@
                        else [])
         '';
       };
-      # Add more mkLatexPdfDocument options as needed, with types and descriptions
     };
   };
   documents = config.latex-utils.documents;
@@ -347,34 +350,39 @@ in {
               text = mkVSCodeSettings {};
             };
 
+            # Helper strings for shellHook conditional messages
+            docCountMsg =
+              if documents != []
+              then
+                (''
+                    echo "   - ${toString (builtins.length documents)} configured document(s)"
+                  ''
+                  + "\n")
+              else "";
+
+            modulePkgMsg =
+              if moduleExtraTexPackages != []
+              then
+                (''
+                    echo "   - Module-level extraTexPackages"
+                  ''
+                  + "\n")
+              else "";
+
             # Helper dev shell that sets up VSCode integration
             vscodeDevShell = pkgs.mkShell {
               buildInputs = [
                 unifiedTexEnv
                 ltexLsWrapped
               ];
-              shellHook =
-                ''
-                  echo "🔧 Setting up VSCode LaTeX integration..."
-                  mkdir -p .vscode
-                  ln -sf "${vscodeSettings}/.vscode/settings.json" .vscode/settings.json
-                  echo "✅ VSCode settings linked successfully!"
-                    echo "📦 Using unified TeX Live environment with packages from:"
-                    ''${
-                    if documents != []
-                    then ''
-                echo "   - ${toString (builtins.length documents)} configured document(s)"
-                ''
-                    else ""
-                  }
-                    ''${
-                    if moduleExtraTexPackages != []
-                    then ''
-                echo "   - Module-level extraTexPackages"
-                ''
-                    else ""
-                  }
-                '';
+              shellHook = ''
+                echo "🔧 Setting up VSCode LaTeX integration..."
+                mkdir -p .vscode
+                ln -sf "${vscodeSettings}/.vscode/settings.json" .vscode/settings.json
+                echo "✅ VSCode settings linked successfully!"
+                echo "📦 Using unified TeX Live environment with packages from:"
+                ${docCountMsg}${modulePkgMsg}
+              '';
             };
           in {
             vscode-settings = vscodeSettings;
