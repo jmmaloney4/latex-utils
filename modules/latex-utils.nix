@@ -245,13 +245,19 @@ in {
             }
             else {};
 
+          # Wrap ltex-ls to only see the unified TeX Live binaries
+          ltexLsWrapped = pkgs.writeShellScriptBin "ltex-ls" ''
+            export PATH=${lib.makeBinPath [ unifiedTexEnv ]}
+            exec ${pkgs.ltex-ls}/bin/ltex-ls "\$@"
+          '';
+
           # VSCode integration
             # Function to generate VSCode settings with custom overrides
             mkVSCodeSettings = overrides: let
               defaultSettings = {
                 "ltex.language" = "en-US";
                 "ltex.enabled" = true;
-                "ltex.server.path" = "${pkgs.ltex-ls}/bin/ltex-ls";
+                "ltex.server.path" = "${ltexLsWrapped}/bin/ltex-ls";
 
                 # LaTeX Workshop configuration using unified environment
                 "latex-workshop.latex.toolchain" = [
@@ -341,7 +347,7 @@ in {
             vscodeDevShell = pkgs.mkShell {
               buildInputs = [
                 unifiedTexEnv
-                pkgs.ltex-ls
+                ltexLsWrapped
               ];
               shellHook = ''
                 echo "🔧 Setting up VSCode LaTeX integration..."
@@ -367,8 +373,8 @@ in {
             };
           in {
             vscode-settings = vscodeSettings;
-              # Don't include vscodeSettingsWithOverrides here - it's a function
             vscode-devshell = vscodeDevShell;
+            ltex-ls-wrapped = ltexLsWrapped;
             }
             else {};
         in {
