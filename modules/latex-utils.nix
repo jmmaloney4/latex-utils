@@ -353,27 +353,28 @@ in {
                 unifiedTexEnv
                 ltexLsWrapped
               ];
-              shellHook = ''
-                echo "🔧 Setting up VSCode LaTeX integration..."
-                mkdir -p .vscode
-                ln -sf "${vscodeSettings}/.vscode/settings.json" .vscode/settings.json
-                echo "✅ VSCode settings linked successfully!"
-                  echo "📦 Using unified TeX Live environment with packages from:"
-                  ${
-                  if documents != []
-                  then ''
-                    echo "   - ${toString (builtins.length documents)} configured document(s)"
-                  ''
-                  else ""
-                }
-                  ${
-                  if moduleExtraTexPackages != []
-                  then ''
-                    echo "   - Module-level extraTexPackages"
-                  ''
-                  else ""
-                }
-              '';
+              shellHook =
+                ''
+                  echo "🔧 Setting up VSCode LaTeX integration..."
+                  mkdir -p .vscode
+                  ln -sf "${vscodeSettings}/.vscode/settings.json" .vscode/settings.json
+                  echo "✅ VSCode settings linked successfully!"
+                    echo "📦 Using unified TeX Live environment with packages from:"
+                    ''${
+                    if documents != []
+                    then ''
+                echo "   - ${toString (builtins.length documents)} configured document(s)"
+                ''
+                    else ""
+                  }
+                    ''${
+                    if moduleExtraTexPackages != []
+                    then ''
+                echo "   - Module-level extraTexPackages"
+                ''
+                    else ""
+                  }
+                '';
             };
           in {
             vscode-settings = vscodeSettings;
@@ -381,6 +382,15 @@ in {
             ltex-ls-wrapped = ltexLsWrapped;
           };
         in {
+          # Namespaced outputs for latex-utils
+          latex-utils = {
+            devShell = vscodeIntegration.vscode-devshell;
+            # You could also expose other module-specific things here, e.g.:
+            # packages = docPkgs // unifiedPackages // vscodeIntegration // ( ... ); # if you wanted config.latex-utils.packages
+            # unifiedTexEnvironment = unifiedTexEnv;
+          };
+
+          # Outputs merged by flake-parts into global config namespaces
           packages =
             docPkgs
             // unifiedPackages
@@ -390,20 +400,16 @@ in {
               then {default = mkDoc (builtins.head documents);}
               else {}
             );
-
-          devShells = {
-            default = lib.mkDefault vscodeIntegration.vscode-devshell; # Use the well-defined vscodeDevShell
-          };
-
-          # Make the VSCode settings override function available as a package builder
-          # Users can use it like: nix build .#vscode-settings-custom -- '{"ltex.language": "de-DE"}'
-          apps.vscode-settings-custom = {
-            type = "app";
-            program = "${pkgs.writeShellScript "vscode-settings-custom" ''
-              ${lib.getExe pkgs.jq} -n "$1" > settings.json
-              echo "Generated VSCode settings in settings.json"
-            ''}";
-            meta.description = "Generate custom VSCode settings for LaTeX with your overrides";
+          devShells.default = lib.mkDefault vscodeIntegration.vscode-devshell;
+          apps = {
+            vscode-settings-custom = {
+              type = "app";
+              program = "${pkgs.writeShellScript "vscode-settings-custom" ''
+                ${lib.getExe pkgs.jq} -n "$1" > settings.json
+                echo "Generated VSCode settings in settings.json"
+              ''}";
+              meta.description = "Generate custom VSCode settings for LaTeX with your overrides";
+            };
           };
         })
         # Other modules can extend perSystem here
