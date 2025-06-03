@@ -1,0 +1,87 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# LaTeX Utils Development Rules
+
+Comprehensive development rules for the latex-utils project enforcing:
+1. Reading architecture/ADRs before any LLM writes code
+2. Automatic agent-log entries for every LLM-driven change  
+3. Folder-structure hygiene (no orphan modules; keep logs and ADRs in place)
+
+## Architecture and Documentation Requirements
+
+**Before modifying any Nix code in this project:**
+
+- ALWAYS read `docs/ARCHITECTURE.md` and any relevant ADRs under `docs/decisions/` before writing code
+- In your plan or commit message, include a 2–3 bullet summary of how your change aligns with the existing architecture
+- If no `docs/ARCHITECTURE.md` exists, you must raise an issue to request one
+
+## Agent Changelog Requirements
+
+**For every LLM-driven change:**
+
+- BEFORE committing, ensure that `docs/agent_logs/<TIMESTAMP>-<agent_id>.md` exists OR that `docs/AGENT_CHANGELOG.md` was appended with a valid entry
+- Timestamps must be in UTC format with Z suffix (e.g., 2025-06-03T06:00:00Z)
+- If missing or malformed, the draft will be flagged: ⚠️ Missing or invalid changelog entry
+
+**Changelog Protection:**
+
+- Humans should NOT modify `docs/agent_logs/` files manually
+- If corrections are needed, open an issue and assign it to the responsible agent
+
+## File Organization and Structure
+
+**Module Hygiene:**
+
+- Every new Nix file under `lib/`, `modules/`, or `template/` must be exported or documented in a module README or index file
+- Update the corresponding `<component>/README.md` or `<component>/default.nix`
+- No orphaned modules allowed
+
+**Documentation Structure:**
+
+- You must initialize `docs/decisions/000-adr-template.md` (an ADR template) and `docs/agent_logs/.gitkeep` before proceeding if they don't exist
+
+## Change Management
+
+**Large Changes:**
+
+- If any diff adds or removes more than 200 lines under `lib/`, `modules/`, or `template/`, add or update an ADR in `docs/decisions/`
+
+**Nix Flake Hygiene:**
+
+- After modifying `flake.nix`, you must run `nix flake update` or `nix flake lock` to update `flake.lock`
+- Include both `flake.nix` and `flake.lock` changes in the same commit
+
+## LaTeX-Specific Requirements
+
+**Template Changes:**
+
+- When modifying templates under `template/`, ensure corresponding tests exist under `tests/` directory
+- Templates should be validated to work with common LaTeX distributions
+
+**Library Functions:**
+
+- New library functions in `lib/**/*.nix` must include docstring comments explaining parameters, return values, and usage examples
+- Consider adding the function to the appropriate section in README or creating usage examples
+
+## Validation Checklist
+
+**Before Commit:**
+
+- [ ] Architecture documentation has been read
+- [ ] Agent changelog entry exists
+- [ ] No orphaned modules introduced
+- [ ] Tests exist for template changes
+- [ ] Library functions are documented
+- [ ] Flake lock updated if flake.nix changed
+
+**Large Changes:**
+
+- [ ] ADR created or updated for architectural changes
+- [ ] Change impact documented
+- [ ] Backward compatibility considered
+
+@docs/ARCHITECTURE.md
+@docs/decisions/000-adr-template.md

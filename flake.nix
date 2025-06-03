@@ -50,6 +50,9 @@
           tests.unifiedTexLive = import ./tests/unifiedTexLive.nix {
             inherit pkgs lib;
           };
+          tests.documentLevelPackages = import ./tests/document-level-packages.nix {
+            inherit pkgs lib;
+          };
           # tests.testModuleLevel = import ./tests/test-module-level.nix {
           #   inherit pkgs lib;
           # };
