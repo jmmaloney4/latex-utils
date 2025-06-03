@@ -99,11 +99,14 @@ in {
       '';
     };
 
+    /*
+       REMOVE devShell option
     devShell = lib.mkOption {
       type = lib.types.package;
       default = null;
       description = "A shell fragment (buildInputs+shellHook) exposing the unified TeX environment and VSCode settings";
     };
+    */
   };
 
   config = {
@@ -145,7 +148,7 @@ in {
                   contextMsg = "while discovering packages in ${pathStr} for document ${doc.name}";
                 in
                   lib.addErrorContext contextMsg (
-                  if (builtins.pathExists p)
+                    if (builtins.pathExists p)
                     then let
                       contents = builtins.readFile p;
                     in
@@ -158,8 +161,8 @@ in {
               # Pass discovered packages for function-type extraTexPackages
               docExtraPackagesNormalized = lib.addErrorContext "while normalizing extraTexPackages for document ${doc.name}" (
                 normalizeHelpers.normalizeExtraTexPackages {
-                extraTexPackages = doc.extraTexPackages;
-                discoveredPackages = discovered;
+                  extraTexPackages = doc.extraTexPackages;
+                  discoveredPackages = discovered;
                 }
               );
 
@@ -241,113 +244,108 @@ in {
 
           # Create packages for the unified TeX Live environment and latexmk
           # Always create these if we have module-level packages, even without documents
-          unifiedPackages =
-            if documents != [] || moduleExtraTexPackages != []
-            then {
+          unifiedPackages = {
             texlive-unified = unifiedTexEnv;
             latexmk-unified = pkgs.writeShellScriptBin "latexmk" ''
               exec ${lib.getExe' unifiedTexEnv "latexmk"} "$@"
             '';
-            }
-            else {};
+          };
 
           # Wrap ltex-ls to only see the unified TeX Live binaries
           ltexLsWrapped = pkgs.writeShellScriptBin "ltex-ls" ''
-            export PATH=${lib.makeBinPath [ unifiedTexEnv ]}
+            export PATH=${lib.makeBinPath [unifiedTexEnv]}
             exec ${pkgs.ltex-ls}/bin/ltex-ls "\$@"
           '';
 
           # VSCode integration
-            # Function to generate VSCode settings with custom overrides
-            mkVSCodeSettings = overrides: let
-              defaultSettings = {
-                "ltex.language" = "en-US";
-                "ltex.enabled" = true;
-                "ltex.server.path" = "${ltexLsWrapped}/bin/ltex-ls";
+          # Function to generate VSCode settings with custom overrides
+          mkVSCodeSettings = overrides: let
+            defaultSettings = {
+              "ltex.language" = "en-US";
+              "ltex.enabled" = true;
+              "ltex.server.path" = "${ltexLsWrapped}/bin/ltex-ls";
 
-                # LaTeX Workshop configuration using unified environment
-                "latex-workshop.latex.toolchain" = [
-                  {
-                    command = "${unifiedTexEnv}/bin/latexmk";
-                    args = [
-                      # Core compilation options
-                      "-pdf" # Generate PDF output
-                      "-interaction=nonstopmode" # Don't stop on errors (good for IDE)
-                      "-file-line-error" # Error format: file:line:error (IDE-friendly)
-                      "-synctex=1" # Enable SyncTeX for editor-PDF sync
+              # LaTeX Workshop configuration using unified environment
+              "latex-workshop.latex.toolchain" = [
+                {
+                  command = "${unifiedTexEnv}/bin/latexmk";
+                  args = [
+                    # Core compilation options
+                    "-pdf" # Generate PDF output
+                    "-interaction=nonstopmode" # Don't stop on errors (good for IDE)
+                    "-file-line-error" # Error format: file:line:error (IDE-friendly)
+                    "-synctex=1" # Enable SyncTeX for editor-PDF sync
 
-                      # Build organization
-                      "-output-directory=.latex-build" # Put ALL build artifacts in .latex-build/
+                    # Build organization
+                    "-output-directory=.latex-build" # Put ALL build artifacts in .latex-build/
 
-                      # Enhanced IDE experience
-                      "-recorder" # Create .fls file for dependency tracking
-                      "-silent" # Quieter output (less noise in IDE)
-                      "-bibtex" # Ensure bibliography processing
+                    # Enhanced IDE experience
+                    "-recorder" # Create .fls file for dependency tracking
+                    "-silent" # Quieter output (less noise in IDE)
+                    "-bibtex" # Ensure bibliography processing
 
-                      # Document placeholder
-                      "%DOC%"
-                    ];
-                  }
-                ];
+                    # Document placeholder
+                    "%DOC%"
+                  ];
+                }
+              ];
 
-                # Auto-build configuration
-                "latex-workshop.latex.autoBuild.run" = "onFileChange";
+              # Auto-build configuration
+              "latex-workshop.latex.autoBuild.run" = "onFileChange";
 
-                # Output and cleanup configuration
-                "latex-workshop.latex.outDir" = ".latex-build";
-                "latex-workshop.latex.autoClean.run" = "onBuilt";
-                "latex-workshop.latex.clean.fileTypes" = [
-                  "*.aux"
-                  "*.bbl"
-                  "*.blg"
-                  "*.idx"
-                  "*.ind"
-                  "*.lof"
-                  "*.lot"
-                  "*.out"
-                  "*.toc"
-                  "*.acn"
-                  "*.acr"
-                  "*.alg"
-                  "*.glg"
-                  "*.glo"
-                  "*.gls"
-                  "*.ist"
-                  "*.fls"
-                  "*.log"
-                  "*.fdb_latexmk"
-                  "*.synctex.gz"
-                ];
+              # Output and cleanup configuration
+              "latex-workshop.latex.outDir" = ".latex-build";
+              "latex-workshop.latex.autoClean.run" = "onBuilt";
+              "latex-workshop.latex.clean.fileTypes" = [
+                "*.aux"
+                "*.bbl"
+                "*.blg"
+                "*.idx"
+                "*.ind"
+                "*.lof"
+                "*.lot"
+                "*.out"
+                "*.toc"
+                "*.acn"
+                "*.acr"
+                "*.alg"
+                "*.glg"
+                "*.glo"
+                "*.gls"
+                "*.ist"
+                "*.fls"
+                "*.log"
+                "*.fdb_latexmk"
+                "*.synctex.gz"
+              ];
 
-                # PDF viewer configuration
-                "latex-workshop.view.pdf.viewer" = "tab";
-                "latex-workshop.view.pdf.internal.synctex.keybinding" = "double-click";
+              # PDF viewer configuration
+              "latex-workshop.view.pdf.viewer" = "tab";
+              "latex-workshop.view.pdf.internal.synctex.keybinding" = "double-click";
 
-                # Forward search configuration (editor -> PDF)
-                "latex-workshop.synctex.afterBuild.enabled" = true;
-              };
-              settings = defaultSettings // overrides;
-            in
-              builtins.toJSON settings;
+              # Forward search configuration (editor -> PDF)
+              "latex-workshop.synctex.afterBuild.enabled" = true;
+            };
+            settings = defaultSettings // overrides;
+          in
+            builtins.toJSON settings;
 
-            # VSCode settings function for custom overrides
-            vscodeSettingsWithOverrides = overrides:
-              pkgs.writeTextFile {
-                name = "vscode-settings-custom";
-                destination = "/.vscode/settings.json";
-                text = mkVSCodeSettings overrides;
+          # VSCode settings function for custom overrides
+          vscodeSettingsWithOverrides = overrides:
+            pkgs.writeTextFile {
+              name = "vscode-settings-custom";
+              destination = "/.vscode/settings.json";
+              text = mkVSCodeSettings overrides;
             };
 
           # VSCode integration packages (only include derivations)
-          vscodeIntegration =
-            if documents != [] || moduleExtraTexPackages != []
-            then let
-              # Default VSCode settings package
-              vscodeSettings = pkgs.writeTextFile {
-                name = "vscode-settings";
-                destination = "/.vscode/settings.json";
-                text = mkVSCodeSettings {};
-              };
+          vscodeIntegration = let
+            # Default VSCode settings package
+            vscodeSettings = pkgs.writeTextFile {
+              name = "vscode-settings";
+              destination = "/.vscode/settings.json";
+              text = mkVSCodeSettings {};
+            };
 
             # Helper dev shell that sets up VSCode integration
             vscodeDevShell = pkgs.mkShell {
@@ -362,45 +360,39 @@ in {
                 echo "✅ VSCode settings linked successfully!"
                   echo "📦 Using unified TeX Live environment with packages from:"
                   ${
-                    if documents != []
-                    then ''
-                      echo "   - ${toString (builtins.length documents)} configured document(s)"
-                    ''
-                    else ""
-                  }
+                  if documents != []
+                  then ''
+                    echo "   - ${toString (builtins.length documents)} configured document(s)"
+                  ''
+                  else ""
+                }
                   ${
-                    if moduleExtraTexPackages != []
-                    then ''
-                      echo "   - Module-level extraTexPackages"
-                    ''
-                    else ""
-                  }
+                  if moduleExtraTexPackages != []
+                  then ''
+                    echo "   - Module-level extraTexPackages"
+                  ''
+                  else ""
+                }
               '';
             };
           in {
             vscode-settings = vscodeSettings;
             vscode-devshell = vscodeDevShell;
             ltex-ls-wrapped = ltexLsWrapped;
-            }
-            else {};
+          };
         in {
           packages =
-            if documents == [] && moduleExtraTexPackages == []
-            then {}
-            else
-              docPkgs
-              // unifiedPackages
-              // vscodeIntegration
-              // (
-                if documents != []
-                then {default = mkDoc (builtins.head documents);}
-                else {}
-              );
+            docPkgs
+            // unifiedPackages
+            // vscodeIntegration
+            // (
+              if documents != []
+              then {default = mkDoc (builtins.head documents);}
+              else {}
+            );
 
           devShells = {
-            vscode = pkgs.mkShell {
-              inputsFrom = [ config.latex-utils.devShell ];
-            };
+            default = lib.mkDefault vscodeIntegration.vscode-devshell; # Use the well-defined vscodeDevShell
           };
 
           # Make the VSCode settings override function available as a package builder
@@ -412,20 +404,6 @@ in {
               echo "Generated VSCode settings in settings.json"
             ''}";
             meta.description = "Generate custom VSCode settings for LaTeX with your overrides";
-          };
-
-          # Composite devShell fragment for latex-utils
-          config.latex-utils.devShell = pkgs.mkShell {
-            buildInputs = [
-              unifiedTexEnv
-              pkgs.ltex-ls
-            ];
-            shellHook = ''
-              echo "🔧 Setting up LaTeX Workshop + LTeX…"
-              mkdir -p .vscode
-              ln -sf "${vscodeIntegration."vscode-settings"}/.vscode/settings.json" .vscode/settings.json
-              echo "✅ VSCode settings linked!"
-            '';
           };
         })
         # Other modules can extend perSystem here

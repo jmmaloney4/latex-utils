@@ -12,37 +12,39 @@
     };
   };
   # Evaluate the module to get options and perSystem definitions
-  moduleAttrs = module { config = baseConfig; pkgs = pkgs; lib = lib; };
+  moduleAttrs = module {
+    config = baseConfig;
+    pkgs = pkgs;
+    lib = lib;
+  };
   # Run perSystem to get outputs including devShells and config updates
-  perSystem = moduleAttrs.config.perSystem { config = baseConfig; pkgs = pkgs; lib = lib; };
+  perSystem = moduleAttrs.config.perSystem {
+    config = baseConfig;
+    pkgs = pkgs;
+    lib = lib;
+  };
 in {
-  # Ensure the devShell option is defined in options.latex-utils
-  optionDevShellDefined = {
-    expr = builtins.hasAttr "devShell" moduleAttrs.options."latex-utils";
+  # Ensure perSystem itself has the devShells attribute
+  topLevelDevShellsExists = {
+    expr = builtins.hasAttr "devShells" perSystem;
     expected = true;
   };
 
-  # Ensure the composite devShell fragment exists in the generated config
-  fragmentExists = {
-    expr = builtins.hasAttr "devShell" perSystem.config."latex-utils";
+  # Ensure the default devShell exists within perSystem.devShells
+  defaultShellInDevShellsExists = {
+    expr =
+      if perSystem ? "devShells"
+      then builtins.hasAttr "default" perSystem.devShells
+      else false; # Fail if devShells itself is missing
     expected = true;
   };
 
-  # Ensure the devShell fragment builds
-  fragmentBuilds = {
-    expr = perSystem.config."latex-utils".devShell.drvPath != null;
+  # Ensure the default devShell builds
+  defaultShellBuilds = {
+    expr =
+      if perSystem ? "devShells" && perSystem.devShells ? "default"
+      then perSystem.devShells.default.drvPath != null
+      else false; # Fail if intermediate attrs are missing
     expected = true;
   };
-
-  # Ensure the vscode devShell was composed and exists
-  vscodeShellExists = {
-    expr = builtins.hasAttr "vscode" perSystem.devShells;
-    expected = true;
-  };
-
-  # Ensure the vscode devShell builds
-  vscodeShellBuilds = {
-    expr = perSystem.devShells.vscode.drvPath != null;
-    expected = true;
-  };
-} 
+}

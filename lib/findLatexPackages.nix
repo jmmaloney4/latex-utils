@@ -1,3 +1,33 @@
+/*
+Function: findLatexPackages
+
+Description:
+  Parses the given LaTeX file contents to extract TeX Live package names.
+  It looks for `\usepackage{...}` commands and `% CTAN: ...` comments.
+  It then attempts to resolve these names against `pkgs.texlive` and returns
+  an attribute set where keys are the package names and values are the
+  corresponding TeX Live package derivations.
+  Names that cannot be resolved in `pkgs.texlive` are omitted from the result.
+
+Parameters:
+  fileContents (string, required): The string content of a LaTeX file.
+
+Returns:
+  attrset of derivations: An attribute set mapping successfully resolved TeX Live
+                          package names to their derivations.
+                          Example: { amsmath = <derivation>; pgf = <derivation>; }
+
+Example:
+  findLatexPackages {
+    fileContents = ''
+      \documentclass{article}
+      \usepackage{amsmath,amsfonts}
+      \usepackage{tikz} % CTAN: pgf
+      \usepackage{unknownpackage}
+    '';
+  }
+  => { amsmath = <pkgs.texlive.amsmath>; amsfonts = <pkgs.texlive.amsfonts>; pgf = <pkgs.texlive.pgf>; }
+*/
 # --------------------------------------------------------------------------------------
 # Regex Compatibility in Nix (builtins.match)
 # --------------------------------------------------------------------------------------

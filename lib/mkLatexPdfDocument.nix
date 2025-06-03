@@ -2,7 +2,69 @@
   pkgs,
   lib,
   ...
-}: args @ {
+}:
+/*
+Function: mkLatexPdfDocument
+
+Description:
+  Builds a LaTeX document into a PDF using `latexmk` with `lualatex`.
+  It automatically discovers TeX Live packages from source files (`\usepackage` and
+  `% CTAN:` comments) and combines them with explicitly provided `extraTexPackages`.
+  It also handles font caching for `lualatex`.
+
+Parameters (passed as an attribute set):
+  name (string, required): The base name for the output PDF (e.g., "my-document").
+                           If it doesn't end with ".pdf", ".pdf" will be appended.
+  src (path, required): The source directory containing the LaTeX files.
+  workingDirectory (string, optional, default: "."):
+    The subdirectory within `src` where `latexmk` will be executed.
+  inputFile (string, optional, default: "main.tex"):
+    The main TeX file (relative to `workingDirectory`) to be compiled.
+  outputPath (string, optional, default: "output.pdf"):
+    The expected name of the PDF file produced by `latexmk` (relative to `workingDirectory`).
+    This file will be moved to `$out`.
+  extraTexPackages (attrset, list, or function, optional, default: []):
+    Additional TeX Live packages to include. Can be:
+    - A list of package name strings (e.g., ["amsmath" "xcolor"])
+    - A list of TeX Live package derivations (e.g., [pkgs.texlive.amsmath])
+    - A list of TeX Live package *objects* (e.g. [pkgs.texlive.amsfonts])
+    - A function that takes discovered packages (attrset) and returns one of the above lists.
+    - An attrset of already normalized packages (internal use).
+    See `normalizeExtraTexPackages.nix` for full details on supported formats.
+  _preNormalizedExtraPackages (attrset, optional):
+    Internally used by the main module to pass already normalized `extraTexPackages`.
+    If provided, `extraTexPackages` is ignored for normalization.
+  texPackages (attrset of derivations, optional, default: {}):
+    An additional attribute set of TeX Live packages to include, typically for packages
+    not found by name in `pkgs.texlive`.
+  scheme (derivation, optional, default: pkgs.texlive.scheme-basic):
+    The base TeX Live scheme to use.
+  silent (boolean, optional, default: false):
+    (Currently unused, placeholder for future quieter build options).
+  stdenv (derivation, optional, default: pkgs.stdenvNoCC):
+    The stdenv to use for building the document.
+  nativeBuildInputs (list, optional, default: []):
+    Additional native build inputs for the derivation.
+  phases (list of strings, optional, default: ["unpackPhase" "buildPhase" "installPhase"]):
+    Custom phases for the derivation.
+  buildPhase (string, optional):
+    Custom build phase script. Overrides the default `latexmk` call.
+  installPhase (string, optional):
+    Custom install phase script. Overrides the default PDF move.
+
+Returns:
+  derivation: A Nix derivation that builds the LaTeX document into a PDF file.
+              The output PDF will be available as `$out`.
+
+Example:
+  (callPackage ./mkLatexPdfDocument.nix {}) {
+    name = "my-paper";
+    src = ./src/my-paper-source;
+    inputFile = "paper.tex";
+    extraTexPackages = [ "biblatex-ieee" pkgs.texlive.pgfplots ];
+  }
+*/
+args @ {
   name,
   src,
   workingDirectory ? ".",

@@ -21,7 +21,6 @@
     flake-parts.lib.mkFlake {inherit inputs;} {
       systems = import systems;
       imports = [
-        ./modules/latex-utils.nix
         inputs.nix-unit.modules.flake.default
         inputs.treefmt-nix.flakeModule
         inputs.mission-control.flakeModule
@@ -53,13 +52,13 @@
           tests.documentLevelPackages = import ./tests/document-level-packages.nix {
             inherit pkgs lib;
           };
-          tests.devShellFragment = import ./tests/devShellFragment.nix { inherit pkgs lib; };
-          # tests.testModuleLevel = import ./tests/test-module-level.nix {
-          #   inherit pkgs lib;
-          # };
-          # tests.normalizeExtraTexPackages = import ./tests/normalizeExtraTexPackages.nix {
-          #   inherit pkgs lib;
-          # };
+          tests.devShellFragment = import ./tests/devShellFragment.nix {inherit pkgs lib;};
+          tests.testModuleLevel = import ./tests/test-module-level.nix {
+            inherit pkgs lib;
+          };
+          tests.normalizeExtraTexPackages = import ./tests/normalizeExtraTexPackages.nix {
+            inherit pkgs lib;
+          };
         };
         treefmt = {
           config = {
@@ -83,7 +82,6 @@
               config.mission-control.devShell
               config.pre-commit.devShell
               config.treefmt.build.devShell
-              config.latex-utils.devShell
             ];
           };
         };

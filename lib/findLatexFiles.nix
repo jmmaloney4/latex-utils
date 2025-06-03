@@ -3,6 +3,29 @@
   lib,
   ...
 }:
+/*
+Function: findLatexFiles
+
+Description:
+  Recursively finds all files with specified extensions (defaulting to .tex and .cls)
+  within a given base path. It returns a de-duplicated list of absolute paths
+  to the found files.
+
+Parameters:
+  basePath (string, required): The absolute or relative path to the directory to search.
+  extensions (list of strings, optional, default: [".tex" ".cls"]):
+    A list of file extensions to search for (e.g., [".tex", ".bib", ".cls"]).
+
+Returns:
+  list of strings: A list of unique absolute paths to the LaTeX files found.
+
+Example:
+  findLatexFiles {
+    basePath = ./my-latex-project;
+    extensions = [ ".tex" ".sty" ];
+  }
+  => [ "/path/to/my-latex-project/main.tex", "/path/to/my-latex-project/styles/custom.sty", ... ]
+*/
 with pkgs.lib.attrsets;
 with pkgs.lib;
 with pkgs.lib.debug; let

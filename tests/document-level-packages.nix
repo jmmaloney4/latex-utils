@@ -7,7 +7,7 @@
 
   # Test configuration that mimics the issue reported
   moduleExtraTexPackages = ["amsmath"];
-  
+
   # Mock documents with document-level packages
   documents = [
     {
@@ -104,13 +104,13 @@ in {
 
   # Test that document-level packages from first document are included
   firstDocumentPackagesIncluded = {
-    expr = 
-      builtins.hasAttr "enumitem" unifiedAdditionalPackages &&
-      builtins.hasAttr "algorithms" unifiedAdditionalPackages;
+    expr =
+      builtins.hasAttr "enumitem" unifiedAdditionalPackages
+      && builtins.hasAttr "algorithms" unifiedAdditionalPackages;
     expected = true;
   };
 
-  # Test that document-level packages from second document are included  
+  # Test that document-level packages from second document are included
   secondDocumentPackagesIncluded = {
     expr = builtins.hasAttr "tikzposter" unifiedAdditionalPackages;
     expected = true;
@@ -139,7 +139,7 @@ in {
     expected = true;
   };
 
-  # Test specific case from issue report: algorithms should be available for IDE  
+  # Test specific case from issue report: algorithms should be available for IDE
   algorithmsAvailableForIDE = {
     expr = builtins.hasAttr "algorithms" unifiedAdditionalPackages;
     expected = true;
@@ -199,4 +199,4 @@ in {
     expr = builtins.hasAttr "tikzposter" unifiedTexPackages;
     expected = true;
   };
-} 
+}

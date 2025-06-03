@@ -46,22 +46,34 @@
 2. **Import the module and declare your documents**:
 
    ```nix
-   {
-     imports = [ inputs.latex-utils.modules.latex-utils ];
-     latex-utils.documents = [
-       {
-         name = "paper.pdf";
-         src = ./.;
-         # inputFile = "main.tex"; # optional, defaults to main.tex
-         # extraTexPackages = []; # optional, for packages not auto-detected
-       }
-       {
-         name = "slides.pdf";
-         src = ./slides;
-         inputFile = "slides.tex";
-       }
-     ];
-   }
+   # In your flake.nix
+   # ...
+   outputs = { self, flake-parts, latex-utils, nixpkgs }@inputs:
+     flake-parts.lib.mkFlake { inherit self inputs; } {
+       systems = [ "x86_64-linux" /* ... other systems ... */ ];
+       imports = [
+         inputs.latex-utils.flakeModule # Use flakeModule for flake-parts
+       ];
+       perSystem = { config, pkgs, system, ... }: {
+         # Configure latex-utils options
+         latex-utils.documents = [
+           {
+             name = "paper.pdf";
+             src = ./.;
+             # inputFile = "main.tex"; # optional, defaults to main.tex
+             # extraTexPackages = []; # optional, for packages not auto-detected
+           }
+           {
+             name = "slides.pdf";
+             src = ./slides;
+             inputFile = "slides.tex";
+           }
+         ];
+         # Optionally, re-export the dev shell for convenience
+         devShells.default = config.latex-utils.devShells.default;
+       };
+     };
+   # ...
    ```
 
 3. **Build your PDFs**
@@ -404,37 +416,70 @@ The function receives an attrset of discovered packages (as derivations) and mus
 
 ## Unified TeX Live Environment for IDE Integration
 
-When you define multiple LaTeX documents with different package requirements, latex-utils automatically creates a **unified TeX Live environment** containing all packages needed by all your documents. This environment is exposed as additional packages that you can use for IDE integration.
+When you define multiple LaTeX documents with different package requirements, latex-utils automatically creates a **unified TeX Live environment** containing all packages needed by all your documents. This environment is exposed as additional packages and a pre-configured development shell.
 
 ### Quick Setup
 
-**For VSCode users (zero configuration):**
+The `latex-utils` module provides a `devShells.default` that includes the unified TeX Live environment, `ltex-ls` (language server), and automatically links VSCode settings for LaTeX Workshop.
+
+To use it in your `flake.nix`:
 ```nix
-perSystem = { self', ... }: {
-  devShells.default = self'.devShells.vscode;  # Complete VSCode + TeX Live setup
-};
+# In your flake.nix
+# ...
+outputs = { self, flake-parts, latex-utils, nixpkgs }@inputs:
+  flake-parts.lib.mkFlake { inherit self inputs; } {
+    systems = [ "x86_64-linux" /* ... */ ];
+    imports = [ inputs.latex-utils.flakeModule ];
+
+    perSystem = { config, pkgs, system, ... }: {
+      # Configure latex-utils options
+      latex-utils.documents = [
+        { name = "my-paper.pdf"; src = ./my-paper; }
+      ];
+      # ... other latex-utils options ...
+
+      # Make the latex-utils dev shell your default `nix develop` shell
+      devShells.default = config.latex-utils.devShells.default;
+
+      # Or, if you have your own default dev shell and want to add it separately:
+      # devShells.latex = config.latex-utils.devShells.default;
+    };
+  };
+# ...
 ```
+Once you enter the shell (e.g., `nix develop`), VSCode should automatically pick up the settings for LaTeX Workshop and LTeX.
 
 **For other IDEs or custom setups:**
+
+If you need to manually construct a shell or want to integrate the components into your existing development environment, you can use the provided packages:
 ```nix
-perSystem = { self', pkgs, ... }: {
-  devShells.default = pkgs.mkShell {
-    buildInputs = [
-      # Include the unified TeX Live environment for your IDE
-      self'.packages.texlive-unified
-      self'.packages.latexmk-unified
-    ];
-  };
+# In your perSystem block
+# ...
+devShells.myCustomLatexShell = pkgs.mkShell {
+  buildInputs = [
+    config.latex-utils.packages.texlive-unified # The full TeX Live set
+    config.latex-utils.packages.latexmk-unified # latexmk using the unified set
+    config.latex-utils.packages.ltex-ls-wrapped # LTeX language server
+    # Add other tools you need, e.g., pkgs.zathura for PDF viewing
+  ];
+  shellHook = ''
+    # Optional: Link VSCode settings if you use VSCode sometimes
+    mkdir -p .vscode
+    ln -sf "${config.latex-utils.packages."vscode-settings"}/.vscode/settings.json" .vscode/settings.json
+    echo "Custom LaTeX environment ready."
+  '';
 };
+# ...
 ```
 
-**Available packages:**
-- `texlive-unified`: Complete TeX Live installation with all packages from all documents
-- `latexmk-unified`: latexmk wrapper using the unified environment
-- `vscode-settings`: Pre-configured VSCode settings for LaTeX Workshop + LTeX-LS
-- `vscode-devshell`: Ready-to-use development shell with VSCode integration
+**Available packages (via `config.latex-utils.packages`):**
+- `texlive-unified`: Complete TeX Live installation with all packages from all documents.
+- `latexmk-unified`: `latexmk` wrapper using the unified environment.
+- `ltex-ls-wrapped`: LTeX Language Server wrapped to use the `texlive-unified` environment.
+- `vscode-settings`: Pre-configured VSCode settings for LaTeX Workshop + LTeX-LS.
+- `vscode-devshell`: The derivation for the `devShells.default` provided by `latex-utils`.
 
-After entering the dev shell (`nix develop`), point your IDE's LaTeX configuration to use the executables from the environment. All packages from all your documents will be available.
+After entering the dev shell (`nix develop` or `nix develop .#myCustomLatexShell`), point your IDE's LaTeX configuration to use the executables from the environment (e.g., `latexmk`, `lualatex`, `pdflatex`). All packages from all your documents will be available.
 
 **➡️ [Full IDE Integration Guide](docs/ide-integration.md)**
 
@@ -460,37 +505,43 @@ To ensure fast, reliable, and reproducible font discovery for LuaLaTeX and XeLaT
   description = "My LaTeX project";
   inputs.latex-utils.url = "github:jmmaloney4/latex-utils";
   inputs.flake-parts.url = "github:hercules-ci/flake-parts";
+  # Assuming you have nixpkgs input:
+  # inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-  outputs = inputs@{ flake-parts, ... }:
-    flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = [ "x86_64-linux" ];
-      imports = [ inputs.latex-utils.modules.latex-utils ];
-      
-      # Module-level packages for all documents
-      latex-utils.extraTexPackages = [
-        "amsmath"
-        "geometry" 
-        "hyperref"
-      ];
-      
-      latex-utils.documents = [
-        {
-          name = "thesis.pdf";
-          src = ./.;
-          # Uses module packages + any discovered packages
-        }
-        {
-          name = "poster.pdf";
-          src = ./poster;
-          inputFile = "poster.tex";
-          # Add poster-specific packages
-          extraTexPackages = ["tikzposter" "tikz"];
-        }
-      ];
-      
-      # Use the unified VSCode dev shell
-      perSystem = { self', ... }: {
-        devShells.default = self'.devShells.vscode;
+  outputs = inputs@{ self, flake-parts, latex-utils, nixpkgs }:
+    flake-parts.lib.mkFlake { inherit self inputs; } {
+      systems = [ "x86_64-linux" ]; # Add other systems as needed
+      imports = [ inputs.latex-utils.flakeModule ];
+
+      # Module-level configurations are typically placed in perSystem
+      # for flake-parts modules, or can be at this top level if
+      # the module is designed to pick them up (latex-utils does).
+      perSystem = { config, pkgs, system, ... }: {
+        latex-utils.extraTexPackages = [
+          "amsmath"
+          "geometry"
+          "hyperref"
+        ];
+
+        latex-utils.documents = [
+          {
+            name = "thesis.pdf";
+            src = ./.;
+            # Uses module packages + any discovered packages
+          }
+          {
+            name = "poster.pdf";
+            src = ./poster;
+            inputFile = "poster.tex";
+            # Add poster-specific packages
+            extraTexPackages = ["tikzposter" "tikz"];
+          }
+        ];
+
+        # Use the unified VSCode dev shell provided by latex-utils
+        devShells.default = config.latex-utils.devShells.default;
+        # Or if you prefer a named shell:
+        # devShells.latex = config.latex-utils.devShells.default;
       };
     };
 }
