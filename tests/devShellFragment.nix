@@ -24,13 +24,15 @@
     lib = lib;
   };
 in {
-  # Ensure perSystem itself has the devShells attribute
+  # Test: Check if the top-level 'devShells' attribute exists in perSystem output.
+  # Purpose: Verifies that the module's perSystem evaluation produces the 'devShells' attribute set as expected.
   topLevelDevShellsExists = {
     expr = builtins.hasAttr "devShells" perSystem;
     expected = true;
   };
 
-  # Ensure the default devShell exists within perSystem.devShells
+  # Test: Check if a 'default' development shell exists within 'perSystem.devShells'.
+  # Purpose: Ensures that the standard 'default' dev shell is defined and available.
   defaultShellInDevShellsExists = {
     expr =
       if perSystem ? "devShells"
@@ -39,7 +41,8 @@ in {
     expected = true;
   };
 
-  # Ensure the default devShell builds
+  # Test: Check if the 'default' development shell is a buildable derivation.
+  # Purpose: Verifies that the 'default' dev shell definition results in a valid derivation path, indicating it can be built.
   defaultShellBuilds = {
     expr =
       if perSystem ? "devShells" && perSystem.devShells ? "default"

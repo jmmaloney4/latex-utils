@@ -96,36 +96,8 @@
   # Helper to check if a derivation builds
   builds = drv: drv.drvPath != null;
 in {
-  # Test that module-level packages are included
-  modulePackagesIncluded = {
-    expr = builtins.hasAttr "amsmath" unifiedAdditionalPackages;
-    expected = true;
-  };
-
-  # Test that document-level packages from first document are included
-  firstDocumentPackagesIncluded = {
-    expr =
-      builtins.hasAttr "enumitem" unifiedAdditionalPackages
-      && builtins.hasAttr "algorithms" unifiedAdditionalPackages;
-    expected = true;
-  };
-
-  # Test that document-level packages from second document are included
-  secondDocumentPackagesIncluded = {
-    expr = builtins.hasAttr "tikzposter" unifiedAdditionalPackages;
-    expected = true;
-  };
-
-  # Test that all expected document packages are included
-  allDocumentPackagesIncluded = {
-    expr = let
-      hasPackage = pkg: builtins.hasAttr pkg unifiedAdditionalPackages;
-    in
-      lib.all hasPackage expectedDocumentPackages;
-    expected = true;
-  };
-
-  # Debug: Show what packages are actually in the unified environment
+  # Test: Compare the sorted list of all package names in unifiedAdditionalPackages against the expected combined list.
+  # Purpose: Provides a comprehensive check that exactly the expected packages (module and document-level) are present.
   unifiedPackagesList = {
     expr = lib.lists.sort builtins.lessThan (builtins.attrNames unifiedAdditionalPackages);
     expected = lib.lists.sort builtins.lessThan (
@@ -133,70 +105,32 @@ in {
     );
   };
 
-  # Test specific case from issue report: enumitem should be available for IDE
-  enumitemAvailableForIDE = {
-    expr = builtins.hasAttr "enumitem" unifiedAdditionalPackages;
-    expected = true;
-  };
-
-  # Test specific case from issue report: algorithms should be available for IDE
-  algorithmsAvailableForIDE = {
-    expr = builtins.hasAttr "algorithms" unifiedAdditionalPackages;
-    expected = true;
-  };
-
-  # Test specific case from issue report: tikzposter should be available for IDE
-  tikzposterAvailableForIDE = {
-    expr = builtins.hasAttr "tikzposter" unifiedAdditionalPackages;
-    expected = true;
-  };
-
-  # Test that processedDocuments contains the expected merged packages
+  # Test: Check if the 'extraNormalized' attribute for the first processed document contains the correct merged packages.
+  # Purpose: Verifies the per-document package merging logic, ensuring module packages are combined with document-specific ones.
   processedDocumentsCorrect = {
     expr = let
       firstDoc = builtins.head processedDocuments;
       firstDocPackages = builtins.attrNames firstDoc.extraNormalized;
     in
       lib.lists.sort builtins.lessThan firstDocPackages;
+    # Expects: "algorithms" (doc1), "amsmath" (module), "enumitem" (doc1)
     expected = ["algorithms" "amsmath" "enumitem"];
   };
 
-  # Test that allExtraPackagesAttrs contains all packages from all documents
-  allExtraPackagesCorrect = {
-    expr = lib.lists.sort builtins.lessThan (builtins.attrNames allExtraPackagesAttrs);
-    expected = ["algorithms" "amsmath" "enumitem" "tikzposter"];
-  };
-
-  # Test that the unified TeX environment actually builds
+  # Test: Check if the final unified TeX Live environment (pkgs.texlive.combine result) is a buildable derivation.
+  # Purpose: Ensures that the assembled TeX Live environment with all packages is valid and can be built.
   unifiedTexEnvBuilds = {
     expr = builds unifiedTexEnv;
     expected = true;
   };
 
-  # Test that the unified TeX environment contains the expected packages
+  # Test: Check if all expected document-level packages are present in the final 'unifiedTexPackages' attrset used for pkgs.texlive.combine.
+  # Purpose: Verifies that document-specific packages are correctly included in the inputs to the final TeX environment combination.
   unifiedTexEnvContainsDocumentPackages = {
     expr = let
       hasPackage = pkg: builtins.hasAttr pkg unifiedTexPackages;
     in
       lib.all hasPackage expectedDocumentPackages;
-    expected = true;
-  };
-
-  # Test that enumitem is specifically available in the final TeX environment
-  enumitemInFinalTexEnv = {
-    expr = builtins.hasAttr "enumitem" unifiedTexPackages;
-    expected = true;
-  };
-
-  # Test that algorithms is specifically available in the final TeX environment
-  algorithmsInFinalTexEnv = {
-    expr = builtins.hasAttr "algorithms" unifiedTexPackages;
-    expected = true;
-  };
-
-  # Test that tikzposter is specifically available in the final TeX environment
-  tikzposterInFinalTexEnv = {
-    expr = builtins.hasAttr "tikzposter" unifiedTexPackages;
     expected = true;
   };
 }
