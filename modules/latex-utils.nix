@@ -139,7 +139,7 @@ in {
                   contextMsg = "while discovering packages in ${pathStr} for document ${doc.name}";
                 in
                   lib.addErrorContext contextMsg (
-                    if (builtins.pathExists p)
+                  if (builtins.pathExists p)
                     then let
                       contents = builtins.readFile p;
                     in
@@ -152,8 +152,8 @@ in {
               # Pass discovered packages for function-type extraTexPackages
               docExtraPackagesNormalized = lib.addErrorContext "while normalizing extraTexPackages for document ${doc.name}" (
                 normalizeHelpers.normalizeExtraTexPackages {
-                  extraTexPackages = doc.extraTexPackages;
-                  discoveredPackages = discovered;
+                extraTexPackages = doc.extraTexPackages;
+                discoveredPackages = discovered;
                 }
               );
 
@@ -238,92 +238,92 @@ in {
           unifiedPackages =
             if documents != [] || moduleExtraTexPackages != []
             then {
-              texlive-unified = unifiedTexEnv;
-              latexmk-unified = pkgs.writeShellScriptBin "latexmk" ''
-                exec ${lib.getExe' unifiedTexEnv "latexmk"} "$@"
-              '';
+            texlive-unified = unifiedTexEnv;
+            latexmk-unified = pkgs.writeShellScriptBin "latexmk" ''
+              exec ${lib.getExe' unifiedTexEnv "latexmk"} "$@"
+            '';
             }
             else {};
 
           # VSCode integration
-          # Function to generate VSCode settings with custom overrides
-          mkVSCodeSettings = overrides: let
-            defaultSettings = {
-              "ltex.language" = "en-US";
-              "ltex.enabled" = true;
-              "ltex.server.path" = "${pkgs.ltex-ls}/bin/ltex-ls";
+            # Function to generate VSCode settings with custom overrides
+            mkVSCodeSettings = overrides: let
+              defaultSettings = {
+                "ltex.language" = "en-US";
+                "ltex.enabled" = true;
+                "ltex.server.path" = "${pkgs.ltex-ls}/bin/ltex-ls";
 
-              # LaTeX Workshop configuration using unified environment
-              "latex-workshop.latex.toolchain" = [
-                {
-                  command = "${unifiedTexEnv}/bin/latexmk";
-                  args = [
-                    # Core compilation options
-                    "-pdf" # Generate PDF output
-                    "-interaction=nonstopmode" # Don't stop on errors (good for IDE)
-                    "-file-line-error" # Error format: file:line:error (IDE-friendly)
-                    "-synctex=1" # Enable SyncTeX for editor-PDF sync
+                # LaTeX Workshop configuration using unified environment
+                "latex-workshop.latex.toolchain" = [
+                  {
+                    command = "${unifiedTexEnv}/bin/latexmk";
+                    args = [
+                      # Core compilation options
+                      "-pdf" # Generate PDF output
+                      "-interaction=nonstopmode" # Don't stop on errors (good for IDE)
+                      "-file-line-error" # Error format: file:line:error (IDE-friendly)
+                      "-synctex=1" # Enable SyncTeX for editor-PDF sync
 
-                    # Build organization
-                    "-output-directory=.latex-build" # Put ALL build artifacts in .latex-build/
+                      # Build organization
+                      "-output-directory=.latex-build" # Put ALL build artifacts in .latex-build/
 
-                    # Enhanced IDE experience
-                    "-recorder" # Create .fls file for dependency tracking
-                    "-silent" # Quieter output (less noise in IDE)
-                    "-bibtex" # Ensure bibliography processing
+                      # Enhanced IDE experience
+                      "-recorder" # Create .fls file for dependency tracking
+                      "-silent" # Quieter output (less noise in IDE)
+                      "-bibtex" # Ensure bibliography processing
 
-                    # Document placeholder
-                    "%DOC%"
-                  ];
-                }
-              ];
+                      # Document placeholder
+                      "%DOC%"
+                    ];
+                  }
+                ];
 
-              # Auto-build configuration
-              "latex-workshop.latex.autoBuild.run" = "onFileChange";
+                # Auto-build configuration
+                "latex-workshop.latex.autoBuild.run" = "onFileChange";
 
-              # Output and cleanup configuration
-              "latex-workshop.latex.outDir" = ".latex-build";
-              "latex-workshop.latex.autoClean.run" = "onBuilt";
-              "latex-workshop.latex.clean.fileTypes" = [
-                "*.aux"
-                "*.bbl"
-                "*.blg"
-                "*.idx"
-                "*.ind"
-                "*.lof"
-                "*.lot"
-                "*.out"
-                "*.toc"
-                "*.acn"
-                "*.acr"
-                "*.alg"
-                "*.glg"
-                "*.glo"
-                "*.gls"
-                "*.ist"
-                "*.fls"
-                "*.log"
-                "*.fdb_latexmk"
-                "*.synctex.gz"
-              ];
+                # Output and cleanup configuration
+                "latex-workshop.latex.outDir" = ".latex-build";
+                "latex-workshop.latex.autoClean.run" = "onBuilt";
+                "latex-workshop.latex.clean.fileTypes" = [
+                  "*.aux"
+                  "*.bbl"
+                  "*.blg"
+                  "*.idx"
+                  "*.ind"
+                  "*.lof"
+                  "*.lot"
+                  "*.out"
+                  "*.toc"
+                  "*.acn"
+                  "*.acr"
+                  "*.alg"
+                  "*.glg"
+                  "*.glo"
+                  "*.gls"
+                  "*.ist"
+                  "*.fls"
+                  "*.log"
+                  "*.fdb_latexmk"
+                  "*.synctex.gz"
+                ];
 
-              # PDF viewer configuration
-              "latex-workshop.view.pdf.viewer" = "tab";
-              "latex-workshop.view.pdf.internal.synctex.keybinding" = "double-click";
+                # PDF viewer configuration
+                "latex-workshop.view.pdf.viewer" = "tab";
+                "latex-workshop.view.pdf.internal.synctex.keybinding" = "double-click";
 
-              # Forward search configuration (editor -> PDF)
-              "latex-workshop.synctex.afterBuild.enabled" = true;
-            };
-            settings = defaultSettings // overrides;
-          in
-            builtins.toJSON settings;
+                # Forward search configuration (editor -> PDF)
+                "latex-workshop.synctex.afterBuild.enabled" = true;
+              };
+              settings = defaultSettings // overrides;
+            in
+              builtins.toJSON settings;
 
-          # VSCode settings function for custom overrides
-          vscodeSettingsWithOverrides = overrides:
-            pkgs.writeTextFile {
-              name = "vscode-settings-custom";
-              destination = "/.vscode/settings.json";
-              text = mkVSCodeSettings overrides;
+            # VSCode settings function for custom overrides
+            vscodeSettingsWithOverrides = overrides:
+              pkgs.writeTextFile {
+                name = "vscode-settings-custom";
+                destination = "/.vscode/settings.json";
+                text = mkVSCodeSettings overrides;
             };
 
           # VSCode integration packages (only include derivations)
@@ -337,17 +337,17 @@ in {
                 text = mkVSCodeSettings {};
               };
 
-              # Helper dev shell that sets up VSCode integration
-              vscodeDevShell = pkgs.mkShell {
-                buildInputs = [
-                  unifiedTexEnv
-                  pkgs.ltex-ls
-                ];
-                shellHook = ''
-                  echo "🔧 Setting up VSCode LaTeX integration..."
-                  mkdir -p .vscode
-                  ln -sf "${vscodeSettings}/.vscode/settings.json" .vscode/settings.json
-                  echo "✅ VSCode settings linked successfully!"
+            # Helper dev shell that sets up VSCode integration
+            vscodeDevShell = pkgs.mkShell {
+              buildInputs = [
+                unifiedTexEnv
+                pkgs.ltex-ls
+              ];
+              shellHook = ''
+                echo "🔧 Setting up VSCode LaTeX integration..."
+                mkdir -p .vscode
+                ln -sf "${vscodeSettings}/.vscode/settings.json" .vscode/settings.json
+                echo "✅ VSCode settings linked successfully!"
                   echo "📦 Using unified TeX Live environment with packages from:"
                   ${
                     if documents != []
@@ -363,12 +363,12 @@ in {
                     ''
                     else ""
                   }
-                '';
-              };
-            in {
-              vscode-settings = vscodeSettings;
+              '';
+            };
+          in {
+            vscode-settings = vscodeSettings;
               # Don't include vscodeSettingsWithOverrides here - it's a function
-              vscode-devshell = vscodeDevShell;
+            vscode-devshell = vscodeDevShell;
             }
             else {};
         in {

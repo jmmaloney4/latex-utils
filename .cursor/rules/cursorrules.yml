@@ -24,6 +24,7 @@ rules:
     when: "any LLM plans to modify files matching `lib/**/*.nix`, `modules/**/*.nix`, `flake.nix`, `template/**/*.nix`, `tests/**/*.nix`"
     then:
       - "BEFORE committing, ensure that `docs/agent_logs/<TIMESTAMP>-<agent_id>.md` exists *or* that `docs/AGENT_CHANGELOG.md` was appended with a valid entry."
+      - "Timestamps must be in UTC format with Z suffix (e.g., 2025-06-03T06:00:00Z)."
       - "If missing or malformed, the draft will be flagged: `⚠️ Missing or invalid changelog entry. Please create a new file under docs/agent_logs/ or append to docs/AGENT_CHANGELOG.md using the official template.`"
 
   # ─────────────────────────────────────────────────────────────────────────
