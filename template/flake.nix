@@ -21,7 +21,9 @@
           name = "mydocument.pdf";
           src = ./.;
           # inputFile = "main.tex";
-          # texPackages = { inherit (inputs.nixpkgs.legacyPackages.x86_64-linux.texlive) amscls beamer; };
+          # extraTexPackages = [ "amscls" "beamer" ];
+          # Or, using derivations:
+          # extraTexPackages = [ pkgs.texlive.amscls pkgs.texlive.beamer ];
         }
       ];
     };

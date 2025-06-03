@@ -68,17 +68,17 @@ in {
 
   # Test list of TeX Live package objects (NEW)
   # Purpose: Verifies that the function correctly processes a list of TeX Live package objects (attrs with tlType and pkgs).
-  # Test: Input is a list of TeX Live package objects (pkgs.texlive.amsfonts, pkgs.texlive.amssymb).
+  # Test: Input is a list of TeX Live package objects (pkgs.texlive.amsfonts provides amssymb).
   #       Expected output is an attrset with keys corresponding to the package object names.
   listOfTexLivePackageObjects = {
     expr = let
       result = normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = [pkgs.texlive.amsfonts pkgs.texlive.amssymb];
+        extraTexPackages = [pkgs.texlive.amsfonts]; # Corrected: amsfonts provides amssymb
         discoveredPackages = {};
       };
     in
       getSortedNames result;
-    expected = ["amsfonts" "amssymb"];
+    expected = ["amsfonts"]; # Corrected: expected output
   };
 
   # Test error handling: mixed list (no longer supported)
@@ -392,6 +392,21 @@ in {
     expected = true;
   };
 
+  # Fixed test for duplicate derivations
+  testDuplicateDerivationsFixed = {
+    expr = let
+      result = normalizeHelpers.normalizeExtraTexPackages {
+        extraTexPackages = [pkgs.texlive.xcolor pkgs.texlive.xcolor]; # Input with duplicates
+        discoveredPackages = {};
+      };
+      # getSortedNames is defined at the top of this file
+    in
+      getSortedNames result;
+    expected = ["xcolor"]; # Expected unique, sorted names
+  };
+
+  /*
+     Removing obsolete/contradictory tests:
   testListOfMixedTypes = {
     # Test with a list containing mixed types (strings, derivations)
     extraTexPackages = [
@@ -420,4 +435,5 @@ in {
     action = cfg: cfg.extraTexPackages;
     expectedSortedNames = ["lipsum" "xcolor"]; # Expected sorted names, including lipsum
   };
+  */
 }
