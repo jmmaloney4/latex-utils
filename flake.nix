@@ -26,6 +26,7 @@
         inputs.mission-control.flakeModule
         inputs.flake-root.flakeModule
         inputs.git-hooks-nix.flakeModule
+        ./modules/latex-utils.nix
       ];
       perSystem = {
         config,

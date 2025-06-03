@@ -174,6 +174,45 @@ latex-utils.documents = [
 ];
 ```
 
+### Note on `mathrsfs` Package
+
+The `mathrsfs.sty` style, used for script letters in math, requires special handling in minimal TeX Live setups. It is part of Jörg Knappen's `jknapltx` bundle, and the glyphs themselves come from the `rsfs` font package.
+
+If you are using a minimal TeX Live scheme (like `scheme-small`) and need `\usepackage{mathrsfs}`, you must ensure both TeX Live packages `jknapltx` and `rsfs` are included in your environment.
+
+**How `latex-utils` handles this:**
+
+- **Automatic Discovery**: While `latex-utils` strives to detect packages like `mathrsfs` automatically, the most reliable way to ensure both `jknapltx` (which provides `mathrsfs.sty`) and `rsfs` (which provides the fonts) are included is by manual specification, especially in very minimal setups.
+- **Manual Addition**: It's safer to explicitly add them if you encounter issues:
+  - You can add them to `latex-utils.extraTexPackages` at the module level if needed by many documents:
+    ```nix
+    latex-utils.extraTexPackages = [ "jknapltx" "rsfs" /* ... other common packages ... */ ];
+    ```
+  - Or at the document level:
+    ```nix
+    latex-utils.documents = [
+      {
+        name = "mydoc.pdf";
+        src = ./.;
+        extraTexPackages = [ "jknapltx" "rsfs" ];
+      }
+    ];
+    ```
+- **Nix Context**: For reference, if you were managing your TeX environment directly with Nix, you would use:
+  ```nix
+  # Example with texlive.combine
+  mytex = pkgs.texlive.combine {
+    inherit (pkgs.texlive) scheme-small; # or your preferred minimal scheme
+    jknapltx; # Provides mathrsfs.sty
+    rsfs;     # Provides the fonts
+  };
+
+  # Example with texlive.withPackages
+  mytex = pkgs.texlive.withPackages (ps: [ ps.jknapltx ps.rsfs ]);
+  ```
+
+**Key takeaway**: Larger TeX Live schemes (e.g., `scheme-medium`, `scheme-full`) typically include `jknapltx` and `rsfs` by default. This note is most relevant when using minimal schemes to keep your Nix closure size small. If `\usepackage{mathrsfs}` fails, ensure both `jknapltx` and `rsfs` are present in your `extraTexPackages`.
+
 ### Example: Complex Document Structure
 
 Consider this LaTeX project structure:
