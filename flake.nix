@@ -39,26 +39,27 @@
         };
         nix-unit = {
           allowNetwork = true;
-          tests.findLatexPackages = import ./tests/findLatexPackages.nix {
-            inherit pkgs lib;
-            findLatexPackages = import ./lib/findLatexPackages.nix {inherit pkgs lib;};
-          };
-          tests.extraTexPackages = import ./tests/extraTexPackages.nix {
-            inherit pkgs lib;
-          };
-          tests.unifiedTexLive = import ./tests/unifiedTexLive.nix {
-            inherit pkgs lib;
-          };
-          tests.documentLevelPackages = import ./tests/documentLevelPackages.nix {
-            inherit pkgs lib;
-          };
-          tests.devShellFragment = import ./tests/devShellFragment.nix {inherit pkgs lib;};
-          tests.testModuleLevel = import ./tests/testModuleLevel.nix {
-            inherit pkgs lib;
-          };
-          tests.normalizeExtraTexPackages = import ./tests/normalizeExtraTexPackages.nix {
-            inherit pkgs lib;
-          };
+          tests =
+            {
+              findLatexPackages = import ./tests/findLatexPackages.nix {
+                inherit pkgs lib;
+                findLatexPackages = import ./lib/findLatexPackages.nix {inherit pkgs lib;};
+              };
+              extraTexPackages = import ./tests/extraTexPackages.nix {
+                inherit pkgs lib;
+              };
+              unifiedTexLive = import ./tests/unifiedTexLive.nix {
+                inherit pkgs lib;
+              };
+              documentLevelPackages = import ./tests/documentLevelPackages.nix {
+                inherit pkgs lib;
+              };
+              devShellFragment = import ./tests/devShellFragment.nix {inherit pkgs lib;};
+              normalizeExtraTexPackages = import ./tests/normalizeExtraTexPackages.nix {
+                inherit pkgs lib;
+              };
+            }
+            // (import ./tests/testModuleLevel.nix {inherit pkgs lib;});
         };
         treefmt = {
           config = {
