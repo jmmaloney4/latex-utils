@@ -1,5 +1,5 @@
 # ADR 000: <Short, Descriptive Title>
-*Date:* <YYYY-MM-DD>  
+*Date:* <YYYY-MM-DD>  # Use `date -u +%Y-%m-%d` for UTC date
 *Status:* proposed / accepted / deprecated / superseded
 
 ## Context
