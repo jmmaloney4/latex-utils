@@ -423,7 +423,7 @@ in {
             shellHook = ''
               echo "🔧 Setting up LaTeX Workshop + LTeX…"
               mkdir -p .vscode
-              ln -sf "${vscodeSettings}/.vscode/settings.json" .vscode/settings.json
+              ln -sf "${vscodeIntegration."vscode-settings"}/.vscode/settings.json" .vscode/settings.json
               echo "✅ VSCode settings linked!"
             '';
           };
