@@ -125,9 +125,31 @@ in {
         description = "Whether to enable a flake check that rebuilds all PDFs";
       };
     };
+
+    # Per-System Options (Using flake-parts transposition)
+    # These define shell fragments that will be available as outputs.latex-utils.${system}.*
+    perSystem = flake-parts-lib.mkPerSystemOption {
+      options.latex-utils = {
+        unifiedTexShell = lib.mkOption {
+          type = lib.types.package;
+          description = "Composable devshell fragment with unified TeX Live environment";
+          readOnly = true;
+        };
+
+        vscodeShell = lib.mkOption {
+          type = lib.types.package;
+          description = "Composable devshell fragment with TeX environment + VSCode integration";
+          readOnly = true;
+        };
+      };
+    };
   };
 
   config = {
+    # Register transposition for latex-utils namespace
+    # This makes outputs.latex-utils.${system}.* available externally
+    transposition.latex-utils = {};
+
     perSystem = {
       config,
       pkgs,

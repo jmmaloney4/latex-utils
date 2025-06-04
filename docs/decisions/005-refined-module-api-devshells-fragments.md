@@ -61,6 +61,81 @@ The `latex-utils` module will define options that, once configured (often with d
 *   It avoids polluting the top-level `config.build` or other standard flake-parts outputs with shell fragments.
 *   `config.devShells.latex-utils` remains the standard way to access the primary, complete devShell provided by the module.
 
+## ReadOnly Option Configuration
+
+### Required: `readOnly = true` for Fragment Options
+
+The exported devshell fragment options (`unifiedTexShell` and `vscodeShell`) **must** be marked with `readOnly = true` in their option definitions. This is a critical aspect of the API design that ensures proper usage patterns.
+
+**Implementation Pattern:**
+```nix
+perSystem = flake-parts-lib.mkPerSystemOption {
+  options.latex-utils = {
+    unifiedTexShell = lib.mkOption {
+      type = lib.types.package;
+      description = "Composable devshell fragment with unified TeX Live environment";
+      readOnly = true;  # ← Required
+    };
+
+    vscodeShell = lib.mkOption {
+      type = lib.types.package;
+      description = "Composable devshell fragment with TeX environment + VSCode integration";
+      readOnly = true;  # ← Required
+    };
+  };
+};
+```
+
+### What `readOnly = true` Means
+
+In the NixOS module system (which flake-parts uses), `readOnly = true` indicates that:
+
+1. **These options represent computed outputs** - They are derivations produced by the module based on its configuration, rather than values that users should directly assign.
+
+2. **Users cannot override these values** - Any attempt to set these options directly will result in a module system error, preventing misuse.
+
+3. **The module controls their values exclusively** - Only the module itself, in its `config` section, should provide values for these options.
+
+4. **External access is intended for consumption, not configuration** - Users and tests can access these derivations via `config.latex-utils.*` (within perSystem) or `outputs.latex-utils.${system}.*` (externally) for composition via `inputsFrom`, but should not attempt to redefine them.
+
+### Why `readOnly = true` is Essential
+
+**Prevents Misconfiguration:**
+- Users might attempt to override these with incompatible shell definitions, breaking the module's intended behavior.
+- Ensures that the module's logic for package discovery, normalization, and environment building is respected.
+
+**Follows Established Patterns:**
+- This pattern is used by other flake-parts modules like `mission-control`, which marks its computed `devShell` option as `readOnly = true`.
+- Aligns with the principle that computed outputs should be distinguished from configurable inputs.
+
+**Clarifies API Intent:**
+- Makes it explicit that these are **outputs** of the module, not **inputs** to be configured.
+- Encourages the correct usage pattern: configure the module-level options (like `documents`, `extraTexPackages`, `enableVSCode`) and then consume the resulting shell fragments.
+
+**Example of Correct Usage:**
+```nix
+# In a user's flake.nix
+{
+  imports = [ inputs.latex-utils.flakeModules.default ];
+  
+  # Configure the module
+  latex-utils = {
+    documents = [ { name = "paper.pdf"; src = ./.; } ];
+    extraTexPackages = [ "amsmath" "graphicx" ];
+  };
+  
+  # Consume the computed fragments
+  perSystem = { config, ... }: {
+    devShells.my-custom = pkgs.mkShell {
+      inputsFrom = [ config.latex-utils.vscodeShell ];
+      buildInputs = [ pkgs.my-additional-tool ];
+    };
+  };
+}
+```
+
+This approach ensures that the module's complex logic for LaTeX package discovery, TeX Live environment construction, and VSCode integration remains encapsulated and reliable, while still providing flexible composition points for users.
+
 ## Complete Module Options API Specification
 
 The `latex-utils` module provides a carefully structured API that distinguishes between **module-level configuration options** (which are global to the module and not per-system) and **per-system derivations** (which are built for each system and available as flake outputs).
