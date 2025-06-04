@@ -8,18 +8,18 @@ The latex-utils flake-parts module creates a **unified TeX Live environment** th
 
 For **Visual Studio Code** users, latex-utils automatically provides pre-configured settings and development environments:
 
-### Available VSCode Packages
+### Available VSCode Components
 
-- **`vscode-settings`**: Pre-configured VSCode settings using the unified TeX Live environment
-- **`vscode-settings-with-overrides`**: Function to create custom VSCode settings with your overrides
-- **`vscode-devshell`**: Ready-to-use development shell with VSCode integration
+- **`config.latex-utils.unifiedTexShell`**: Composable shell fragment with unified TeX Live environment
+- **`config.latex-utils.vscodeShell`**: Composable shell fragment with TeX environment + VSCode integration
+- **`config.devShells.latex-utils`**: Complete development shell with VSCode integration
 
 ### Quick VSCode Setup
 
-**Option 1: Use the turn-key VS Code shell**
+**Option 1: Use the complete VS Code shell (Recommended)**
 ```nix
 perSystem = { config, ... }: {
-  devShells.default = config.latex-utils.devShells.full;
+  devShells.default = config.devShells.latex-utils;
 };
 ```
 
@@ -28,15 +28,15 @@ perSystem = { config, ... }: {
 perSystem = { config, pkgs, ... }: {
   devShells.default = pkgs.mkShell {
     inputsFrom = [
-      config.latex-utils.build.unifiedTexShell
-      config.latex-utils.build.vscodeSettingsShell # Optional: links VS Code settings
+      config.latex-utils.unifiedTexShell
+      config.latex-utils.vscodeShell # Optional: adds VS Code integration
     ];
     buildInputs = [ pkgs.pandoc ];
   };
 };
 ```
 - Use only `unifiedTexShell` for a pure TeX environment (no VS Code integration).
-- Add `vscodeSettingsShell` to also link `.vscode/settings.json` in your custom shell.
+- Add `vscodeShell` to also get VS Code integration in your custom shell.
 
 ### Enabling/Disabling VS Code Integration
 
@@ -45,11 +45,11 @@ By default, VS Code integration is enabled. To disable it (e.g., for CI):
 latex-utils.enableVSCode = false;
 ```
 
-When disabled, `devShells.full` will not include VS Code settings or shell hooks.
+When disabled, `config.devShells.latex-utils` will not include VS Code settings or shell hooks.
 
 ### Summary
-- Use `devShells.full` for out-of-the-box VS Code integration.
-- Use `build.unifiedTexShell` and `build.vscodeSettingsShell` for composable, editor-agnostic shells.
+- Use `config.devShells.latex-utils` for out-of-the-box VS Code integration.
+- Use `config.latex-utils.unifiedTexShell` and `config.latex-utils.vscodeShell` for composable, editor-agnostic shells.
 - Control VS Code integration with `enableVSCode`.
 
 ## Manual IDE Integration Setup
@@ -169,9 +169,3 @@ Some LaTeX packages require specific nixpkgs package names:
 | `\usepackage{tikz}` | `pgf` | TikZ is part of PGF package |
 
 The unified environment handles these mappings automatically when specified in `extraTexPackages`.
-
-## Package Name to Derivation Mapping
-
-The unified environment handles these mappings automatically when specified in `extraTexPackages` as strings.
-
-Common mappings include: 

@@ -17,7 +17,7 @@ in {
   # Purpose: Verifies that the module configuration structure allows `extraTexPackages`
   #          to be set even when the `documents` list is empty.
   # Note: This test checks the configuration structure, not the final package resolution.
-  modulePackagesWithNoDocuments = {
+  testModulePackagesWithNoDocuments = {
     expr = let
       config = {
         latex-utils = {
@@ -35,7 +35,7 @@ in {
   # Purpose: Verifies that the module configuration structure allows `extraTexPackages`
   #          at both the top module level and per-document.
   # Note: This test checks the configuration structure, not the final package resolution or merging.
-  moduleAndDocumentPackagesConfigured = {
+  testModuleAndDocumentPackagesConfigured = {
     expr = let
       config = {
         latex-utils = {
@@ -61,7 +61,7 @@ in {
   # Purpose: Verifies that the `extraTexPackages` option at the module level
   #          can accept a function (e.g., to conditionally include packages based on discovered ones).
   # Note: This test checks if the config accepts a function, not the function's evaluation result.
-  moduleFunctionPackagesAccepted = {
+  testModuleFunctionPackagesAccepted = {
     expr = let
       config = {
         latex-utils = {
@@ -79,24 +79,24 @@ in {
   # Purpose: Verifies that the configuration structure accepts TeX Live derivations directly
   #          for `extraTexPackages` at both module and document levels.
   # Note: This primarily tests config acceptance. Actual normalization logic is tested elsewhere.
-  preNormalizedPackagesAccepted = {
+  testPreNormalizedPackagesAccepted = {
     expr = let
       config = {
         latex-utils = {
-          extraTexPackages = [pkgs.texlive.amsmath]; # Pre-normalized derivation
+          extraTexPackages = [pkgs.texlive.amsmath]; # Pre-normalized TeX Live package object
           documents = [
             {
               name = "test.pdf";
               src = minimalTex "testDoc2";
-              extraTexPackages = [pkgs.texlive.xcolor]; # Pre-normalized derivation
+              extraTexPackages = [pkgs.texlive.xcolor]; # Pre-normalized TeX Live package object
             }
           ];
         };
       };
     in
-      # Assertion checks if the first module-level package is a derivation.
-      lib.isDerivation (builtins.head config.latex-utils.extraTexPackages)
-      && lib.isDerivation (builtins.head (builtins.head config.latex-utils.documents).extraTexPackages);
+      # Assertion checks if the first module-level package is an attribute set (TeX Live package object).
+      builtins.isAttrs (builtins.head config.latex-utils.extraTexPackages)
+      && builtins.isAttrs (builtins.head (builtins.head config.latex-utils.documents).extraTexPackages);
     expected = true;
   };
 }

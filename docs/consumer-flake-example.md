@@ -93,14 +93,14 @@
             config.mission-control.devShell
             config.pre-commit.devShell
             config.treefmt.build.devShell
-            config.latex-utils.devShells.full  # 🎉 One line replaces all the manual setup!
+            config.devShells.latex-utils  # 🎉 One line replaces all the manual setup!
           ];
         };
         # To compose your own shell fragment(s):
         # devShells.myCustom = pkgs.mkShell {
         #   inputsFrom = [
-        #     config.latex-utils.build.unifiedTexShell
-        #     config.latex-utils.build.vscodeSettingsShell # Optional: links VS Code settings
+        #     config.latex-utils.unifiedTexShell
+        #     config.latex-utils.vscodeShell # Optional: adds VS Code integration
         #   ];
         #   buildInputs = [ /* your extra tools */ ];
         # };

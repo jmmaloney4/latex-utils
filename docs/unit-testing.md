@@ -4,6 +4,18 @@
 
 This project uses **nix-unit** for regression and property-based testing of Nix code. Tests are located in the `tests/` directory and are run via `nix flake check`.
 
+## Important: nix-unit Test Naming Convention
+
+**⚠️ Critical:** nix-unit only recognizes and runs tests whose attribute names start with "test". This follows the same convention as `lib.debug.runTests` from nixpkgs.
+
+**Examples:**
+- ✅ `testBasic` - Will run
+- ✅ `testListOfStrings` - Will run  
+- ❌ `basic` - Will be ignored
+- ❌ `listOfStrings` - Will be ignored
+
+If your tests aren't running, check that all test attribute names start with "test".
+
 ## Types of Tests
 
 - **Library/Helper Tests**: For pure Nix functions in `lib/`. These are written as Nix expressions that return an attribute set of `{ expr, expected }` pairs.
@@ -15,6 +27,7 @@ This project uses **nix-unit** for regression and property-based testing of Nix 
 
 - Import the function directly from `lib/`.
 - Write assertions as `{ expr = ...; expected = ...; }` or as plain boolean expressions.
+- **Always prefix test names with "test"**
 - Example:
 
   ```nix
@@ -22,9 +35,14 @@ This project uses **nix-unit** for regression and property-based testing of Nix 
   let
     findLatexPackages = import ../lib/findLatexPackages.nix { inherit pkgs lib; };
   in {
-    basic = {
+    testBasic = {
       expr = builtins.attrNames (findLatexPackages { fileContents = "\\usepackage{foo,bar}"; });
       expected = ["bar" "foo"];
+    };
+    
+    testEmptyInput = {
+      expr = builtins.attrNames (findLatexPackages { fileContents = ""; });
+      expected = [];
     };
   }
   ```
@@ -43,7 +61,7 @@ This project uses **nix-unit** for regression and property-based testing of Nix 
     outputs = import ./test-flake-helpers.nix { inherit flake system; };
     fullShell = outputs.devShells.full;
   in {
-    test_fullShell_is_package = lib.isDerivation fullShell;
+    testFullShellIsPackage = lib.isDerivation fullShell;
   }
   ```
 
@@ -113,7 +131,8 @@ in {
 ### 4. **General Guidelines**
 
 - Place all tests in the `tests/` directory.
-- Use descriptive attribute names for each test.
+- **Use test names that start with "test"** - this is required for nix-unit to recognize them.
+- Use descriptive attribute names for each test after the "test" prefix (e.g., `testBasicPackageExtraction`).
 - For tests that should only run on Linux (not Darwin), use a conditional on `pkgs.stdenv.isDarwin`.
 - If you need to test a function that expects a flake-parts context, always go through the test harness flake outputs using the helper.
 
@@ -135,9 +154,11 @@ This will build and run the nix-unit test suite for your current system.
 
 ## Troubleshooting
 
+- **Tests not running / "🎉 0/0 successful"**: Check that all your test attribute names start with "test". nix-unit ignores tests that don't follow this naming convention.
 - **"The option `perSystem` does not exist"**: You are trying to use `lib.evalModules` on a flake-parts module. Rewrite your test to access outputs from the test harness flake using the helper as shown above.
 - **"function 'outputs' called without required argument 'nixpkgs'"**: You are calling the outputs function without all required arguments. Use the helper to pass all necessary arguments.
 - **Infinite recursion**: This can happen if you try to build a derivation that depends on the flake's own outputs. Avoid circular dependencies in tests.
+- **"attribute 'drvPath' missing"**: This usually means you're trying to call a `builds` helper function on TeX Live package objects instead of derivations. Use the proper `builds` helper that handles both derivations and TeX Live package objects.
 
 ## See Also
 

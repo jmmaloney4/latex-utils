@@ -1,7 +1,8 @@
 # ADR 005: Refined `latex-utils` Module API for DevShells and Fragments
 
-**Status:** Proposed
-**Date:** 2024-05-16
+**Status:** Implemented  
+**Date:** 2024-05-16  
+**Implementation Date:** 2025-06-04  
 **Author:** AI Agent & User
 
 ---
@@ -61,6 +62,242 @@ The `latex-utils` module will define options that, once configured (often with d
 *   It avoids polluting the top-level `config.build` or other standard flake-parts outputs with shell fragments.
 *   `config.devShells.latex-utils` remains the standard way to access the primary, complete devShell provided by the module.
 
+## ReadOnly Option Configuration
+
+### Required: `readOnly = true` for Fragment Options
+
+The exported devshell fragment options (`unifiedTexShell` and `vscodeShell`) **must** be marked with `readOnly = true` in their option definitions. This is a critical aspect of the API design that ensures proper usage patterns.
+
+**Implementation Pattern:**
+```nix
+perSystem = flake-parts-lib.mkPerSystemOption {
+  options.latex-utils = {
+    unifiedTexShell = lib.mkOption {
+      type = lib.types.package;
+      description = "Composable devshell fragment with unified TeX Live environment";
+      readOnly = true;  # ← Required
+    };
+
+    vscodeShell = lib.mkOption {
+      type = lib.types.package;
+      description = "Composable devshell fragment with TeX environment + VSCode integration";
+      readOnly = true;  # ← Required
+    };
+  };
+};
+```
+
+### What `readOnly = true` Means
+
+In the NixOS module system (which flake-parts uses), `readOnly = true` indicates that:
+
+1. **These options represent computed outputs** - They are derivations produced by the module based on its configuration, rather than values that users should directly assign.
+
+2. **Users cannot override these values** - Any attempt to set these options directly will result in a module system error, preventing misuse.
+
+3. **The module controls their values exclusively** - Only the module itself, in its `config` section, should provide values for these options.
+
+4. **External access is intended for consumption, not configuration** - Users and tests can access these derivations via `config.latex-utils.*` (within perSystem) or `outputs.latex-utils.${system}.*` (externally) for composition via `inputsFrom`, but should not attempt to redefine them.
+
+### Why `readOnly = true` is Essential
+
+**Prevents Misconfiguration:**
+- Users might attempt to override these with incompatible shell definitions, breaking the module's intended behavior.
+- Ensures that the module's logic for package discovery, normalization, and environment building is respected.
+
+**Follows Established Patterns:**
+- This pattern is used by other flake-parts modules like `mission-control`, which marks its computed `devShell` option as `readOnly = true`.
+- Aligns with the principle that computed outputs should be distinguished from configurable inputs.
+
+**Clarifies API Intent:**
+- Makes it explicit that these are **outputs** of the module, not **inputs** to be configured.
+- Encourages the correct usage pattern: configure the module-level options (like `documents`, `extraTexPackages`, `enableVSCode`) and then consume the resulting shell fragments.
+
+**Example of Correct Usage:**
+```nix
+# In a user's flake.nix
+{
+  imports = [ inputs.latex-utils.flakeModules.default ];
+  
+  # Configure the module
+  latex-utils = {
+    documents = [ { name = "paper.pdf"; src = ./.; } ];
+    extraTexPackages = [ "amsmath" "graphicx" ];
+  };
+  
+  # Consume the computed fragments
+  perSystem = { config, ... }: {
+    devShells.my-custom = pkgs.mkShell {
+      inputsFrom = [ config.latex-utils.vscodeShell ];
+      buildInputs = [ pkgs.my-additional-tool ];
+    };
+  };
+}
+```
+
+This approach ensures that the module's complex logic for LaTeX package discovery, TeX Live environment construction, and VSCode integration remains encapsulated and reliable, while still providing flexible composition points for users.
+
+## Complete Module Options API Specification
+
+The `latex-utils` module provides a carefully structured API that distinguishes between **module-level configuration options** (which are global to the module and not per-system) and **per-system derivations** (which are built for each system and available as flake outputs).
+
+### Module-Level Options (Not Per-System)
+
+These options configure the overall behavior of the `latex-utils` module and are **not** tied to specific systems. They are defined using standard NixOS module system patterns.
+
+#### `latex-utils.documents`
+- **Type:** `listOf docType` 
+- **Default:** `[]`
+- **Description:** List of LaTeX documents to build as packages
+- **Per-System:** ❌ No - this is a module-level configuration
+- **Access Pattern:** Available globally in the module configuration
+- **Example:** 
+  ```nix
+  latex-utils.documents = [
+    {
+      name = "paper.pdf";
+      src = ./.;
+      inputFile = "main.tex";
+      extraTexPackages = ["amsmath"];
+    }
+  ];
+  ```
+
+#### `latex-utils.extraTexPackages`
+- **Type:** `extraTexPackagesType` (same as document-level)
+- **Default:** `[]`
+- **Description:** Extra TeX Live packages to include for ALL documents and environments
+- **Per-System:** ❌ No - applies globally to all documents across all systems
+- **Access Pattern:** Available globally in the module configuration
+- **Example:**
+  ```nix
+  latex-utils.extraTexPackages = ["amsmath" "geometry" "hyperref"];
+  ```
+
+#### `latex-utils.enableVSCode`
+- **Type:** `bool`
+- **Default:** `true`
+- **Description:** Whether to enable VS Code integration in devShells
+- **Per-System:** ❌ No - this is a module-level feature flag
+- **Access Pattern:** Controls behavior across all systems
+
+#### `latex-utils.flakeFormatter`
+- **Type:** `bool`
+- **Default:** `false`
+- **Description:** Whether to provide a flake formatter for .tex files
+- **Per-System:** ❌ No - this is a module-level feature flag
+
+#### `latex-utils.flakeCheck`
+- **Type:** `bool`
+- **Default:** `false`
+- **Description:** Whether to enable a flake check that rebuilds all PDFs
+- **Per-System:** ❌ No - this is a module-level feature flag
+
+### Per-System Options and Derivations
+
+These are defined using `flake-parts-lib.mkPerSystemOption` and follow the flake-parts convention of being system-specific. They use `mkTransposedPerSystemModule` pattern internally, meaning they're accessible both within `perSystem` contexts and as final flake outputs.
+
+#### `latex-utils.unifiedTexShell`
+- **Type:** `package` (derivation)
+- **Description:** Composable devshell fragment with unified TeX Live environment
+- **Per-System:** ✅ Yes - built for each system
+- **Access Patterns:**
+  - **Within perSystem:** `config.latex-utils.unifiedTexShell`
+  - **Final flake output:** `outputs.latex-utils.${system}.unifiedTexShell`
+  - **Tests:** `outputs.latex-utils.x86_64-linux.unifiedTexShell`
+- **Implementation:** Uses `flake-parts-lib.mkPerSystemOption` and transposition
+- **Contents:** Unified TeX Live environment, ltex-ls wrapped, latexmk
+
+#### `latex-utils.vscodeShell`
+- **Type:** `package` (derivation)
+- **Description:** Composable devshell fragment with TeX environment + VSCode integration
+- **Per-System:** ✅ Yes - built for each system 
+- **Access Patterns:**
+  - **Within perSystem:** `config.latex-utils.vscodeShell`
+  - **Final flake output:** `outputs.latex-utils.${system}.vscodeShell`
+  - **Tests:** `outputs.latex-utils.x86_64-linux.vscodeShell`
+- **Implementation:** Uses `flake-parts-lib.mkPerSystemOption` and transposition
+- **Composition:** Includes `unifiedTexShell` via `inputsFrom` plus VSCode settings
+
+#### `devShells.latex-utils`
+- **Type:** `package` (derivation)  
+- **Description:** Complete, ready-to-use devshell
+- **Per-System:** ✅ Yes - built for each system
+- **Access Patterns:**
+  - **Within perSystem:** `config.devShells.latex-utils`
+  - **Final flake output:** `outputs.devShells.${system}.latex-utils`
+  - **User activation:** `nix develop .#latex-utils`
+- **Implementation:** Uses standard flake-parts `devShells` transposition
+- **Composition:** Composed from `vscodeShell` when `enableVSCode` is true
+
+### Document-Level Options (Nested Configuration)
+
+Each document in `latex-utils.documents` has its own sub-options:
+
+#### `documents.*.name`
+- **Type:** `str`
+- **Description:** Name of the output PDF/package
+- **Example:** `"my-paper.pdf"`
+
+#### `documents.*.src`
+- **Type:** `path`
+- **Description:** Source directory for the LaTeX document
+- **Example:** `./my-paper`
+
+#### `documents.*.inputFile`
+- **Type:** `str`
+- **Default:** `"main.tex"`
+- **Description:** Main .tex file (relative to src)
+
+#### `documents.*.workingDirectory`
+- **Type:** `str`
+- **Default:** `"."`
+- **Description:** Working directory within src for the LaTeX document
+
+#### `documents.*.extraTexPackages`
+- **Type:** `extraTexPackagesType`
+- **Default:** `[]`
+- **Description:** Document-specific TeX Live packages (merged with module-level packages)
+
+### Implementation Details: How Per-System Options Work
+
+The per-system options (`unifiedTexShell`, `vscodeShell`) are implemented using flake-parts' transposition mechanism:
+
+1. **Option Definition:** Uses `flake-parts-lib.mkPerSystemOption` to define the option that can be configured within each system's context.
+
+2. **Transposition Registration:** The module registers these options with the transposition system via `config.transposition.latex-utils = {};`.
+
+3. **Automatic Output Generation:** Flake-parts automatically creates the final outputs:
+   - `outputs.latex-utils.${system}.unifiedTexShell`
+   - `outputs.latex-utils.${system}.vscodeShell`
+
+4. **Config Access:** Within `perSystem` contexts, these are available as:
+   - `config.latex-utils.unifiedTexShell`
+   - `config.latex-utils.vscodeShell`
+
+This pattern ensures that:
+- Each system gets its own correctly-built derivations
+- The options are composable within `perSystem` contexts
+- The outputs are externally accessible for testing and consumption
+- The API is consistent with flake-parts conventions
+
+**Note on Standard flake-parts Outputs:** The `devShells.latex-utils` follows the standard flake-parts pattern for `devShells` and doesn't require custom transposition since `devShells` is already a standard per-system output in flake-parts.
+
+### Defining Per-System Options Idiomatically with `mkPerSystemOption`
+
+Further investigation into common practices within the flake-parts ecosystem, notably in projects like `numtide/treefmt-nix` and `Platonic-Systems/mission-control`, reveals a preferred idiom for defining options that are intended to be part of the `perSystem` configuration.
+
+**Why perSystem Options Are Needed for These Features**
+
+The features described in this ADR—composable devshell fragments (`unifiedTexShell`, `vscodeShell`) and a complete devshell (`devShells.latex-utils`)—must be defined as per-system options for several reasons:
+
+- **System-Specific Derivations:** Nix derivations (such as shells and shell fragments) are system-dependent. The available packages, binaries, and environment setup can differ between systems (e.g., `x86_64-linux` vs. `aarch64-darwin`). Defining these as perSystem options ensures each system receives the correct, compatible derivation.
+- **Flake-parts Output Mapping:** Flake-parts collects perSystem options and maps them to the final flake outputs under the appropriate system key (e.g., `outputs.latex-utils.x86_64-linux.unifiedTexShell`). This enables users and tests to access the correct shell for their platform.
+- **Composability and Idiomatic Usage:** By defining shell fragments and devshells as perSystem options, they can be easily composed using `inputsFrom` within the same system context, and users can reliably reference them in their own `perSystem` blocks.
+- **Isolation and Reproducibility:** Per-system scoping prevents accidental cross-system contamination and ensures that each system's environment is built and tested in isolation, which is critical for reproducible development environments.
+
+In summary, perSystem options are the idiomatic and technically necessary way to provide system-aware, composable, and externally accessible devshell fragments and complete shells in the flake-parts ecosystem.
+
 ### Unit Testing Strategy (Aligning with ADR 004)
 
 Unit tests for these outputs will adhere to the pattern established in ADR 004:
@@ -86,7 +323,7 @@ This approach ensures that the module's outputs are tested in a context that mir
 
 ### Consequences
 
-*   **Module Implementation (`modules/latex-utils.nix`):**
+*   **Module Implementation (`modules/latex-utils.nix`)**
     *   The current `build.unifiedTexShell` option/output will be moved/renamed to `latex-utils.unifiedTexShell`.
     *   The current `build.vscodeSettingsShell` option/output will be moved/renamed to `latex-utils.vscodeShell`, and it will be updated to ensure it transitively includes `unifiedTexShell`'s environment.
     *   The current `devShells.full` will be renamed to `devShells.latex-utils` and updated to use `config.latex-utils.vscodeShell` via `inputsFrom`.

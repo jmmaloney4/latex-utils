@@ -77,7 +77,7 @@ If you do not follow this pattern, you will get errors like `attribute 'build' m
 **For every LLM-driven change:**
 
 - BEFORE committing, ensure that `docs/agent_logs/<TIMESTAMP>-<agent_id>.md` exists OR that `docs/AGENT_CHANGELOG.md` was appended with a valid entry
-- Timestamps must be in UTC format with Z suffix (e.g., 2025-06-03T06:00:00Z)
+- Timestamps must be in UTC format with Z suffix (e.g., 2025-06-03T06:00:00Z). **This timestamp should be generated and used directly (e.g., in memory or as a shell variable) without creating any separate or temporary timestamp files in the project root or elsewhere.**
 - If missing or malformed, the draft will be flagged: ⚠️ Missing or invalid changelog entry
 
 **Changelog Protection:**

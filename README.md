@@ -7,6 +7,7 @@
 ## Table of Contents
 - [Features](#features)
 - [Quickstart](#quickstart)
+- [Composable Development Environments](#composable-development-environments)
 - [Automatic Package Discovery](#automatic-package-discovery)
 - [Module-Level Extra Packages](#module-level-extra-packages)
 - [Usage Details](#usage-details)
@@ -31,6 +32,7 @@
 - **Extensible**: Add more options as needed.
 - **Unified TeX Live environment**: Single TeX installation with all packages for IDE integration.
 - **VSCode integration**: Automatic LaTeX Workshop and LTeX-LS configuration.
+- **Composable shell fragments**: Mix and match TeX environment and IDE integration as needed.
 
 ---
 
@@ -69,8 +71,9 @@
              inputFile = "slides.tex";
            }
          ];
-         # Optionally, re-export the dev shell for convenience
-         devShells.default = config.latex-utils.devShells.default;
+         
+         # Use the ready-to-go devShell with VSCode integration
+         devShells.default = config.devShells.latex-utils;
        };
      };
    # ...
@@ -84,7 +87,147 @@
    nix build .#default  # builds the first document in your list
    ```
 
-   **That's it!** latex-utils automatically scans your `.tex` files for `\usepackage{...}` commands and includes the required TeX Live packages. No manual package management needed.
+4. **Enter the development environment**
+
+   ```sh
+   nix develop          # Uses your default shell
+   nix develop .#latex-utils  # Directly use the latex-utils shell
+   ```
+
+   **That's it!** latex-utils automatically scans your `.tex` files for `\usepackage{...}` commands and includes the required TeX Live packages. The development shell includes VSCode integration with LaTeX Workshop and LTeX-LS configured automatically.
+
+---
+
+## 🔧 Composable Development Environments
+
+latex-utils provides **composable shell fragments** that you can mix and match to create custom development environments tailored to your needs.
+
+### Available Shell Components
+
+| Component | Access Path | Description |
+|-----------|------------|-------------|
+| **Unified TeX Shell** | `config.latex-utils.unifiedTexShell` | Basic TeX Live environment with all packages, latexmk, and ltex-ls |
+| **VSCode Shell** | `config.latex-utils.vscodeShell` | TeX environment + VSCode settings integration |
+| **Complete DevShell** | `config.devShells.latex-utils` | Ready-to-use shell (uses VSCode shell when enabled) |
+
+### Usage Patterns
+
+#### 1. Use the Complete DevShell (Recommended)
+
+For most users, simply use the provided complete devshell:
+
+```nix
+perSystem = { config, ... }: {
+  # Configure your documents
+  latex-utils.documents = [ /* ... */ ];
+  
+  # Use the complete shell as your default
+  devShells.default = config.devShells.latex-utils;
+};
+```
+
+Then run: `nix develop`
+
+#### 2. Compose Your Own Shell with TeX Environment Only
+
+If you don't want VSCode integration:
+
+```nix
+perSystem = { config, pkgs, ... }: {
+  # Configure your documents  
+  latex-utils.documents = [ /* ... */ ];
+  
+  # Disable VSCode integration
+  latex-utils.enableVSCode = false;
+  
+  # Create custom shell with just TeX environment
+  devShells.my-latex = pkgs.mkShell {
+    inputsFrom = [ config.latex-utils.unifiedTexShell ];
+    buildInputs = [ pkgs.git pkgs.my-custom-tool ];
+    shellHook = ''
+      echo "Custom LaTeX environment ready!"
+    '';
+  };
+};
+```
+
+#### 3. Extend the VSCode Shell
+
+Add your own tools to the VSCode-integrated environment:
+
+```nix
+perSystem = { config, pkgs, ... }: {
+  # Configure your documents
+  latex-utils.documents = [ /* ... */ ];
+  
+  # Extend the VSCode shell with additional tools
+  devShells.extended-latex = pkgs.mkShell {
+    inputsFrom = [ config.latex-utils.vscodeShell ];
+    buildInputs = [ 
+      pkgs.pandoc       # Document conversion
+      pkgs.imagemagick  # Image processing
+      pkgs.inkscape     # Vector graphics
+    ];
+    shellHook = ''
+      echo "Extended LaTeX + VSCode environment with extra tools!"
+    '';
+  };
+};
+```
+
+#### 4. Multiple Specialized Shells
+
+Create different shells for different workflows:
+
+```nix
+perSystem = { config, pkgs, ... }: {
+  latex-utils.documents = [ /* ... */ ];
+  
+  devShells = {
+    # Minimal TeX-only shell
+    tex-only = pkgs.mkShell {
+      inputsFrom = [ config.latex-utils.unifiedTexShell ];
+    };
+    
+    # Full IDE-integrated shell
+    ide = pkgs.mkShell {
+      inputsFrom = [ config.latex-utils.vscodeShell ];
+    };
+    
+    # Writing shell with additional tools
+    writing = pkgs.mkShell {
+      inputsFrom = [ config.latex-utils.vscodeShell ];
+      buildInputs = [ pkgs.aspell pkgs.languagetool ];
+    };
+    
+    # Presentation shell
+    slides = pkgs.mkShell {
+      inputsFrom = [ config.latex-utils.unifiedTexShell ];
+      buildInputs = [ pkgs.pdf2svg pkgs.poppler_utils ];
+    };
+  };
+};
+```
+
+Then use: `nix develop .#tex-only`, `nix develop .#writing`, etc.
+
+### Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `latex-utils.enableVSCode` | `bool` | `true` | Enable VSCode integration in devShells |
+| `latex-utils.documents` | `list` | `[]` | List of LaTeX documents to build |
+| `latex-utils.extraTexPackages` | `list/function` | `[]` | Extra TeX packages for all documents |
+
+### External Access (for Testing/Integration)
+
+The shell fragments are also available as flake outputs for external consumption:
+
+```bash
+# Access shell fragments externally
+nix develop github:jmmaloney4/latex-utils#latex-utils.x86_64-linux.unifiedTexShell
+nix develop github:jmmaloney4/latex-utils#latex-utils.x86_64-linux.vscodeShell
+```
 
 ---
 
@@ -493,21 +636,17 @@ The function receives an attrset of discovered packages (as derivations) and mus
 
 ## Unified TeX Live Environment for IDE Integration
 
-When you define multiple LaTeX documents with different package requirements, latex-utils automatically creates a **unified TeX Live environment** containing all packages needed by all your documents. This environment is exposed as additional packages and three dev shell fragments:
+When you define multiple LaTeX documents with different package requirements, latex-utils automatically creates a **unified TeX Live environment** containing all packages needed by all your documents. This environment is exposed as additional packages and three dev shell components:
 
-- `config.latex-utils.build.unifiedTexShell`: composable shell fragment with unified TeX Live + helpers (no VS Code integration)
-- `config.latex-utils.build.vscodeSettingsShell`: composable shell fragment that links VS Code settings.json (for use in custom shells)
-- `devShells.full`: a turn-key shell with VS Code integration (enabled by default)
+- `config.latex-utils.unifiedTexShell`: composable shell fragment with unified TeX Live + helpers (no VS Code integration)
+- `config.latex-utils.vscodeShell`: composable shell fragment that includes TeX environment + links VS Code settings.json
+- `config.devShells.latex-utils`: a complete shell with VS Code integration (enabled by default)
 
 ### Quick Setup
 
-To use the turn-key VS Code shell (recommended for most users):
+To use the complete VS Code shell (recommended for most users):
 ```nix
-devShells.full = config.latex-utils.devShells.full;
-```
-Or, to make it your default shell:
-```nix
-devShells.default = config.latex-utils.devShells.full;
+devShells.default = config.devShells.latex-utils;
 ```
 
 #### Disabling VS Code Integration
@@ -523,14 +662,14 @@ If you want to compose your own shell, you can use either or both fragments:
 ```nix
 devShells.myCustomShell = pkgs.mkShell {
   inputsFrom = [
-    config.latex-utils.build.unifiedTexShell
-    config.latex-utils.build.vscodeSettingsShell # Optional: links VS Code settings
+    config.latex-utils.unifiedTexShell
+    config.latex-utils.vscodeShell # Optional: adds VS Code integration
   ];
   buildInputs = [ pkgs.pandoc ];
 };
 ```
 - Use only `unifiedTexShell` for a pure TeX environment (no VS Code integration).
-- Add `vscodeSettingsShell` to also link `.vscode/settings.json` in your custom shell.
+- Add `vscodeShell` to also get VS Code integration in your custom shell.
 
 See [docs/advanced/devshells.md](docs/advanced/devshells.md) for more patterns and details.
 
@@ -590,9 +729,12 @@ To ensure fast, reliable, and reproducible font discovery for LuaLaTeX and XeLaT
         ];
 
         # Use the unified VSCode dev shell provided by latex-utils
-        devShells.full = config.latex-utils.devShells.full;
-        # Or if you prefer a named shell:
-        # devShells.latex = config.latex-utils.devShells.default;
+        devShells.default = config.devShells.latex-utils;
+        # Or create your own composition:
+        # devShells.my-latex = pkgs.mkShell {
+        #   inputsFrom = [ config.latex-utils.vscodeShell ];
+        #   buildInputs = [ pkgs.pandoc ];
+        # };
       };
     };
 }

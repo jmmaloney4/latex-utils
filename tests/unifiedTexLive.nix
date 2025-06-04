@@ -6,8 +6,9 @@
   createTexFile = content: filename:
     pkgs.writeTextDir filename content;
 
-  # Helper to check if a derivation exists and can be built
-  builds = drv: drv.drvPath != null;
+  # Import shared test helpers
+  testHelpers = import ../lib/testHelpers.nix {inherit pkgs lib;};
+  inherit (testHelpers) builds;
 
   # Import helper functions used by the module
   findLatexFiles = import ../lib/findLatexFiles.nix {inherit pkgs lib;};
@@ -33,7 +34,7 @@
     src = createTexFile ''
       \documentclass{article}
       \usepackage{amsmath}
-      \usepackage{tikz}
+      \usepackage{tikz} % CTAN: pgf
       \begin{document}
       \begin{equation} x = 1 \end{equation}
       \begin{tikzpicture}\draw (0,0) -- (1,1);\end{tikzpicture}
@@ -117,7 +118,7 @@
 in
   if isDarwin
   then {
-    skipped = {
+    testSkipped = {
       expr = true;
       expected = true;
       reason = "Skipped on Darwin: builtins.readDir on store paths is not supported (diverted store error)";
@@ -126,7 +127,7 @@ in
   else {
     # Test: Collection of all explicitly defined `extraTexPackages` from multiple documents.
     # Purpose: Verifies that `extraTexPackages` from all document definitions are aggregated correctly before further processing.
-    extraPackageCollection = {
+    testExtraPackageCollection = {
       expr = lib.lists.sort builtins.lessThan allExtraTexPackages;
       expected = ["amsmath" "jknapltx" "pgf" "xcolor"]; # Removed "rsfs"
     };
@@ -134,32 +135,32 @@ in
     # Test: Discovery of packages from the LaTeX source files of multiple documents.
     # Purpose: Verifies that `findLatexPackages` correctly identifies packages used in the .tex files.
     # Discovered from testDoc1: xcolor # Removed mathrsfs
-    # Discovered from testDoc2: amsmath, tikz
-    packageDiscovery = {
+    # Discovered from testDoc2: amsmath, pgf (via tikz CTAN mapping)
+    testPackageDiscovery = {
       expr = let
         discoveredNames = builtins.attrNames allDiscoveredPackages;
       in
         lib.lists.sort builtins.lessThan discoveredNames;
-      expected = lib.lists.sort builtins.lessThan ["amsmath" "tikz" "xcolor"]; # Removed "mathrsfs"
+      expected = lib.lists.sort builtins.lessThan ["amsmath" "pgf" "xcolor"]; # tikz maps to pgf via CTAN comment
     };
 
     # Test: Buildability of the combined TeX Live environment.
     # Purpose: Ensures that the `pkgs.texlive.combine` operation with all collected and discovered packages results in a valid derivation.
-    unifiedTexLiveBuilds = {
+    testUnifiedTexLiveBuilds = {
       expr = builds unifiedTexEnv;
       expected = true;
     };
 
     # Test: Buildability of the latexmk wrapper script.
     # Purpose: Verifies that the generated wrapper script for latexmk, which uses the unified TeX environment, is a valid derivation.
-    latexmkWrapperBuilds = {
+    testLatexmkWrapperBuilds = {
       expr = builds latexmkWrapper;
       expected = true;
     };
 
     # Test: Presence of specific expected packages in the `unifiedTexPackages` attribute set.
     # Purpose: Confirms that key packages (from base, discovered, and extra) are part of the input to `pkgs.texlive.combine`.
-    unifiedContainsPackages = {
+    testUnifiedContainsPackages = {
       expr = let
         hasPackage = pkg: builtins.hasAttr pkg unifiedTexPackages;
       in
@@ -170,7 +171,7 @@ in
     # Test: Buildability of individual documents using a pre-compiled unified package set.
     # Purpose: Verifies that individual documents can be built using the locally defined `mkDoc` which is passed the `texPackages`
     #          (allDiscoveredPackages // extraTexPackagesAttrs), simulating how a per-document build might use a shared environment.
-    documentsWithUnifiedPackagesBuild = {
+    testDocumentsWithUnifiedPackagesBuild = {
       expr = builds (mkDoc testDoc1) && builds (mkDoc testDoc2);
       expected = true;
     };
@@ -182,7 +183,7 @@ in
     # This test, as written, checks `allExtraTexPackages` where `xcolor` appears once due to its definition.
     # A better test for deduplication would be to have input to `lib.lists.unique` with actual duplicates.
     # For now, it verifies `xcolor` (from doc1) is present once in the already unique list.
-    extraPackageDeduplication = {
+    testExtraPackageDeduplication = {
       expr = let
         xcolorCount = lib.lists.count (x: x == "xcolor") allExtraTexPackages;
       in
@@ -190,23 +191,23 @@ in
       expected = 1; # xcolor is in testDoc1.extraTexPackages
     };
 
-    # Test: Check the `pname` of the unified TeX Live environment derivation.
+    # Test: Check the `name` of the unified TeX Live environment derivation.
     # Purpose: Verifies that the result of `pkgs.texlive.combine` has the expected package name, indicating it's a combined derivation.
-    unifiedEnvironmentType = {
-      expr = unifiedTexEnv.pname or "";
-      expected = "texlive-combined";
+    testUnifiedEnvironmentType = {
+      expr = unifiedTexEnv.name or "";
+      expected = "texlive-combined-2024";
     };
 
-    # Test: Check the `pname` of the latexmk wrapper derivation.
+    # Test: Check the `name` of the latexmk wrapper derivation.
     # Purpose: Verifies that the generated shell script for latexmk has the expected package name.
-    latexmkWrapperType = {
-      expr = latexmkWrapper.pname or "";
+    testLatexmkWrapperType = {
+      expr = latexmkWrapper.name or "";
       expected = "latexmk";
     };
 
     # Test: Handling of an empty document list for `extraTexPackages` collection.
     # Purpose: Verifies that the package collection logic gracefully handles cases with no documents defined.
-    emptyDocumentHandlingForExtras = {
+    testEmptyDocumentHandlingForExtras = {
       expr = let
         emptyExtraPackages = lib.lists.unique (
           lib.lists.flatten (map (doc: doc.extraTexPackages) [])
@@ -219,12 +220,12 @@ in
     # Test: Correct merging of discovered packages and explicit `extraTexPackages`.
     # Purpose: Verifies that the final set of package names provided to `pkgs.texlive.combine` (via `allDiscoveredPackages // extraTexPackagesAttrs`)
     #          contains all unique package names from both sources.
-    mixedDiscoveredAndExtraPackageNames = {
+    testMixedDiscoveredAndExtraPackageNames = {
       expr = let
         combinedPackages = allDiscoveredPackages // extraTexPackagesAttrs;
         packageNames = lib.lists.sort builtins.lessThan (builtins.attrNames combinedPackages);
       in
         packageNames;
-      expected = lib.lists.sort builtins.lessThan ["amsmath" "jknapltx" "pgf" "tikz" "xcolor"]; # Removed "mathrsfs"
+      expected = lib.lists.sort builtins.lessThan ["amsmath" "jknapltx" "pgf" "xcolor"]; # pgf appears from both discovery and extra
     };
   }
