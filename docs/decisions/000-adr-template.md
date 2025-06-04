@@ -1,0 +1,10 @@
+# [ADR-XXX: Short Title of Decision]
+
+- **Status**: [Proposed | Accepted | Deprecated | Superseded by ADR-YYY]
+- **Date**: [YYYY-MM-DD]
+- **Context**: [Describe the context and problem motivating this decision. What issue needs tobe addressed? What are the constraints and assumptions?]
+- **Decision**: [Describe the chosen solution. What is the change being proposed or implemented?]
+- **Consequences**: [What are the positive and negative consequences of this decision? Consider technical, operational, and strategic impacts.]
+- **Alternatives Considered**: [List other options considered and why they were not chosen.]
+- **Technical Details**: [Optional: Include diagrams, code snippets, or references to specific implementations.]
+- **References**: [Optional: Links to relevant issues, PRs, documentation, or external resources.] 
