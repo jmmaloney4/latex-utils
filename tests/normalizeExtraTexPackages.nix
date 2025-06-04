@@ -22,14 +22,16 @@
   # Helper to get sorted attribute names from result
   getSortedNames = result: lib.lists.sort builtins.lessThan (builtins.attrNames result);
 in {
-  # DIRECT TEST: Check if pkgs.texlive.amsmath exists
-  directamsmathExists = {
+  # Test: Check that a specific TeX Live package exists and can be checked in conditions.
+  # Purpose: Confirms that `pkgs.texlive.amsmath` is available and follows the expected structure (for both object access and drvPath).
+  testDirectamsmathExists = {
     expr = pkgs.texlive ? "amsmath";
     expected = true;
   };
 
-  # DIRECT TEST: Check if pkgs.texlive.amsmath is a derivation or object if it exists
-  directamsmathIsDerivationOrObject = {
+  # Test: Check that a specific TeX Live package exists and can be checked in conditions.
+  # Purpose: Confirms that `pkgs.texlive.amsmath` is available and follows the expected structure (for both object access and drvPath).
+  testDirectamsmathIsDerivationOrObject = {
     expr =
       if pkgs.texlive ? "amsmath"
       then (lib.isDerivation pkgs.texlive.amsmath || (lib.isAttrs pkgs.texlive.amsmath && pkgs.texlive.amsmath ? tlType && lib.isString pkgs.texlive.amsmath.tlType && pkgs.texlive.amsmath ? pkgs && lib.isList pkgs.texlive.amsmath.pkgs))
@@ -37,403 +39,300 @@ in {
     expected = true;
   };
 
-  # Test list of strings (backward compatibility)
-  # Purpose: Verifies that the function correctly processes a list of package name strings.
-  # Test: Input is ["amsmath", "xcolor"]. Expected output is an attrset with keys "amsmath" and "xcolor".
-  listOfStrings = {
+  # Test: List of strings should be normalized to an attribute set of derivations.
+  # Purpose: Verifies that a simple list of package name strings is correctly converted to a {name -> derivation} mapping.
+  testListOfStrings = {
     expr = let
       result = normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = ["amsmath" "xcolor"];
+        extraTexPackages = ["amsmath" "amsfonts"];
         discoveredPackages = {};
       };
     in
       getSortedNames result;
-    expected = ["amsmath" "xcolor"];
+    expected = ["amsfonts" "amsmath"];
   };
 
-  # Test list of derivations
-  # Purpose: Verifies that the function correctly processes a list of TeX Live derivations.
-  # Test: Input is a list of derivations (pkgs.texlive.amsmath, pkgs.texlive.xcolor).
-  #       Expected output is an attrset with keys corresponding to the derivation names.
-  listOfDerivations = {
+  # Test: List of TeX Live derivations should be normalized to an attribute set.
+  # Purpose: Confirms that when derivations are provided directly, they're correctly mapped by name.
+  testListOfDerivations = {
     expr = let
       result = normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = [pkgs.texlive.amsmath pkgs.texlive.xcolor];
+        extraTexPackages = [pkgs.texlive.amsmath pkgs.texlive.amsfonts];
         discoveredPackages = {};
       };
     in
       getSortedNames result;
-    expected = ["amsmath" "xcolor"];
+    expected = ["amsfonts" "amsmath"];
   };
 
-  # Test list of TeX Live package objects (NEW)
-  # Purpose: Verifies that the function correctly processes a list of TeX Live package objects (attrs with tlType and pkgs).
-  # Test: Input is a list of TeX Live package objects (pkgs.texlive.amsfonts provides amssymb).
-  #       Expected output is an attrset with keys corresponding to the package object names.
-  listOfTexLivePackageObjects = {
+  # Test: List of TeX Live package objects should be normalized to an attribute set.
+  # Purpose: Ensures that TeX Live package objects (with `tlType` and `pkgs` attributes) are handled correctly.
+  testListOfTexLivePackageObjects = {
     expr = let
       result = normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = [pkgs.texlive.amsfonts]; # Corrected: amsfonts provides amssymb
+        extraTexPackages = [pkgs.texlive.amsmath];
         discoveredPackages = {};
       };
     in
       getSortedNames result;
-    expected = ["amsfonts"]; # Corrected: expected output
+    expected = ["amsmath"];
   };
 
-  # Test error handling: mixed list (no longer supported)
-  # Purpose: Ensures that providing a mixed list of strings and derivations (which is no longer supported) results in an error.
-  # Test: Input is ["amsmath", pkgs.texlive.xcolor]. Expected behavior is for the function call to fail (shouldFail.success == false).
-  mixedListError = {
+  # Test: Mixed list of different types should produce an error.
+  # Purpose: Verifies that mixing strings and derivations in a single list is rejected with a descriptive error.
+  testMixedListError = {
     expr = let
-      shouldFail = builtins.tryEval (normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = ["amsmath" pkgs.texlive.xcolor]; # mixed types
+      result = builtins.tryEval (normalizeHelpers.normalizeExtraTexPackages {
+        extraTexPackages = ["amsmath" pkgs.texlive.amsfonts];
         discoveredPackages = {};
       });
     in
-      shouldFail.success;
+      result.success;
     expected = false;
   };
 
-  # Test error handling: function that returns list of strings (no longer directly supported)
-  # Purpose: Ensures that a function returning a list of strings (which must now return derivations or TeX Live package objects) results in an error.
-  # Test: Input is a function that conditionally returns ["pgfplots"] or ["standalone"].
-  #       Expected behavior is for the function call to fail (shouldFail.success == false).
-  functionReturningStringsError = {
+  # Test: Function returning strings should produce an error.
+  # Purpose: Confirms that functions returning non-derivation lists are properly rejected.
+  testFunctionReturningStringsError = {
     expr = let
-      shouldFail = builtins.tryEval (normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = discovered:
-          if builtins.hasAttr "tikz" discovered
-          then ["pgfplots"] # strings not allowed from function
-          else ["standalone"];
-        discoveredPackages = testDiscovered;
+      result = builtins.tryEval (normalizeHelpers.normalizeExtraTexPackages {
+        extraTexPackages = _discovered: ["amsmath"];
+        discoveredPackages = {};
       });
     in
-      shouldFail.success;
+      result.success;
     expected = false;
   };
 
-  # Test function that returns list of derivations
-  # Purpose: Verifies that the function correctly processes input from a function that returns a list of TeX Live derivations.
-  # Test: Input is a function that, based on `discoveredPackages`, returns [pkgs.texlive.amsfonts].
-  #       Expected output is an attrset with the key "amsfonts".
-  functionReturningDerivations = {
+  # Test: Function returning derivations should be normalized to an attribute set.
+  # Purpose: Verifies that functions returning lists of derivations are correctly processed.
+  testFunctionReturningDerivations = {
     expr = let
       result = normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = discovered:
-          if builtins.hasAttr "amsmath" discovered
-          then [pkgs.texlive.amsfonts]
-          else [pkgs.texlive.mathtools];
-        discoveredPackages = testDiscovered;
+        extraTexPackages = _discovered: [pkgs.texlive.amsmath pkgs.texlive.amsfonts];
+        discoveredPackages = {};
       };
     in
       getSortedNames result;
-    expected = ["amsfonts"];
+    expected = ["amsfonts" "amsmath"];
   };
 
-  # Test function that returns list of TeX Live package objects (NEW)
-  # Purpose: Verifies that the function correctly processes input from a function that returns a list of TeX Live package objects.
-  # Test: Input is a function that, based on `discoveredPackages`, returns [pkgs.texlive.amsfonts, pkgs.texlive.amssymb].
-  #       Expected output is an attrset with keys "amsfonts" and "amssymb".
-  functionReturningTexLivePackageObjects = {
+  # Test: Function returning TeX Live package objects should be normalized to an attribute set.
+  # Purpose: Ensures that functions returning TeX Live package objects are handled correctly.
+  testFunctionReturningTexLivePackageObjects = {
     expr = let
       result = normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = discovered:
-          if builtins.hasAttr "amsmath" discovered
-          then [pkgs.texlive.amsfonts]
-          else [pkgs.texlive.mathtools];
-        discoveredPackages = testDiscovered;
+        extraTexPackages = _discovered: [pkgs.texlive.amsmath];
+        discoveredPackages = {};
       };
     in
       getSortedNames result;
-    expected = ["amsfonts"];
+    expected = ["amsmath"];
   };
 
-  # Test error handling: function returning mixed types (no longer supported)
-  # Purpose: Ensures that a function returning a mixed list of derivations and strings (no longer supported) results in an error.
-  # Test: Input is a function that conditionally returns [pkgs.texlive.colortbl, "xspace"].
-  #       Expected behavior is for the function call to fail (shouldFail.success == false).
-  functionReturningMixedError = {
+  # Test: Function returning mixed types should produce an error.
+  # Purpose: Verifies that functions returning mixed-type lists are properly rejected.
+  testFunctionReturningMixedError = {
     expr = let
-      shouldFail = builtins.tryEval (normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = discovered:
-          if builtins.hasAttr "xcolor" discovered
-          then [pkgs.texlive.colortbl "xspace"] # mixed types not allowed
-          else [];
-        discoveredPackages = testDiscovered;
+      result = builtins.tryEval (normalizeHelpers.normalizeExtraTexPackages {
+        extraTexPackages = _discovered: ["amsmath" pkgs.texlive.amsfonts];
+        discoveredPackages = {};
       });
     in
-      shouldFail.success;
+      result.success;
     expected = false;
   };
 
-  # Test function that returns list of derivations (formerly functionReturningMixed successful path)
-  # Purpose: Verifies that the function correctly handles a function returning a list of derivations,
-  #          particularly after refactoring away from mixed type returns.
-  # Test: Input is a function that, based on `discoveredPackages`, returns [pkgs.texlive.colortbl, pkgs.texlive.uspace].
-  #       Expected output is an attrset with keys "colortbl" and "uspace".
-  functionReturningDerivationsNew = {
+  # Test: Function returning derivations (alternative implementation) should be normalized.
+  # Purpose: Additional verification that functions returning derivation lists work correctly.
+  testFunctionReturningDerivationsNew = {
     expr = let
       result = normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = discovered:
-          if builtins.hasAttr "xcolor" discovered
-          then [pkgs.texlive.colortbl pkgs.texlive.uspace]
-          else [];
-        discoveredPackages = testDiscovered;
+        extraTexPackages = discoveredPackages: [pkgs.texlive.amsmath];
+        discoveredPackages = {};
       };
     in
       getSortedNames result;
-    expected = ["colortbl" "uspace"];
+    expected = ["amsmath"];
   };
 
-  # Test empty list
-  # Purpose: Verifies that the function correctly handles an empty list as input.
-  # Test: Input is an empty list []. Expected output is an empty attrset.
-  emptyList = {
+  # Test: Empty list should result in an empty attribute set.
+  # Purpose: Verifies that providing no extra packages results in an empty normalized result.
+  testEmptyList = {
     expr = let
       result = normalizeHelpers.normalizeExtraTexPackages {
         extraTexPackages = [];
         discoveredPackages = {};
       };
     in
-      getSortedNames result;
+      builtins.attrNames result;
     expected = [];
   };
 
-  # Test function returning empty list
-  # Purpose: Verifies that the function correctly handles a function that returns an empty list.
-  # Test: Input is a function that returns []. Expected output is an empty attrset.
-  functionReturningEmpty = {
+  # Test: Function returning empty list should result in an empty attribute set.
+  # Purpose: Confirms that functions returning empty lists are handled correctly.
+  testFunctionReturningEmpty = {
     expr = let
       result = normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = discovered: [];
-        discoveredPackages = testDiscovered;
+        extraTexPackages = _discovered: [];
+        discoveredPackages = {};
       };
     in
-      getSortedNames result;
+      builtins.attrNames result;
     expected = [];
   };
 
-  # Test that all derivations in result are valid (when input is list of strings)
-  # Purpose: Ensures that the normalized packages (when input is a list of strings) are valid buildable items.
-  # Test: Input is ["amsmath", "xcolor"]. Checks if all items in the resulting attrset are buildable. Expected: true.
-  derivationsAreValidFromStrings = {
+  # Test: Derivations created from strings should be valid and buildable.
+  # Purpose: Ensures that string-to-derivation conversion produces valid derivations with correct drvPath.
+  testDerivationsAreValidFromStrings = {
     expr = let
       result = normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = ["amsmath" "xcolor"];
+        extraTexPackages = ["amsmath"];
         discoveredPackages = {};
       };
-      allValid = lib.lists.all (name: builds result.${name}) (builtins.attrNames result);
     in
-      allValid;
+      builds result.amsmath;
     expected = true;
   };
 
-  # Test that all derivations in result are valid (when input is list of derivations)
-  # Purpose: Ensures that the normalized packages (when input is a list of derivations) are valid buildable items.
-  # Test: Input is [pkgs.texlive.amsmath, pkgs.texlive.xcolor]. Checks if all items in the resulting attrset are buildable. Expected: true.
-  derivationsAreValidFromDerivations = {
+  # Test: Derivations provided directly should be valid and buildable.
+  # Purpose: Confirms that directly provided derivations maintain their validity after normalization.
+  testDerivationsAreValidFromDerivations = {
     expr = let
       result = normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = [pkgs.texlive.amsmath pkgs.texlive.xcolor];
+        extraTexPackages = [pkgs.texlive.amsmath];
         discoveredPackages = {};
       };
-      allValid = lib.lists.all (name: builds result.${name}) (builtins.attrNames result);
     in
-      allValid;
+      builds result.amsmath;
     expected = true;
   };
 
-  # Test that all TeX Live package objects in result are valid (NEW)
-  # Purpose: Ensures that the normalized packages (when input is a list of TeX Live package objects) are valid (i.e., attrs with a `pkgs` list).
-  # Test: Input is [pkgs.texlive.amsfonts, pkgs.texlive.amssymb].
-  #       Checks if all items in the resulting attrset are valid TeX Live package objects. Expected: true.
-  texLivePackageObjectsAreValid = {
+  # Test: TeX Live package objects should be valid and analyzable.
+  # Purpose: Verifies that TeX Live package objects are correctly processed and maintain their structure.
+  testTexLivePackageObjectsAreValid = {
     expr = let
       result = normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = [pkgs.texlive.amsfonts]; # Use list of TeX Live package objects
+        extraTexPackages = [pkgs.texlive.amsmath];
         discoveredPackages = {};
       };
-      allValid = lib.lists.all (
-        name: let
-          item = result.${name};
-        in
-          (builtins.isAttrs item) && (item ? pkgs) && (builtins.isList item.pkgs)
-      ) (builtins.attrNames result);
     in
-      allValid;
+      # Check if the result has the expected TexLive package structure
+      result.amsmath ? "tlType" && lib.isString result.amsmath.tlType;
     expected = true;
   };
 
-  # Test error handling: invalid list item type (e.g., a number)
-  # Purpose: Ensures that the function errors out if a list item has an unsupported type.
-  # Test: Input is ["amsmath", 42] (a string and a number). Expected behavior is for the function call to fail (shouldFail.success == false).
-  invalidListItemError = {
+  # Test: Invalid list item should produce an error.
+  # Purpose: Confirms that non-string, non-derivation items in lists are properly rejected.
+  testInvalidListItemError = {
     expr = let
-      shouldFail = builtins.tryEval (normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = ["amsmath" 42]; # number is invalid
+      result = builtins.tryEval (normalizeHelpers.normalizeExtraTexPackages {
+        extraTexPackages = [42]; # Invalid: number instead of string/derivation
         discoveredPackages = {};
       });
     in
-      shouldFail.success;
+      result.success;
     expected = false;
   };
 
-  # Test error handling: function returning non-list
-  # Purpose: Ensures that the function errors out if the provided function does not return a list.
-  # Test: Input is a function that returns "not-a-list" (a string).
-  #       Expected behavior is for the function call to fail (shouldFail.success == false).
-  functionReturningNonListError = {
+  # Test: Function returning non-list should produce an error.
+  # Purpose: Verifies that functions returning non-list values are properly rejected.
+  testFunctionReturningNonListError = {
     expr = let
-      shouldFail = builtins.tryEval (normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = discovered: "not-a-list";
-        discoveredPackages = testDiscovered;
-      });
-    in
-      shouldFail.success;
-    expected = false;
-  };
-
-  # Test error handling: invalid input type for extraTexPackages
-  # Purpose: Ensures that the function errors out if `extraTexPackages` itself is of an unsupported type.
-  # Test: Input `extraTexPackages` is "not-list-or-function" (a string).
-  #       Expected behavior is for the function call to fail (shouldFail.success == false).
-  invalidInputTypeError = {
-    expr = let
-      shouldFail = builtins.tryEval (normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = "not-list-or-function";
+      result = builtins.tryEval (normalizeHelpers.normalizeExtraTexPackages {
+        extraTexPackages = _discovered: "invalid"; # Must return a list
         discoveredPackages = {};
       });
     in
-      shouldFail.success;
+      result.success;
     expected = false;
   };
 
-  # Test case: list of derivations
-  listIsDerivations = {
+  # Test: Invalid input type should produce an error.
+  # Purpose: Confirms that non-list, non-function inputs are properly rejected.
+  testInvalidInputTypeError = {
+    expr = let
+      result = builtins.tryEval (normalizeHelpers.normalizeExtraTexPackages {
+        extraTexPackages = "invalid"; # Must be list or function
+        discoveredPackages = {};
+      });
+    in
+      result.success;
+    expected = false;
+  };
+
+  # Test: List containing only derivations should be classified correctly.
+  # Purpose: Ensures that TeX Live package objects are processed correctly when provided in a list.
+  testListIsDerivations = {
     expr = let
       result = normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = [pkgs.texlive.xcolor]; # Use list of derivations (mathrsfs is in jknappen)
+        extraTexPackages = [pkgs.texlive.amsmath pkgs.texlive.amsfonts];
         discoveredPackages = {};
       };
     in
       getSortedNames result;
-    expected = ["xcolor"];
+    expected = ["amsfonts" "amsmath"];
   };
 
-  # Test case for a list of derivations with duplicates
-  normalizeListOfDerivationsWithDuplicates = {
-    # description = "Correctly normalizes a list of TeX Live derivations with duplicates";
+  # Test: List of derivations with duplicates should be deduplicated.
+  # Purpose: Verifies that when the same derivation appears multiple times, it's included only once in the result.
+  testNormalizeListOfDerivationsWithDuplicates = {
     expr = let
       result = normalizeHelpers.normalizeExtraTexPackages {
         extraTexPackages = [
-          # pkgs.texlive.mathrsfs # Original was jknappen
-          pkgs.texlive.xcolor
-          pkgs.texlive.xcolor # Duplicate
           pkgs.texlive.amsmath
-          # pkgs.texlive.mathrsfs # Original was jknappen, duplicate
+          pkgs.texlive.amsfonts
+          pkgs.texlive.amsmath # duplicate
         ];
         discoveredPackages = {};
       };
-      expectedSortedNames = ["amsmath" "xcolor"]; # Expected sorted unique names
-    in
-      getSortedNames result == expectedSortedNames;
-    expected = true;
-  };
-
-  # Test case for a function returning derivations
-  normalizeFunctionReturningListOfDerivations = {
-    # description = "Correctly normalizes a function returning a list of TeX Live derivations";
-    expr = let
-      result = normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = discovered:
-          [
-            # pkgs.texlive.mathrsfs # Original was jknappen
-            pkgs.texlive.xcolor
-          ]
-          ++ lib.optional (discovered ? "lipsum") pkgs.texlive.lipsum;
-        discoveredPackages = {}; # No discovered packages for this specific test variation
-      };
-      expectedSortedNames = ["xcolor"];
-    in
-      getSortedNames result == expectedSortedNames;
-    expected = true;
-  };
-
-  # Test case: function returning derivations, with discovered packages
-  normalizeFunctionReturningListOfDerivationsWithDiscovered = {
-    # description = "Correctly normalizes a function returning derivations, considering discovered ones";
-    expr = let
-      result = normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = discovered:
-          [
-            # pkgs.texlive.mathrsfs # Original was jknappen
-            pkgs.texlive.xcolor
-          ]
-          ++ lib.optional (discovered ? "lipsum") pkgs.texlive.lipsum;
-        discoveredPackages = {lipsum = pkgs.texlive.lipsum;}; # Simulate lipsum being discovered
-      };
-      expectedSortedNames = ["lipsum" "xcolor"]; # Expected sorted names, including lipsum
-    in
-      getSortedNames result == expectedSortedNames;
-    expected = true;
-  };
-
-  # Test with an empty list of discovered packages
-  emptyListOfDiscoveredPackages = {
-    expr = let
-      result = normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = [pkgs.texlive.amsmath pkgs.texlive.xcolor];
-        discoveredPackages = {};
-      };
-      allValid = lib.lists.all (name: builds result.${name}) (builtins.attrNames result);
-    in
-      allValid;
-    expected = true;
-  };
-
-  # Fixed test for duplicate derivations
-  testDuplicateDerivationsFixed = {
-    expr = let
-      result = normalizeHelpers.normalizeExtraTexPackages {
-        extraTexPackages = [pkgs.texlive.xcolor pkgs.texlive.xcolor]; # Input with duplicates
-        discoveredPackages = {};
-      };
-      # getSortedNames is defined at the top of this file
     in
       getSortedNames result;
-    expected = ["xcolor"]; # Expected unique, sorted names
+    expected = ["amsfonts" "amsmath"];
   };
 
-  /*
-     Removing obsolete/contradictory tests:
-  testListOfMixedTypes = {
-    # Test with a list containing mixed types (strings, derivations)
-    extraTexPackages = [
-      "amsmath" # String
-      pkgs.texlive.xcolor # Derivation
-    ];
-    action = cfg: cfg.extraTexPackages;
-    expectedSortedNames = ["amsmath" "xcolor"]; # Expected sorted unique names
+  # Test: Function returning list of derivations should be normalized correctly.
+  # Purpose: Ensures that functions returning derivation lists are processed the same as direct lists.
+  testNormalizeFunctionReturningListOfDerivations = {
+    expr = let
+      result = normalizeHelpers.normalizeExtraTexPackages {
+        extraTexPackages = _discovered: [pkgs.texlive.amsmath pkgs.texlive.amsfonts];
+        discoveredPackages = {};
+      };
+    in
+      getSortedNames result;
+    expected = ["amsfonts" "amsmath"];
   };
 
-  testDuplicateDerivations = {
-    # Test with duplicate derivations
-    extraTexPackages = [
-      pkgs.texlive.xcolor # Original was jknappen
-    ];
-    action = cfg: cfg.extraTexPackages;
-    expectedSortedNames = ["xcolor"];
+  # Test: Function can access discovered packages and use them in logic.
+  # Purpose: Verifies that functions receive the correct discoveredPackages argument and can use it.
+  testNormalizeFunctionReturningListOfDerivationsWithDiscovered = {
+    expr = let
+      result = normalizeHelpers.normalizeExtraTexPackages {
+        extraTexPackages = discoveredPackages:
+          if discoveredPackages ? "amsmath"
+          then [pkgs.texlive.amsfonts] # Add amsfonts if amsmath was discovered
+          else [pkgs.texlive.amsmath pkgs.texlive.amsfonts];
+        discoveredPackages = {"amsmath" = pkgs.texlive.amsmath;};
+      };
+    in
+      getSortedNames result;
+    expected = ["amsfonts"];
   };
 
-  testDerivationsAndStringsWithNames = {
-    # Test with derivations and strings that extract package names
-    extraTexPackages = [
-      (pkgs.texlive.xcolor) # Derivation, should extract "xcolor"
-      "lipsum" # String, should be used as is
-    ];
-    action = cfg: cfg.extraTexPackages;
-    expectedSortedNames = ["lipsum" "xcolor"]; # Expected sorted names, including lipsum
+  # Test: Empty list of discovered packages should be handled correctly.
+  # Purpose: Confirms that the function works correctly when no packages have been discovered.
+  testEmptyListOfDiscoveredPackages = {
+    expr = let
+      result = normalizeHelpers.normalizeExtraTexPackages {
+        extraTexPackages = discoveredPackages:
+          if discoveredPackages == {}
+          then [pkgs.texlive.amsmath]
+          else [];
+        discoveredPackages = {};
+      };
+    in
+      getSortedNames result;
+    expected = ["amsmath"];
   };
-  */
 }

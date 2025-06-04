@@ -5,6 +5,10 @@
   # Import normalization helpers like the module does
   normalizeHelpers = import ../lib/normalizeExtraTexPackages.nix {inherit pkgs lib;};
 
+  # Import shared test helpers
+  testHelpers = import ../lib/testHelpers.nix {inherit pkgs lib;};
+  inherit (testHelpers) builds;
+
   # Test configuration that mimics the issue reported
   moduleExtraTexPackages = ["amsmath"];
 
@@ -92,13 +96,10 @@
   # Expected packages that should be in the unified environment
   expectedDocumentPackages = ["enumitem" "algorithms" "tikzposter"];
   expectedModulePackages = ["amsmath"];
-
-  # Helper to check if a derivation builds
-  builds = drv: drv.drvPath != null;
 in {
   # Test: Compare the sorted list of all package names in unifiedAdditionalPackages against the expected combined list.
   # Purpose: Provides a comprehensive check that exactly the expected packages (module and document-level) are present.
-  unifiedPackagesList = {
+  testUnifiedPackagesList = {
     expr = lib.lists.sort builtins.lessThan (builtins.attrNames unifiedAdditionalPackages);
     expected = lib.lists.sort builtins.lessThan (
       expectedModulePackages ++ expectedDocumentPackages
@@ -107,7 +108,7 @@ in {
 
   # Test: Check if the 'extraNormalized' attribute for the first processed document contains the correct merged packages.
   # Purpose: Verifies the per-document package merging logic, ensuring module packages are combined with document-specific ones.
-  processedDocumentsCorrect = {
+  testProcessedDocumentsCorrect = {
     expr = let
       firstDoc = builtins.head processedDocuments;
       firstDocPackages = builtins.attrNames firstDoc.extraNormalized;
@@ -119,14 +120,14 @@ in {
 
   # Test: Check if the final unified TeX Live environment (pkgs.texlive.combine result) is a buildable derivation.
   # Purpose: Ensures that the assembled TeX Live environment with all packages is valid and can be built.
-  unifiedTexEnvBuilds = {
+  testUnifiedTexEnvBuilds = {
     expr = builds unifiedTexEnv;
     expected = true;
   };
 
   # Test: Check if all expected document-level packages are present in the final 'unifiedTexPackages' attrset used for pkgs.texlive.combine.
   # Purpose: Verifies that document-specific packages are correctly included in the inputs to the final TeX environment combination.
-  unifiedTexEnvContainsDocumentPackages = {
+  testUnifiedTexEnvContainsDocumentPackages = {
     expr = let
       hasPackage = pkg: builtins.hasAttr pkg unifiedTexPackages;
     in

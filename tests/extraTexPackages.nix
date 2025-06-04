@@ -13,8 +13,9 @@
       Hello, world!
       \end{document}
     '';
-  # Helper to check if a derivation builds
-  builds = drv: drv.drvPath != null;
+  # Import shared test helpers
+  testHelpers = import ../lib/testHelpers.nix {inherit pkgs lib;};
+  inherit (testHelpers) builds;
 
   # Resolve specific TeX Live packages that might be objects, ensuring we pass derivations if needed.
   # amsfonts contains amstex, amssymb, etc.
@@ -22,7 +23,7 @@
   resolvedAmstex = pkgs.texlive.amsfonts;
   resolvedAmsrefs = pkgs.texlive.amsrefs;
 in {
-  singleExtraPackageString = {
+  testSingleExtraPackageString = {
     expr = builds (mkDoc {
       name = "test-single-extra.pdf";
       src = minimalTex "singleExtraSrc" "\\usepackage{xcolor}";
@@ -31,7 +32,7 @@ in {
     expected = true;
   };
 
-  multipleExtraPackagesStrings = {
+  testMultipleExtraPackagesStrings = {
     expr = builds (mkDoc {
       name = "test-multiple-extras.pdf";
       src = minimalTex "multipleExtrasSrc" "\\usepackage{xcolor}";
@@ -40,7 +41,7 @@ in {
     expected = true;
   };
 
-  noExplicitExtraPackages = {
+  testNoExplicitExtraPackages = {
     expr = builds (mkDoc {
       name = "test-no-extras.pdf";
       src = minimalTex "noExtrasSrc" "\\usepackage{amsmath}";
@@ -48,7 +49,7 @@ in {
     expected = true;
   };
 
-  emptyListOfExtraPackages = {
+  testEmptyListOfExtraPackages = {
     expr = builds (mkDoc {
       name = "test-empty-list.pdf";
       src = minimalTex "emptyListSrc" "";
@@ -57,7 +58,7 @@ in {
     expected = true;
   };
 
-  explicitPackageAlsoDiscovered = {
+  testExplicitPackageAlsoDiscovered = {
     expr = builds (mkDoc {
       name = "test-override-discovered.pdf";
       src = minimalTex "overrideDiscoveredSrc" "\\usepackage{xcolor}";
@@ -66,7 +67,7 @@ in {
     expected = true;
   };
 
-  multipleIndependentDocuments = {
+  testMultipleIndependentDocuments = {
     expr = let
       doc1 = mkDoc {
         name = "doc1.pdf";
@@ -83,7 +84,7 @@ in {
     expected = true;
   };
 
-  packageAlreadyInBaseScheme = {
+  testPackageAlreadyInBaseScheme = {
     expr = builds (mkDoc {
       name = "test-already-in-scheme.pdf";
       src = minimalTex "alreadyInSchemeSrc" "";
@@ -92,7 +93,7 @@ in {
     expected = true;
   };
 
-  integrationWithFileParams = {
+  testIntegrationWithFileParams = {
     expr = builds (mkDoc {
       name = "test-integration.pdf";
       src = minimalTex "integrationSrc" "\\usepackage{xcolor}";
@@ -103,7 +104,7 @@ in {
     expected = true;
   };
 
-  listOfPackageDerivations = {
+  testListOfPackageDerivations = {
     expr = builds (mkDoc {
       name = "test-list-of-derivations.pdf";
       src = minimalTex "listOfDerivationsSrc" "\\usepackage{xcolor}";
@@ -116,7 +117,7 @@ in {
      # This test causes an infinite recursion, likely due to how pkgs.texlive derivations
      # are evaluated when texlive.combine is invoked, potentially creating a circular
      # dependency back to the flake's checks.
-  functionReturningPackageDerivations = {
+  testFunctionReturningPackageDerivations = {
     expr = let
       result = normalizeExtraTexPackages {
         extraTexPackages = discovered: [
@@ -135,7 +136,7 @@ in {
 
   /*
      Rest of the tests remain commented out
-  multipleExtrasFromStringList = {
+  testMultipleExtrasFromStringList = {
     texConfig = {
       extraTexPackages = ["xcolor"];
     };
@@ -145,7 +146,7 @@ in {
     src = minimalTex "multipleExtrasSrc" "\\usepackage{xcolor}";
   };
 
-  docLevelWithOneExtra = {
+  testDocLevelWithOneExtra = {
     texConfig = {
       discoverPackages = true;
       extraTexPackages = ["xcolor"];
@@ -156,7 +157,7 @@ in {
     src = minimalTex "doc2Src" "";
   };
 
-  listOfDerivations_structured = { # Renamed from listOfDerivations to avoid conflict
+  testListOfDerivationsStructured = { # Renamed from listOfDerivations to avoid conflict
     texConfig = {
       extraTexPackages = [pkgs.texlive.xcolor];
     };
