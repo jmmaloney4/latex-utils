@@ -1,6 +1,6 @@
 # Unit Testing in latex-utils
 
-> **Note:** The rationale and research for the flake-parts testing pattern used in this project is documented in [ADR 004](./decisions/004-flake-parts-testing-pattern.md). Please consult it for background and justification.
+> **Note:** The rationale and research for the flake-parts testing pattern used in this project is documented in [ADR 004](../internal/decisions/004-flake-parts-testing-pattern.md). Please consult it for background and justification.
 
 This project uses **nix-unit** for regression and property-based testing of Nix code. Tests are located in the `tests/` directory and are run via `nix flake check`.
 
@@ -125,7 +125,7 @@ in {
 ```
 
 #### References
-- See [ADR 004](./decisions/004-flake-parts-testing-pattern.md) for rationale and research.
+- See [ADR 004](../internal/decisions/004-flake-parts-testing-pattern.md) for rationale and research.
 - See [flake-parts template](https://github.com/hercules-ci/flake-parts/blob/main/template/default/flake.nix) for canonical usage.
 
 ### 4. **General Guidelines**
@@ -162,7 +162,7 @@ This will build and run the nix-unit test suite for your current system.
 
 ## See Also
 
-- [ARCHITECTURE.md](./ARCHITECTURE.md) for module structure and API.
+- [ARCHITECTURE.md](../internal/ARCHITECTURE.md) for module structure and API.
 - [flake-parts documentation](https://flake.parts/) for more on flake-parts modules.
 - [nix-unit documentation](https://github.com/nix-community/nix-unit) for test syntax and features.
 

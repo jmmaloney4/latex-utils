@@ -671,7 +671,7 @@ devShells.myCustomShell = pkgs.mkShell {
 - Use only `unifiedTexShell` for a pure TeX environment (no VS Code integration).
 - Add `vscodeShell` to also get VS Code integration in your custom shell.
 
-See [docs/advanced/devshells.md](docs/advanced/devshells.md) for more patterns and details.
+See [docs/user/devshells.md](docs/user/devshells.md) for more patterns and details.
 
 ## Font Loading and Fontconfig Caching
 
@@ -744,7 +744,7 @@ To ensure fast, reliable, and reproducible font discovery for LuaLaTeX and XeLaT
 
 ## Library Functions
 
-The following utility functions are available in the `lib/` directory. See [docs/library.md](docs/library.md) for full details and advanced usage.
+The following utility functions are available in the `lib/` directory. See [docs/user/library.md](docs/user/library.md) for full details and advanced usage.
 
 | Function                | Description |
 |-------------------------|-------------|
@@ -754,7 +754,7 @@ The following utility functions are available in the `lib/` directory. See [docs
 | `mkLatexPdfDocument`    | Builds a LaTeX document as a Nix derivation, automatically including required and extra TeX Live packages. |
 | `mkFontconfigCache`     | Prebuilds the fontconfig cache for LuaLaTeX and XeLaTeX, using all fonts available in your TeX environment. |
 
-See [docs/library.md](docs/library.md) for arguments, return values, and advanced usage.
+See [docs/user/library.md](docs/user/library.md) for arguments, return values, and advanced usage.
 
 ---
 
@@ -779,9 +779,9 @@ nix build .#checks.$(nix eval --raw --impure --expr builtins.currentSystem).nix-
 
 ## Documentation
 
-- **[Library Functions](docs/library.md)** - Detailed library function reference  
-- **[TeX Live Integration](docs/texlive-integration.md)** - Comprehensive guide to TeX Live package structure and the `normalizeExtraTexPackages` function
-- **[IDE Integration Guide](docs/ide-integration.md)** - Complete guide for IDE setup with unified TeX Live environments
-- **[Consumer Flake Example](docs/consumer-flake-example.md)** - Before/after example showing VSCode integration simplification
+- **[Library Functions](docs/user/library.md)** - Detailed library function reference  
+- **[TeX Live Integration](docs/user/texlive-integration.md)** - Comprehensive guide to TeX Live package structure and the `normalizeExtraTexPackages` function
+- **[IDE Integration Guide](docs/user/ide-integration.md)** - Complete guide for IDE setup with unified TeX Live environments
+- **[Consumer Flake Example](docs/user/consumer-flake-example.md)** - Before/after example showing VSCode integration simplification
 
 ---

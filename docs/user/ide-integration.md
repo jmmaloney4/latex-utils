@@ -168,4 +168,4 @@ Some LaTeX packages require specific nixpkgs package names:
 | `\usepackage{mathrsfs}` | `rsfs` + `jknapltx` | Need both font and interface |
 | `\usepackage{tikz}` | `pgf` | TikZ is part of PGF package |
 
-The unified environment handles these mappings automatically when specified in `extraTexPackages`.
+The unified environment handles these mappings automatically when specified in `extraTexPackages`. 

@@ -21,8 +21,22 @@
   - <Downside 1>  
   - <Downside 2>  
 
+## Technical Details
+  - <Optional: Include diagrams, code snippets, or references to specific implementations.>
+
 ## Supersedes / Dependencies (optional)
-- supersedes: `<path/to/older-adr-XYZ.md>`  
+- supersedes: `<path/to/older-adr-XYZ.md>`
 - depends on: `<path/to/adr-ABC.md>`
 
-> **Note:** Do not list the template ADR (ADR 000) as a dependency in real ADRs.
+## Appendices
+<Include any supporting materials, such as detailed technical specifications, research findings, relevant quotations, or other exhibits that are too extensive for the main body but valuable for reviewers.>
+
+### Appendix A: <Title of Appendix A>
+<Content of Appendix A>
+
+### Appendix B: <Title of Appendix B>
+<Content of Appendix B>
+
+(Add more appendices as needed)
+
+> **Note:** Do not list the template ADR (ADR 000) as a dependency in real ADRs. 

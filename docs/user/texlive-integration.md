@@ -6,7 +6,7 @@ This document explains how `latex-utils` integrates with the TeX Live ecosystem 
 
 The `normalizeExtraTexPackages` function is a critical component that handles the complexity of specifying additional TeX packages in a unified way. It accepts multiple input formats and normalizes them into a consistent format that can be consumed by `texlive.combine`.
 
-**Important:** This implementation requires the **new TeX Live package structure** introduced in nixpkgs in spring 2024 (commit `9daed7b`). If you're using older nixpkgs versions (nixos-23.11, early nixos-24.05), please update to recent nixpkgs-unstable or nixos-24.11+.
+**Important:** This implementation requires the **new TeX Live package structure** introduced in nixpkgs in spring 2024 (commit `9daed7b`). If you\'re using older nixpkgs versions (nixos-23.11, early nixos-24.05), please update to recent nixpkgs-unstable or nixos-24.11+.
 
 ## TeX Live Package Structure in Nixpkgs: Two Eras
 
@@ -35,7 +35,7 @@ pkgs.texlive.amsfonts = {
 **Why the change happened:**
 - Generator maintenance pain (huge blob of hand-maintained metadata)
 - Store bloat (every wrapper created multiple derivations even for macro-only packages)
-- Better alignment with TeX Live's own package structure
+- Better alignment with TeX Live\'s own package structure
 
 ### Current Era (2024+) - SUPPORTED
 
@@ -55,7 +55,7 @@ pkgs.texlive.amsfonts = {
 ```
 
 **Characteristics:**
-- `lib.isDerivation: false` (it's just an attrset wrapper)
+- `lib.isDerivation: false` (it\'s just an attrset wrapper)
 - Contains actual derivations in the `pkgs` list
 - Each derivation has TeX Live metadata (`tlType`, `pname`, `outputs`, etc.)
 - This is what you get when you reference `pkgs.texlive.packagename`
@@ -205,7 +205,7 @@ This ensures robust naming even with unusual package structures.
 
 ## Migration from Legacy Era
 
-If you're updating from an older nixpkgs version and encounter errors, here's what changed:
+If you\'re updating from an older nixpkgs version and encounter errors, here\'s what changed:
 
 ### Before (Legacy Era)
 ```nix
@@ -250,7 +250,7 @@ However, for `latex-utils` users, this migration is transparent - just use the s
 
 1. **Always test with all input types** when modifying `normalizeExtraTexPackages`
 2. **Maintain homogeneous type checking** to provide clear error messages
-3. **Preserve original objects** - don't unwrap TeX Live packages unnecessarily
+3. **Preserve original objects** - don\'t unwrap TeX Live packages unnecessarily
 4. **Update tests** when modifying detection logic
 
 ## Integration with texlive.combine
@@ -288,7 +288,7 @@ in
 **Solution:** Verify package names exist in `pkgs.texlive.*`
 
 #### Errors about missing tlType or out attributes
-**Cause:** You're likely using an older nixpkgs with legacy TeX Live structure
+**Cause:** You\'re likely using an older nixpkgs with legacy TeX Live structure
 **Solution:** Update to nixpkgs-unstable or nixos-24.11+ to get the modern TeX Live packages
 
 ### Debugging

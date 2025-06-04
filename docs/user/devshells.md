@@ -24,9 +24,9 @@ perSystem = { config, pkgs, ... }: {
       config.latex-utils.vscodeShell # Optional: adds VS Code integration
     ];
     buildInputs = [ pkgs.pandoc pkgs.zathura ];
-    shellHook = ''
+    shellHook = \'\'
       echo "Custom LaTeX shell with extra tools!"
-    '';
+    \'\';
   };
 };
 ```

@@ -68,22 +68,25 @@ If you do not follow this pattern, you will get errors like `attribute 'build' m
 
 **Before modifying any Nix code in this project:**
 
-- ALWAYS read `docs/ARCHITECTURE.md` and any relevant ADRs under `docs/decisions/` before writing code
+- ALWAYS read `docs/internal/ARCHITECTURE.md` and any relevant ADRs under `docs/decisions/` before writing code
 - In your plan or commit message, include a 2–3 bullet summary of how your change aligns with the existing architecture
-- If no `docs/ARCHITECTURE.md` exists, you must raise an issue to request one
+- If no `docs/internal/ARCHITECTURE.md` exists, you must raise an issue to request one
 
 ## Agent Changelog Requirements
 
 **For every LLM-driven change:**
 
-- BEFORE committing, ensure that `docs/agent_logs/<TIMESTAMP>-<agent_id>.md` exists OR that `docs/AGENT_CHANGELOG.md` was appended with a valid entry
-- Timestamps must be in UTC format with Z suffix (e.g., 2025-06-03T06:00:00Z). **This timestamp should be generated and used directly (e.g., in memory or as a shell variable) without creating any separate or temporary timestamp files in the project root or elsewhere.**
-- If missing or malformed, the draft will be flagged: ⚠️ Missing or invalid changelog entry
+- BEFORE committing, ensure that a new entry detailing the change is prepended to `docs/internal/AGENT_CHANGELOG.md`.
+- Entries should be comprehensive, clearly outlining the actions taken, the rationale, and any affected files or architectural considerations. Aim for frequent, granular updates to facilitate easier review and understanding.
+- Each entry must begin with a metadata block including a UTC timestamp (e.g., `Timestamp: 2025-06-03T06:00:00Z`) and the agent ID. This timestamp should be generated and used directly (e.g., in memory or as a shell variable) without creating any separate or temporary timestamp files.
+- A separator (e.g., `\n\n---\n\n`) should clearly delineate individual log entries.
+- If a changelog entry is missing, malformed, or lacks sufficient detail, the change may be rejected or require rework.
+- If making similar or related changes subsequently, reuse the existing log entry, just expand or clarify it to accurately reflect the latest actions taken.
 
-**Changelog Protection:**
+**Changelog Integrity:**
 
-- Humans should NOT modify `docs/agent_logs/` files manually
-- If corrections are needed, open an issue and assign it to the responsible agent
+- The `docs/internal/AGENT_CHANGELOG.md` file should be primarily managed by automated processes or agents.
+- If manual corrections are absolutely necessary, they should be clearly documented (e.g., in a commit message or a separate related ADR if the correction is significant).
 
 ## File Organization and Structure
 
@@ -94,8 +97,8 @@ If you do not follow this pattern, you will get errors like `attribute 'build' m
 - No orphaned modules allowed
 
 **Documentation Structure:**
-
-- You must initialize `docs/decisions/000-adr-template.md` (an ADR template) and `docs/agent_logs/.gitkeep` before proceeding if they don't exist
+- Internal documentation like designs, ADRs, and agent logs are stored in `docs/internal/`.
+- User-facing documentation is stored in `docs/user/` along with the repository `README.md`.
 
 ## Change Management
 
