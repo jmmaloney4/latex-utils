@@ -51,6 +51,27 @@ The core question: **How should we test flake-parts module outputs in nix-unit?*
 - **Never import the module file directly to test outputs that require flake-parts context.**
 - **Do not use the main project flake for output tests; use the test harness flake and helper for isolation and clarity.**
 
+## Additional Clarification: Handling the `latex-utils` Input in the Test Harness Flake
+
+The test harness flake (`tests/flake.nix`) is intentionally designed to be minimal and decoupled from the main project flake. To achieve this, it does **not** declare a `latex-utils` input in its own `inputs` attribute set at the top level. Instead, it expects to be called with a resolved `latex-utils` input via the `outputsArgs` argument when evaluating outputs.
+
+This pattern is implemented as follows:
+- In the `mkFlake` call, the `inputs` attribute set includes `latex-utils` by inheriting it from `outputsArgs`:
+  ```nix
+  inputs = {
+    inherit (outputsArgs) nixpkgs flake-parts latex-utils;
+  };
+  ```
+- This means the test harness flake can be used in tests by passing in the resolved `latex-utils` input from the main flake or test runner, rather than hardcoding it as a dependency. This keeps the test harness flexible and focused only on the module under test.
+- This is a common and idiomatic pattern for flake-parts module testing, as it allows the test harness to remain stable and independent of changes to the main project flake's structure or dependencies.
+
+**Why is this done?**
+- It ensures that tests are robust to changes in the main flake and can be run in isolation.
+- It avoids coupling the test harness to the main flake's input structure, making tests easier to maintain and reason about.
+- It matches upstream best practices for flake-parts module testing, as seen in other projects and the flake-parts documentation.
+
+If you are writing or updating tests, always ensure that the test harness flake is called with the correct resolved inputs, including `latex-utils`, via the `outputsArgs` argument. This will ensure your tests remain stable and idiomatic.
+
 ## Consequences
 
 - Test files for flake-parts outputs will import the test harness flake and use the helper to realize outputs for a system.

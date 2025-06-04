@@ -15,8 +15,8 @@
     flakeDef = flake;
     outputsArgs = testHarnessOutputsArgs;
   };
-  unifiedShell = outputs.perSystem.${system}.build.unifiedTexShell;
-  vscodeShell = outputs.perSystem.${system}.build.vscodeSettingsShell;
+  unifiedShell = outputs.build.${system}.unifiedTexShell;
+  vscodeShell = outputs.build.${system}.vscodeSettingsShell;
   # Compose both fragments
   composedShell = pkgs.mkShell {
     inputsFrom = [unifiedShell vscodeShell];

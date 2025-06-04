@@ -139,3 +139,33 @@ If you do not follow this pattern, you will get errors like `attribute 'build' m
 
 @docs/ARCHITECTURE.md
 @docs/decisions/000-adr-template.md
+
+> **WARNING:**
+> In the flake-parts ecosystem, `perSystem` is **never** an output. It is always a function (or attribute set) provided as an argument to `flake-parts.lib.mkFlake`. All outputs like `devShells`, `packages`, etc. are produced by flake-parts by calling your `perSystem` function for each system and collecting the results under the appropriate output attributes. You should **never** use, produce, or access a `perSystem` output. If you see code like `outputs.perSystem.x86_64-linux`, it is incorrect and should be refactored.
+>
+> Example from the [flake-parts template](mdc:https:/github.com/hercules-ci/flake-parts/blob/main/template/default/flake.nix):
+> ```nix
+> outputs = inputs@{ flake-parts, ... }:
+>   flake-parts.lib.mkFlake { inherit inputs; } {
+>     systems = [ "x86_64-linux" ];
+>     perSystem = { config, self', inputs', pkgs, system, ... }: {
+>       packages.default = pkgs.hello;
+>     };
+>   };
+> ```
+> As shown, `perSystem` is a function argument, not an output.
+>
+> To verify this in upstream code, use gitingest:
+>   - To view the template: `gitingest hercules-ci/flake-parts template/default/flake.nix`
+>   - To view the README: `gitingest hercules-ci/flake-parts README.md`
+> Look for how `perSystem` is used: always as a function argument, never as an output.
+
+## Running Tests
+
+To run the nix-unit tests for the current system (recommended):
+
+```sh
+nix build .#checks.$(nix eval --raw --impure --expr builtins.currentSystem).nix-unit -L
+```
+
+This will build and run the nix-unit test suite for your current system.

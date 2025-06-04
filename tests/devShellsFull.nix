@@ -18,7 +18,7 @@
     outputsArgs = testHarnessOutputsArgs;
   };
 
-  fullShell = outputs.perSystem.${system}.devShells.full;
+  fullShell = outputs.devShells.${system}.full;
   getShellHook = drv:
     if drv ? shellHook
     then drv.shellHook
