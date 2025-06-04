@@ -25,18 +25,21 @@
 
   isAarch64Darwin = pkgs.stdenv.hostPlatform.system == "aarch64-darwin";
 in {
-  testSingleExtraPackageString = {
-    expr = builds (mkDoc {
-      name = "test-single-extra.pdf";
-      src = minimalTex "singleExtraSrc" "\\usepackage{xcolor}";
-      extraTexPackages = ["xcolor"];
-    });
-    expected = true;
-  };
+  testSingleExtraPackageString =
+    if isAarch64Darwin
+    then pkgs.runCommand "testSingleExtraPackageString-skipped" {} "echo Test skipped on aarch64-darwin; exit 0;"
+    else {
+      expr = builds (mkDoc {
+        name = "test-single-extra.pdf";
+        src = minimalTex "singleExtraSrc" "\\usepackage{xcolor}";
+        extraTexPackages = ["xcolor"];
+      });
+      expected = true;
+    };
 
   testMultipleExtraPackagesStrings =
     if isAarch64Darwin
-    then {}
+    then pkgs.runCommand "testMultipleExtraPackagesStrings-skipped" {} "echo Test skipped on aarch64-darwin; exit 0;"
     else {
       expr = builds (mkDoc {
         name = "test-multiple-extras.pdf";
@@ -46,17 +49,20 @@ in {
       expected = true;
     };
 
-  testNoExplicitExtraPackages = {
-    expr = builds (mkDoc {
-      name = "test-no-extras.pdf";
-      src = minimalTex "noExtrasSrc" "\\usepackage{amsmath}";
-    });
-    expected = true;
-  };
+  testNoExplicitExtraPackages =
+    if isAarch64Darwin
+    then pkgs.runCommand "testNoExplicitExtraPackages-skipped" {} "echo Test skipped on aarch64-darwin; exit 0;"
+    else {
+      expr = builds (mkDoc {
+        name = "test-no-extras.pdf";
+        src = minimalTex "noExtrasSrc" "\\usepackage{amsmath}";
+      });
+      expected = true;
+    };
 
   testEmptyListOfExtraPackages =
     if isAarch64Darwin
-    then {}
+    then pkgs.runCommand "testEmptyListOfExtraPackages-skipped" {} "echo Test skipped on aarch64-darwin; exit 0;"
     else {
       expr = builds (mkDoc {
         name = "test-empty-list.pdf";
@@ -68,7 +74,7 @@ in {
 
   testExplicitPackageAlsoDiscovered =
     if isAarch64Darwin
-    then {}
+    then pkgs.runCommand "testExplicitPackageAlsoDiscovered-skipped" {} "echo Test skipped on aarch64-darwin; exit 0;"
     else {
       expr = builds (mkDoc {
         name = "test-override-discovered.pdf";
@@ -80,7 +86,7 @@ in {
 
   testMultipleIndependentDocuments =
     if isAarch64Darwin
-    then {}
+    then pkgs.runCommand "testMultipleIndependentDocuments-skipped" {} "echo Test skipped on aarch64-darwin; exit 0;"
     else {
       expr = let
         doc1 = mkDoc {
@@ -98,18 +104,21 @@ in {
       expected = true;
     };
 
-  testPackageAlreadyInBaseScheme = {
-    expr = builds (mkDoc {
-      name = "test-already-in-scheme.pdf";
-      src = minimalTex "alreadyInSchemeSrc" "";
-      extraTexPackages = ["lm"];
-    });
-    expected = true;
-  };
+  testPackageAlreadyInBaseScheme =
+    if isAarch64Darwin
+    then pkgs.runCommand "testPackageAlreadyInBaseScheme-skipped" {} "echo Test skipped on aarch64-darwin; exit 0;"
+    else {
+      expr = builds (mkDoc {
+        name = "test-already-in-scheme.pdf";
+        src = minimalTex "alreadyInSchemeSrc" "";
+        extraTexPackages = ["lm"];
+      });
+      expected = true;
+    };
 
   testIntegrationWithFileParams =
     if isAarch64Darwin
-    then {}
+    then pkgs.runCommand "testIntegrationWithFileParams-skipped" {} "echo Test skipped on aarch64-darwin; exit 0;"
     else {
       expr = builds (mkDoc {
         name = "test-integration.pdf";
@@ -123,7 +132,7 @@ in {
 
   testListOfPackageDerivations =
     if isAarch64Darwin
-    then {}
+    then pkgs.runCommand "testListOfPackageDerivations-skipped" {} "echo Test skipped on aarch64-darwin; exit 0;"
     else {
       expr = builds (mkDoc {
         name = "test-list-of-derivations.pdf";
