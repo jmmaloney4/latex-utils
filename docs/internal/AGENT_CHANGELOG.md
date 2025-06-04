@@ -1,3 +1,13 @@
+Timestamp: 2025-06-04T22:46:10Z
+Agent: Claude 3.5 Sonnet
+
+- Created ADR-008: Modularize Large latex-utils.nix Module to document findings and plan for breaking down the monolithic 506-line latex-utils.nix file into focused, maintainable components.
+- Affected files: `docs/internal/decisions/008-modularize-latex-utils-module.md`
+- Rationale: The current `modules/latex-utils.nix` file has grown to 506 lines and violates single responsibility principle by handling type definitions, business logic, VSCode integration, and output assembly in one file. This makes maintenance, testing, and understanding difficult.
+- Details: Proposed splitting into 6 focused components: main orchestrator (~50-80 lines), types (~40-60 lines), options (~80-100 lines), document processing (~100-120 lines), VSCode integration (~80-100 lines), TeX environment (~60-80 lines), and outputs (~80-100 lines). Implementation plan includes 5 phases with comprehensive testing at each step to ensure no regressions.
+
+---
+
 Timestamp: 2025-06-04T20:40:07Z
 Agent: Gemini (via Cursor)
 
