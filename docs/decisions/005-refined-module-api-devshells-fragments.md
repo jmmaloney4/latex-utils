@@ -1,7 +1,8 @@
 # ADR 005: Refined `latex-utils` Module API for DevShells and Fragments
 
-**Status:** Proposed
-**Date:** 2024-05-16
+**Status:** Implemented  
+**Date:** 2024-05-16  
+**Implementation Date:** 2025-06-04  
 **Author:** AI Agent & User
 
 ---
@@ -322,7 +323,7 @@ This approach ensures that the module's outputs are tested in a context that mir
 
 ### Consequences
 
-*   **Module Implementation (`modules/latex-utils.nix`):**
+*   **Module Implementation (`modules/latex-utils.nix`)**
     *   The current `build.unifiedTexShell` option/output will be moved/renamed to `latex-utils.unifiedTexShell`.
     *   The current `build.vscodeSettingsShell` option/output will be moved/renamed to `latex-utils.vscodeShell`, and it will be updated to ensure it transitively includes `unifiedTexShell`'s environment.
     *   The current `devShells.full` will be renamed to `devShells.latex-utils` and updated to use `config.latex-utils.vscodeShell` via `inputsFrom`.
