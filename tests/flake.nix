@@ -18,14 +18,20 @@
     } {
       systems = ["x86_64-linux"];
       imports = [../modules/latex-utils.nix];
+
+      # Module-level options (not per-system)
+      latex-utils.documents = [];
+      # Add other module-level configuration as needed
+
       perSystem = {
         config,
         pkgs,
         lib,
         ...
       }: {
-        latex-utils.documents = [];
-        # Add more minimal config if needed for specific tests
+        # Per-system configuration can go here
+        # The latex-utils.unifiedTexShell and latex-utils.vscodeShell will be
+        # automatically populated by the module and available via config.latex-utils.*
       };
     };
 }

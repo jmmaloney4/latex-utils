@@ -3,19 +3,19 @@
   lib,
   findLatexPackages,
 }: let
-  # Test cases
+  # Test cases - using real TeX Live package names
   testInputBasic = ''
     % A comment
-    \\usepackage{foo}
-    \\usepackage{foo,bar}
-    \\usepackage[options]{baz,qux}
-    \\usepackage[opt]{single}
+    \\usepackage{amsmath}
+    \\usepackage{amsmath,amsfonts}
+    \\usepackage[options]{xcolor,graphics}
+    \\usepackage[opt]{geometry}
     Not a package line
   '';
 
   testInputWhitespace = ''
-    \\usepackage  {  spaced }
-    \\usepackage{  leading, trailing  }
+    \\usepackage  {  amsmath }
+    \\usepackage{  amsfonts, xcolor  }
   '';
 
   testInputMalformed = ''
@@ -25,8 +25,8 @@
   '';
 
   testInputComments = ''
-    % \\usepackage{shouldNotBeFound}
-    \\usepackage{shouldBeFound} % real package
+    % \\usepackage{amsmath}
+    \\usepackage{xcolor} % real package
     % just a comment
   '';
 
@@ -38,14 +38,14 @@ in {
   # Purpose: Verifies that standard package declarations (single, multiple, with options) are correctly identified.
   basic = {
     expr = getSortedNames testInputBasic;
-    expected = ["bar" "baz" "foo" "qux" "single"];
+    expected = ["amsfonts" "amsmath" "geometry" "graphics" "xcolor"];
   };
 
   # Test: Package extraction with varied whitespace around package names and braces.
   # Purpose: Ensures robustness in parsing despite inconsistent spacing in \usepackage commands.
   whitespace = {
     expr = getSortedNames testInputWhitespace;
-    expected = ["leading" "spaced" "trailing"];
+    expected = ["amsfonts" "amsmath" "xcolor"];
   };
 
   # Test: Behavior with malformed \usepackage commands.
@@ -59,7 +59,7 @@ in {
   # Purpose: Ensures that commented-out package declarations are ignored and inline comments don't interfere with parsing.
   comments = {
     expr = getSortedNames testInputComments;
-    expected = ["shouldBeFound"];
+    expected = ["xcolor"];
   };
 
   # Test: Behavior with empty file content.
@@ -79,35 +79,35 @@ in {
   # Test: Extraction of multiple packages declared in a single \usepackage command with options.
   # Purpose: Ensures options part is correctly ignored and all packages in the comma-separated list are found.
   multiPackageWithOptions = {
-    expr = getSortedNames ''\\usepackage[options]{foo, bar, baz}'';
-    expected = ["bar" "baz" "foo"];
+    expr = getSortedNames ''\\usepackage[options]{amsmath, amsfonts, xcolor}'';
+    expected = ["amsfonts" "amsmath" "xcolor"];
   };
 
   # Test: Extraction with a single package name in \usepackage and a CTAN mapping comment.
   # Purpose: Verifies that both the used package name and the TeX Live package name from the CTAN comment are extracted (e.g. tikz -> pgf).
   ctanSingle = {
     expr = getSortedNames ''\\usepackage{tikz} % CTAN: pgf'';
-    expected = ["pgf" "tikz"];
+    expected = ["pgf"]; # both tikz and pgf resolve to the same package
   };
 
   # Test: Extraction with a single package name in \usepackage and multiple TeX Live names in a CTAN comment.
   # Purpose: Checks that the used package and all packages listed in the CTAN comment are extracted.
   ctanMultiple = {
-    expr = getSortedNames ''\\usepackage{somepackage} % CTAN: ctanpackage1, ctanpackage2'';
-    expected = ["ctanpackage1" "ctanpackage2" "somepackage"];
+    expr = getSortedNames ''\\usepackage{amsmath} % CTAN: amsfonts, amssymb'';
+    expected = ["amsfonts" "amsmath" "amssymb"];
   };
 
   # Test: Extraction with multiple packages in \usepackage and multiple TeX Live names in a CTAN comment.
   # Purpose: Ensures all names from both \usepackage and the CTAN comment are aggregated.
   ctanMultiUseAndCTAN = {
-    expr = getSortedNames ''\\usepackage{foo, bar} % CTAN: baz, qux'';
-    expected = ["bar" "baz" "foo" "qux"];
+    expr = getSortedNames ''\\usepackage{amsmath, amsfonts} % CTAN: xcolor, geometry'';
+    expected = ["amsfonts" "amsmath" "geometry" "xcolor"];
   };
 
   # Test: Deduplication and whitespace handling for names extracted from \usepackage and CTAN comments.
-  # Purpose: Verifies that package names are deduplicated (e.g. if 'foo' is in \usepackage and CTAN comment) and whitespace in CTAN comments is handled.
+  # Purpose: Verifies that package names are deduplicated (e.g. if 'amsmath' is in \usepackage and CTAN comment) and whitespace in CTAN comments is handled.
   ctanDedupWhitespace = {
-    expr = getSortedNames ''\\usepackage{foo} % CTAN: foo, bar  ,   baz'';
-    expected = ["bar" "baz" "foo"];
+    expr = getSortedNames ''\\usepackage{amsmath} % CTAN: amsmath, amsfonts  ,   xcolor'';
+    expected = ["amsfonts" "amsmath" "xcolor"];
   };
 }
