@@ -81,6 +81,7 @@ All functions are pure Nix and live under `lib/`.
 | `packages.<doc>`              | One package per document (`paper`, `slides`, …).
 | `packages.texlive`            | Combined TeX Live env with *all* pkgs.
 | `packages.latexmk`            | `latexmk` wrapper bound to the unified env.
+| `packages.latexindent`        | `latexindent` wrapper bound to the unified environment
 | `devShells.full`              | Turn-key VS Code shell (enabled by `enableVSCode`)
 | `build.unifiedTexShell`       | Composable shell fragment (unified TeX, no VS Code integration)
 | `build.vscodeSettingsShell`   | Composable shell fragment (links VS Code settings.json)

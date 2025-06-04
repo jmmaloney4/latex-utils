@@ -266,9 +266,7 @@ perSystem = { config, pkgs, lib, self', ... }: {
     programs.latexindent = {
       enable = true;
       # Use latexindent from the unified TeX Live environment
-      package = pkgs.writeShellScriptBin "latexindent" ''
-        exec ${lib.getExe' self'.packages.texlive "latexindent"} "$@"
-      '';
+      package = self'.packages.latexindent;
     };
   };
   

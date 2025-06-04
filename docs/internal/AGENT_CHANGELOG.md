@@ -1629,6 +1629,34 @@ The unified TeX environment DOES contain all autodiscovered packages from all do
 - Maintains backward compatibility
 - Provides clear guidance for complex development environments
 
+Timestamp: 2025-06-04T23:24:21Z
+Agent: Claude 3.5 Sonnet
+
+**EXPOSE LATEXINDENT PACKAGE**
+
+Added an explicit `latexindent` wrapper export so users can access `latexindent` directly from the unified TeX Live environment.
+
+**Changes Made:**
+- Added `packages.latexindent` to `tex-environment.nix` under `unifiedPackages` to expose `latexindent` as its own package.
+- Updated documentation:
+  - `docs/internal/ARCHITECTURE.md` (added `packages.latexindent` row)
+  - `docs/user/ide-integration.md` (included `self'.packages.latexindent` in manual IDE integration example)
+
+**Rationale:**
+Providing a dedicated `latexindent` export enhances the developer experience by enabling users to reference `latexindent` directly in custom shells or CI scripts without manually wrapping it.
+
+**Architecture Alignment:**
+- **Single Source of Truth:** Centralizes binary wrappers for `latexmk`, `latexindent`, and `ltex-ls` all sourced from the unified environment.
+- **Declarative API:** Exposes intuitive package names that users can easily consume in both automated and manual setups.
+- **Unchanged Functionality:** `latexindent` is still executed within the unified TeX Live environment.
+
+**Files Affected:**
+- `modules/latex-utils/tex-environment.nix`
+- `docs/internal/ARCHITECTURE.md`
+- `docs/user/ide-integration.md`
+
+---
+
 
 
 

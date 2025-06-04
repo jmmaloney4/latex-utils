@@ -40,6 +40,9 @@
     latexmk = pkgs.writeShellScriptBin "latexmk" ''
       exec ${lib.getExe' unifiedTexEnv "latexmk"} "$@"
     '';
+    latexindent = pkgs.writeShellScriptBin "latexindent" ''
+      exec ${lib.getExe' unifiedTexEnv "latexindent"} "$@"
+    '';
   };
 
   # Helper dev shell fragment (no VS Code integration)

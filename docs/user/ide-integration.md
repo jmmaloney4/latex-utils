@@ -63,6 +63,7 @@ perSystem = { self', pkgs, ... }: {
       # Include the unified TeX Live environment for your IDE
       self'.packages.texlive
       self'.packages.latexmk
+      self'.packages.latexindent
     ];
   };
 };
