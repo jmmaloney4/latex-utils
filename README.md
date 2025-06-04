@@ -231,6 +231,71 @@ nix develop github:jmmaloney4/latex-utils#latex-utils.x86_64-linux.vscodeShell
 
 ---
 
+## 🔗 Avoiding TeX Live Environment Conflicts
+
+When composing development shells that include latex-utils with other tools that provide their own TeX Live environments (like treefmt with latexindent), you may encounter PATH conflicts where the wrong TeX Live environment takes precedence.
+
+### Common Problem: treefmt + latexindent Conflicts
+
+If your development shell includes both latex-utils and treefmt with latexindent enabled, you might see issues like:
+
+```bash
+# This might not find packages from your unified TeX environment
+kpsewhich enumitem.sty  # Package not found
+
+# But this works fine
+nix develop .#latex-utils --command kpsewhich enumitem.sty  # Found!
+```
+
+This happens because treefmt's devShell provides its own TeX Live environment that gets PATH precedence over the unified environment.
+
+### Solution: Use Custom latexindent Wrapper
+
+Instead of including treefmt's devShell in `inputsFrom`, configure treefmt to use a custom latexindent wrapper that references your unified TeX Live environment:
+
+```nix
+perSystem = { config, pkgs, lib, self', ... }: {
+  # Configure your LaTeX documents
+  latex-utils.documents = [ /* ... */ ];
+  
+  # Configure treefmt with custom latexindent from unified TeX environment
+  treefmt.config = {
+    inherit (config.flake-root) projectRootFile;
+    package = pkgs.treefmt;
+    programs.alejandra.enable = true;
+    programs.latexindent = {
+      enable = true;
+      # Use latexindent from the unified TeX Live environment
+      package = pkgs.writeShellScriptBin "latexindent" ''
+        exec ${lib.getExe' self'.packages.texlive-unified "latexindent"} "$@"
+      '';
+    };
+  };
+  
+  devShells.default = pkgs.mkShell {
+    # DON'T include treefmt's devShell to avoid TeX Live conflicts
+    inputsFrom = [ config.latex-utils.vscodeShell ];
+    
+    # Include treefmt wrapper directly
+    buildInputs = [ 
+      config.treefmt.build.wrapper
+      # ... your other tools
+    ];
+  };
+};
+```
+
+### Key Points
+
+- **Use the unified package**: `self'.packages.texlive-unified` contains all your autodiscovered packages
+- **Extract the binary**: `lib.getExe' self'.packages.texlive-unified "latexindent"` gets the latexindent path
+- **Avoid shell mixing**: Don't include `config.treefmt.build.devShell` in `inputsFrom`
+- **Direct wrapper inclusion**: Use `config.treefmt.build.wrapper` in `buildInputs` instead
+
+This ensures that all TeX commands (including latexindent) use the same unified TeX Live environment with all your document packages available.
+
+---
+
 ## Automatic Package Discovery
 
 latex-utils automatically identifies and includes the TeX Live packages your documents need by scanning your LaTeX source files. This eliminates the need to manually specify most package dependencies.

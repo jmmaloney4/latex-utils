@@ -74,6 +74,7 @@
   # Get module-level configuration
   documents = config.latex-utils.documents;
   moduleExtraTexPackages = config.latex-utils.extraTexPackages;
+  enableVSCode = config.latex-utils.enableVSCode;
 in {
   options = {
     # Module-Level Options (Not Per-System)
@@ -181,19 +182,20 @@ in {
           # Extract packages from each file with better error handling
           discovered =
             builtins.foldl' (a: b: a // b) {}
-            (map (p: let
-              pathStr = toString p;
-              contextMsg = "while discovering packages in ${pathStr} for document ${doc.name}";
-            in
-              lib.addErrorContext contextMsg (
-                if (builtins.pathExists p)
-                then let
-                  contents = builtins.readFile p;
-                in
-                  findLatexPackages {fileContents = contents;}
-                else lib.warn "LaTeX file ${pathStr} not found for document ${doc.name}" {}
-              ))
-            (lib.lists.unique searchPaths));
+            (map
+              (p: let
+                pathStr = toString p;
+                contextMsg = "while discovering packages in ${pathStr} for document ${doc.name}";
+                rawDiscovered =
+                  if (builtins.pathExists p)
+                  then let
+                    contents = builtins.readFile p;
+                  in
+                    findLatexPackages {fileContents = contents;}
+                  else lib.warn "LaTeX file ${pathStr} not found for document ${doc.name}" {};
+              in
+                lib.addErrorContext contextMsg rawDiscovered)
+              (lib.lists.unique searchPaths));
 
           # Normalize document-specific extraTexPackages
           # Pass discovered packages for function-type extraTexPackages
@@ -208,7 +210,8 @@ in {
           # Document-level takes precedence
           mergedExtraPackages = moduleExtraPackagesNormalized // docExtraPackagesNormalized;
         in {
-          inherit doc discovered;
+          inherit doc;
+          discovered = discovered;
           extraNormalized = mergedExtraPackages;
         })
         documents;
@@ -242,6 +245,7 @@ in {
             (pkgs.texlive)
             latex-bin
             latexmk
+            latexindent
             biblatex
             biber
             csquotes
@@ -478,7 +482,7 @@ in {
             );
 
           # Complete devShell using standard flake-parts devShells transposition
-          devShells.latex-utils = lib.mkIf config.latex-utils.enableVSCode (pkgs.mkShell {
+          devShells.latex-utils = lib.mkIf enableVSCode (pkgs.mkShell {
             name = "latex-utils-devshell";
             inputsFrom = [config.latex-utils.vscodeShell]; # Use config.latex-utils.vscodeShell
           });
