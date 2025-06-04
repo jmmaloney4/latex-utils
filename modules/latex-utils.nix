@@ -4,71 +4,13 @@
   flake-parts-lib,
   ...
 }: let
-  # Define custom types for extraTexPackages
-  extraTexPackagesType =
-    lib.types.either
-    (lib.types.either
-      (lib.types.listOf lib.types.str)
-      (lib.types.listOf lib.types.package))
-    (lib.types.functionTo (lib.types.listOf lib.types.package));
+  # Import type definitions
+  types = import ./latex-utils/types.nix {inherit lib;};
 
-  docType = lib.types.submodule {
-    options = {
-      name = lib.mkOption {
-        type = lib.types.str;
-        description = "Name of the output PDF/package";
-        example = "my-paper.pdf";
-      };
-
-      src = lib.mkOption {
-        type = lib.types.path;
-        description = "Source directory for the LaTeX document";
-        example = ./my-paper;
-      };
-
-      inputFile = lib.mkOption {
-        type = lib.types.str;
-        default = "main.tex";
-        description = "Main .tex file (relative to src)";
-        example = "main.tex";
-      };
-
-      workingDirectory = lib.mkOption {
-        type = lib.types.str;
-        default = ".";
-        description = "Working directory within src for the LaTeX document";
-        example = ".";
-      };
-
-      extraTexPackages = lib.mkOption {
-        type = extraTexPackagesType;
-        default = [];
-        description = ''
-          Extra TeX Live packages to include for this document.
-          Can be:
-          - List of package names (strings): ["'mathrsfs'" "'xcolor'"]
-          - List of derivations: [pkgs.texlive.mathrsfs pkgs.myCustomTexPackage]
-          - A function that takes `pkgs.texlive` and returns a list of derivations: `texlive: [ texlive.mathrsfs texlive.xcolor ]`
-
-          Note: Lists must be homogeneous (all strings OR all derivations).
-          Functions must return lists of derivations.
-
-          See: https://nixos.wiki/wiki/TexLive#Customizing_TeX_Live_environments
-        '';
-        example = lib.literalExpression ''
-          # List of package name strings
-          ["'mathrsfs'" "'xcolor'"]
-
-          # List of derivations
-          [pkgs.texlive.mathrsfs pkgs.myCustomTexPackage]
-
-          # Function (for dynamic package selection)
-          (discovered: if builtins.hasAttr "tikz" discovered
-                       then [pkgs.texlive.pgfplots]
-                       else [])
-        '';
-      };
-    };
+  # Import option definitions
+  optionsModule = import ./latex-utils/options.nix {
+    inherit lib flake-parts-lib;
+    inherit types;
   };
 
   # Get module-level configuration
@@ -76,75 +18,8 @@
   moduleExtraTexPackages = config.latex-utils.extraTexPackages;
   enableVSCode = config.latex-utils.enableVSCode;
 in {
-  options = {
-    # Module-Level Options (Not Per-System)
-    # These are global configuration options that apply across all systems
-    latex-utils = {
-      documents = lib.mkOption {
-        type = lib.types.listOf docType;
-        default = [];
-        description = "List of LaTeX documents to build as packages";
-      };
-
-      extraTexPackages = lib.mkOption {
-        type = extraTexPackagesType;
-        default = [];
-        description = ''
-          Extra TeX Live packages to include for ALL documents and environments.
-          These packages are merged with document-specific packages.
-
-          Can be:
-          - List of package names (strings): ["mathrsfs" "xcolor"]
-          - List of derivations: [pkgs.texlive.mathrsfs pkgs.myCustomTexPackage]
-          - A function that takes `pkgs.texlive` and returns a list of derivations: `texlive: [ texlive.mathrsfs texlive.xcolor ]`
-
-          Note: Lists must be homogeneous (all strings OR all derivations).
-          Functions must return lists of derivations.
-          Document-specific packages take precedence in case of conflicts.
-        '';
-        example = lib.literalExpression ''
-          # Common packages for all documents
-          ["amsmath" "amssymb" "mathtools" "unicode-math"]
-        '';
-      };
-
-      enableVSCode = lib.mkOption {
-        type = lib.types.bool;
-        default = true;
-        description = "Whether to enable VS Code integration in devShells";
-      };
-
-      flakeFormatter = lib.mkOption {
-        type = lib.types.bool;
-        default = false;
-        description = "Whether to provide a flake formatter for .tex files";
-      };
-
-      flakeCheck = lib.mkOption {
-        type = lib.types.bool;
-        default = false;
-        description = "Whether to enable a flake check that rebuilds all PDFs";
-      };
-    };
-
-    # Per-System Options (Using flake-parts transposition)
-    # These define shell fragments that will be available as outputs.latex-utils.${system}.*
-    perSystem = flake-parts-lib.mkPerSystemOption {
-      options.latex-utils = {
-        unifiedTexShell = lib.mkOption {
-          type = lib.types.package;
-          description = "Composable devshell fragment with unified TeX Live environment";
-          readOnly = true;
-        };
-
-        vscodeShell = lib.mkOption {
-          type = lib.types.package;
-          description = "Composable devshell fragment with TeX environment + VSCode integration";
-          readOnly = true;
-        };
-      };
-    };
-  };
+  # Import options from the options module
+  inherit (optionsModule) options;
 
   config = {
     # Register transposition for latex-utils namespace
