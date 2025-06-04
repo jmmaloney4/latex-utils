@@ -1,13 +1,17 @@
 {
+  description = "A LaTeX document project using latex-utils";
+
   inputs = {
-    nixpkgs.url = github:NixOS/nixpkgs/nixos-unstable;
-    flake-parts.url = github:hercules-ci/flake-parts;
+    # Pin the version of nixpkgs to ensure reproducibility
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-parts.url = "github:hercules-ci/flake-parts";
     latex-utils = {
       url = "github:jmmaloney4/latex-utils";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-parts.follows = "flake-parts";
     };
   };
+
   outputs = inputs @ {
     flake-parts,
     latex-utils,
@@ -15,12 +19,13 @@
   }:
     flake-parts.lib.mkFlake {inherit inputs;} {
       systems = ["x86_64-linux"];
-      imports = [inputs.latex-utils.modules.latex-utils];
+      imports = [flakeInputs.flake-parts.flakeModules.easySetup];
       perSystem = {
         config,
         pkgs,
         ...
       }: {
+        imports = [inputs.latex-utils.modules.flake.latex-utils];
         latex-utils.documents = [
           {
             name = "mydocument.pdf";
@@ -32,7 +37,7 @@
           }
         ];
         # Use the turn-key VS Code shell:
-        devShells.default = config.latex-utils.devShells.full;
+        devShells.default = config.devShells.latex-utils;
         # Or compose your own shell fragments:
         # devShells.myCustom = pkgs.mkShell {
         #   inputsFrom = [

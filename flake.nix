@@ -26,6 +26,8 @@
         flakeInputs.mission-control.flakeModule
         flakeInputs.flake-root.flakeModule
         flakeInputs.git-hooks-nix.flakeModule
+        flakeInputs.flake-parts.flakeModules.modules
+        ./modules/latex-utils.nix
       ];
       perSystem = {
         config,
@@ -104,9 +106,9 @@
           };
         };
       };
+      # For backward compatibility, as per ADR-007
       flake = {
         flakeModule = import ./modules/latex-utils.nix;
-        flakeModules.latex-utils = import ./modules/latex-utils.nix;
       };
     };
 }

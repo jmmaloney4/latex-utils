@@ -8,7 +8,7 @@
   
   outputs = { latex-utils, ... } @ inputs:
     flake-parts.lib.mkFlake { inherit inputs; } {
-      imports = [ inputs.latex-utils.modules.latex-utils ];
+      imports = [ inputs.latex-utils.modules.flake.latex-utils ];
       
       latex-utils.documents = [
         {
@@ -75,7 +75,7 @@
   
   outputs = { latex-utils, ... } @ inputs:
     flake-parts.lib.mkFlake { inherit inputs; } {
-      imports = [ inputs.latex-utils.modules.latex-utils ];
+      imports = [ inputs.latex-utils.modules.flake.latex-utils ];
       
       latex-utils.documents = [
         {

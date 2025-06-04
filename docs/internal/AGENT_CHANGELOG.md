@@ -1296,3 +1296,31 @@ $ nix-instantiate --eval --expr '...'
 3. Document common LaTeX vs TeX Live package name differences 
 ---
 
+Timestamp: YYYY-MM-DDTHH:MM:SSZ
+Agent: Gemini (via Cursor)
+
+Implemented ADR-007 to publish the `latex-utils` module using the idiomatic `flake-parts.modules` approach (`outputs.modules.flake.latex-utils`), while retaining backward compatibility for `flake.flakeModule`.
+
+Key changes:
+- Created `docs/internal/decisions/007-publish-module-using-flake-parts-modules.md`:
+    - Documented the decision to migrate to `flake-parts.modules`.
+    - Added a section explaining Nix module classes in the context of `flake-parts` (e.g., `nixosModules`, `flake` class).
+    - Revised the "Decision" section to specify `flake.modules.flake.latex-utils` as the canonical path, retain `flake.flakeModule` (pointing to `import ./modules/latex-utils.nix;`) for backward compatibility, and remove the old `flake.flakeModules.latex-utils` alias.
+- Modified `flake.nix`:
+    - Added `flakeInputs.flake-parts.flakeModules.modules` to the global `imports` list.
+    - Added `./modules/latex-utils.nix` to the global `imports` list, enabling discovery by `flake-parts` for the `outputs.modules.flake.latex-utils` path.
+    - Re-introduced `flake.flakeModule = import ./modules/latex-utils.nix;` at the top level of the main `outputs` block for backward compatibility, as per the updated ADR.
+    - The previous direct `flake.flakeModule` and `flake.flakeModules.latex-utils` exports from an earlier version of the `flake.nix` structure (before this ADR process started) remain removed in favor of the new `flake-parts.modules` system and the explicit backward compatibility layer.
+- Verified that `modules/latex-utils.nix` is correctly structured to be picked up by `flake-parts` (implicitly named "latex-utils" and classed as "flake").
+- Updated documentation and examples (`README.md`, `docs/user/*.md`, `template/flake.nix`) to primarily reference the new canonical import path `inputs.latex-utils.modules.flake.latex-utils`, while also mentioning `inputs.latex-utils.flakeModule` for existing users or direct import needs.
+- Confirmed via search that no existing tests in `tests/**/*.nix` were directly asserting the old publishing paths (`flakeModule` or `flakeModules.latex-utils` from the pre-ADR structure).
+- Updated `flake.lock` by running `nix flake lock` after the `flake.nix` modifications.
+
+This multi-step change aligns the project with `flake-parts` best practices for module publishing, improving discoverability and type safety via `flake.modules.flake.latex-utils`, while providing a clear backward compatibility path with `flake.flakeModule`.
+
+---
+
+
+
+
+

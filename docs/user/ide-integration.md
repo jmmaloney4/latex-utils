@@ -92,9 +92,13 @@ The module creates a single TeX Live environment containing all packages from al
 ```nix
 {
   inputs.latex-utils.url = "github:jmmaloney4/latex-utils";
-  
+  # If latex-utils is an input of your flake-parts flake:
+  # imports = [ inputs.latex-utils.flakeModules.latex-utils ];
+  # Or, if you are manually importing the module:
+  imports = [ inputs.latex-utils.modules.flake.latex-utils ];
+
   outputs = inputs: flake-parts.lib.mkFlake { inherit inputs; } {
-    imports = [ inputs.latex-utils.modules.latex-utils ];
+    imports = [ inputs.latex-utils.modules.flake.latex-utils ];
     
     latex-utils.documents = [
       {

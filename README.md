@@ -52,9 +52,9 @@
    # ...
    outputs = { self, flake-parts, latex-utils, nixpkgs }@inputs:
      flake-parts.lib.mkFlake { inherit self inputs; } {
-       systems = [ "x86_4-linux" /* ... other systems ... */ ];
+       systems = [ "x86_64-linux" /* ... other systems ... */ ];
        imports = [
-         inputs.latex-utils.flakeModule # Use flakeModule for flake-parts
+         inputs.latex-utils.modules.flake.latex-utils # Use standard flake-parts module path
        ];
        perSystem = { config, pkgs, system, ... }: {
          # Configure latex-utils options
@@ -692,50 +692,58 @@ To ensure fast, reliable, and reproducible font discovery for LuaLaTeX and XeLaT
 
 ```nix
 {
-  description = "My LaTeX project";
-  inputs.latex-utils.url = "github:jmmaloney4/latex-utils";
-  inputs.flake-parts.url = "github:hercules-ci/flake-parts";
-  # Assuming you have nixpkgs input:
-  # inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  description = "A sample LaTeX project using latex-utils";
 
-  outputs = inputs@{ self, flake-parts, latex-utils, nixpkgs }:
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    latex-utils.url = "github:jmmaloney4/latex-utils";
+    # For git pre-commit hooks (optional)
+    git-hooks-nix.url = "github:cachix/git-hooks.nix";
+    treefmt-nix.url = "github:numtide/treefmt-nix";
+  };
+
+  outputs = { self, flake-parts, latex-utils, nixpkgs, ... }@inputs:
     flake-parts.lib.mkFlake { inherit self inputs; } {
-      systems = [ "x86_4-linux" ]; # Add other systems as needed
-      imports = [ inputs.latex-utils.flakeModule ];
+      systems = [ "x86_64-linux" ]; # Add your target systems
 
-      # Module-level configurations are typically placed in perSystem
-      # for flake-parts modules, or can be at this top level if
-      # the module is designed to pick them up (latex-utils does).
-      perSystem = { config, pkgs, system, ... }: {
-        latex-utils.extraTexPackages = [
-          "amsmath"
-          "geometry"
-          "hyperref"
-        ];
+      imports = [
+        inputs.latex-utils.modules.flake.latex-utils # Use standard flake-parts module path
+        # inputs.git-hooks-nix.flakeModule # Optional: For pre-commit hooks
+        # inputs.treefmt-nix.flakeModule   # Optional: For code formatting
+      ];
 
-        latex-utils.documents = [
-          {
-            name = "thesis.pdf";
-            src = ./.;
-            # Uses module packages + any discovered packages
-          }
-          {
-            name = "poster.pdf";
-            src = ./poster;
-            inputFile = "poster.tex";
-            # Add poster-specific packages
-            extraTexPackages = ["tikzposter" "tikz"];
-          }
-        ];
+      perSystem = { config, pkgs, system, lib, ... }:
+        {
+          latex-utils.extraTexPackages = [
+            "amsmath"
+            "geometry"
+            "hyperref"
+          ];
 
-        # Use the unified VSCode dev shell provided by latex-utils
-        devShells.default = config.devShells.latex-utils;
-        # Or create your own composition:
-        # devShells.my-latex = pkgs.mkShell {
-        #   inputsFrom = [ config.latex-utils.vscodeShell ];
-        #   buildInputs = [ pkgs.pandoc ];
-        # };
-      };
+          latex-utils.documents = [
+            {
+              name = "thesis.pdf";
+              src = ./.;
+              # Uses module packages + any discovered packages
+            }
+            {
+              name = "poster.pdf";
+              src = ./poster;
+              inputFile = "poster.tex";
+              # Add poster-specific packages
+              extraTexPackages = ["tikzposter" "tikz"];
+            }
+          ];
+
+          # Use the unified VSCode dev shell provided by latex-utils
+          devShells.default = config.devShells.latex-utils;
+          # Or create your own composition:
+          # devShells.my-latex = pkgs.mkShell {
+          #   inputsFrom = [ config.latex-utils.vscodeShell ];
+          #   buildInputs = [ pkgs.pandoc ];
+          # };
+        };
     };
 }
 ```
@@ -744,44 +752,4 @@ To ensure fast, reliable, and reproducible font discovery for LuaLaTeX and XeLaT
 
 ## Library Functions
 
-The following utility functions are available in the `lib/` directory. See [docs/user/library.md](docs/user/library.md) for full details and advanced usage.
-
-| Function                | Description |
-|-------------------------|-------------|
-| `findLatexFiles`        | Recursively finds all LaTeX source files (.tex, .cls, etc.) in a directory tree. |
-| `findLatexPackages`     | Parses LaTeX source files to extract required TeX Live package names from `\usepackage` lines. |
-| `normalizeExtraTexPackages` | Normalizes different input formats for `extraTexPackages` (strings, derivations, functions) to a consistent attrset of derivations. |
-| `mkLatexPdfDocument`    | Builds a LaTeX document as a Nix derivation, automatically including required and extra TeX Live packages. |
-| `mkFontconfigCache`     | Prebuilds the fontconfig cache for LuaLaTeX and XeLaTeX, using all fonts available in your TeX environment. |
-
-See [docs/user/library.md](docs/user/library.md) for arguments, return values, and advanced usage.
-
----
-
-## Usage Examples (Tests)
-
-The `tests/` directory contains real-world usage examples and regression tests for the library functions and module options. See:
-- `tests/extraTexPackages.nix`: Examples of using `extraTexPackages` and building multiple documents.
-- `tests/findLatexPackages.nix`: Examples of parsing LaTeX files for required packages.
-- `tests/unifiedTexLive.nix`: Comprehensive tests for the unified TeX Live environment functionality.
-
-Run all tests with:
-```sh
-nix flake check
-```
-
-Or run just the nix-unit tests:
-```sh
-nix build .#checks.$(nix eval --raw --impure --expr builtins.currentSystem).nix-unit
-```
-
----
-
-## Documentation
-
-- **[Library Functions](docs/user/library.md)** - Detailed library function reference  
-- **[TeX Live Integration](docs/user/texlive-integration.md)** - Comprehensive guide to TeX Live package structure and the `normalizeExtraTexPackages` function
-- **[IDE Integration Guide](docs/user/ide-integration.md)** - Complete guide for IDE setup with unified TeX Live environments
-- **[Consumer Flake Example](docs/user/consumer-flake-example.md)** - Before/after example showing VSCode integration simplification
-
----
+The following utility functions are available in the `lib/`
