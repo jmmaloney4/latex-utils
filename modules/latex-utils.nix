@@ -47,7 +47,7 @@
           Can be:
           - List of package names (strings): ["mathrsfs" "xcolor"]
           - List of derivations: [pkgs.texlive.mathrsfs pkgs.myCustomTexPackage]
-          - Function returning derivation list: (discovered: [pkgs.texlive.xcolor])
+          - A function that takes `pkgs.texlive` and returns a list of derivations: `texlive: [ texlive.mathrsfs texlive.xcolor ]`
 
           Note: Lists must be homogeneous (all strings OR all derivations).
           Functions must return lists of derivations.
@@ -91,7 +91,7 @@ in {
           Can be:
           - List of package names (strings): [" mathrsfs " " xcolor "]
           - List of derivations: [pkgs.texlive.mathrsfs pkgs.myCustomTexPackage]
-          - Function returning derivation list: (discovered: [pkgs.texlive.xcolor])
+          - A function that takes `pkgs.texlive` and returns a list of derivations: `texlive: [ texlive.mathrsfs texlive.xcolor ]`
 
           Note: Lists must be homogeneous (all strings OR all derivations).
           Functions must return lists of derivations.

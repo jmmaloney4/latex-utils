@@ -15,8 +15,8 @@
     flakeDef = flake;
     outputsArgs = testHarnessOutputsArgs;
   };
-  unifiedShell = outputs.build.${system}.unifiedTexShell;
-  vscodeShell = outputs.build.${system}.vscodeSettingsShell;
+  unifiedShell = outputs.latex-utils.${system}.unifiedTexShell;
+  vscodeShell = outputs.latex-utils.${system}.vscodeShell;
   # Compose both fragments
   composedShell = pkgs.mkShell {
     inputsFrom = [unifiedShell vscodeShell];
@@ -36,14 +36,14 @@
     lib.any (input: lib.hasInfix "texlive" (builtins.toString input)) (map builtins.toString inputs);
 in {
   test_unifiedTexShell_is_package = lib.isDerivation unifiedShell;
-  test_vscodeSettingsShell_is_package = lib.isDerivation vscodeShell;
+  test_vscodeShell_is_package = lib.isDerivation vscodeShell;
 
   test_unifiedTexShell_has_texlive = let
     inputs = getBuildInputs unifiedShell;
   in
     lib.any (input: lib.hasInfix "texlive" (builtins.toString input)) (map builtins.toString inputs);
 
-  test_vscodeSettingsShell_shellHook_links_settings = let
+  test_vscodeShell_shellHook_links_settings = let
     hook = getShellHook vscodeShell;
   in
     lib.hasInfix ".vscode/settings.json" (toString hook);

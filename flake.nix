@@ -54,7 +54,7 @@
               documentLevelPackages = import ./tests/documentLevelPackages.nix {
                 inherit pkgs lib;
               };
-              devShellsFull = import ./tests/devShellsFull.nix {
+              devShellLatexUtils = import ./tests/devShellLatexUtils.nix {
                 inherit pkgs lib;
                 mainFlakeResolvedInputs = inputs;
               };
