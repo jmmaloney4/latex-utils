@@ -4,6 +4,7 @@
   pkgs,
   documents,
   enableVSCode,
+  flakeCheck,
   # Document processing outputs
   mkDoc,
   # TeX environment outputs
@@ -59,7 +60,7 @@ in {
     };
   };
 
-  checks = lib.optionalAttrs config.latex-utils.flakeCheck {
+  checks = lib.optionalAttrs flakeCheck {
     latex = latexCheck;
   };
 

@@ -17,6 +17,7 @@
   documents = config.latex-utils.documents;
   moduleExtraTexPackages = config.latex-utils.extraTexPackages;
   enableVSCode = config.latex-utils.enableVSCode;
+  flakeCheck = config.latex-utils.flakeCheck;
 in {
   # Import options from the options module
   inherit (optionsModule) options;
@@ -51,7 +52,7 @@ in {
 
       # Import output assembly
       outputsModule = import ./latex-utils/outputs.nix {
-        inherit config lib pkgs documents enableVSCode;
+        inherit config lib pkgs documents enableVSCode flakeCheck;
         # Document processing outputs
         inherit (documentProcessing) mkDoc;
         # TeX environment outputs
