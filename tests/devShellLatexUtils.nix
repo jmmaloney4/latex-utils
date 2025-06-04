@@ -10,11 +10,10 @@
 
   # These are the arguments that the test harness flake's `outputs` function expects
   testHarnessOutputsArgs = {
-    self = flake; # The test harness flake itself
-    inherit (mainFlakeResolvedInputs) nixpkgs flake-parts;
-    # If your modules/latex-utils.nix uses specific inputs from the main flake,
-    # they might need to be passed here too, e.g.:
-    # latex-utils-inputs = mainFlakeResolvedInputs.latex-utils-inputs;
+    self = flake;
+    nixpkgs = mainFlakeResolvedInputs.nixpkgs;
+    flake-parts = mainFlakeResolvedInputs.flake-parts;
+    latex-utils = mainFlakeResolvedInputs.self;
   };
 
   # Evaluate the test harness flake to get its outputs
@@ -23,22 +22,35 @@
     outputsArgs = testHarnessOutputsArgs;
   };
 
-  # The specific devShell to test
-  # This path comes from the `perSystem` output of your `modules/latex-utils.nix` flake module
-  theShell = outputs.devShells.${system}.latex-utils;
+  # Test the vscodeShell fragment instead of the conditional devShells.latex-utils
+  # This should be available regardless of enableVSCode setting
+  vscodeShell = outputs.latex-utils.${system}.vscodeShell or (throw "latex-utils.vscodeShell not found in outputs");
 in {
-  # Test 1: Check if the devShell is a derivation
-  test_latexUtilsShell_is_derivation = lib.isDerivation theShell;
+  # Test 1: Check if the vscodeShell is a derivation
+  test_vscodeShell_is_derivation = lib.isDerivation vscodeShell;
 
-  # Test 2: Check if it has a basic TeX Live package in its buildInputs
-  # This assumes 'texlive-scheme-basic' or a similar foundational package is expected.
-  # Adjust the package name if your default set is different.
-  test_latexUtilsShell_has_texlive_basic_scheme =
-    lib.any (p: lib.getName p == "texlive-scheme-basic") theShell.buildInputs;
+  # Test 2: Check if the vscodeShell has TeX Live content in inputsFrom
+  test_vscodeShell_has_inputs_from =
+    vscodeShell ? inputsFrom && lib.isList vscodeShell.inputsFrom && vscodeShell.inputsFrom != [];
 
-  # Test 3: Check if the shellHook is a non-empty string (basic check)
-  test_latexUtilsShell_has_shellHook =
-    theShell ? shellHook && lib.isString theShell.shellHook && theShell.shellHook != "";
+  # Test 3: Check if the vscodeShell has a shellHook
+  test_vscodeShell_has_shellHook =
+    vscodeShell ? shellHook && lib.isString vscodeShell.shellHook && vscodeShell.shellHook != "";
+
+  # Test 4: Check if first inputsFrom item has texlive in buildInputs
+  test_vscodeShell_includes_texlive = let
+    hasInputsFrom = vscodeShell ? inputsFrom && vscodeShell.inputsFrom != [];
+    firstInput =
+      if hasInputsFrom
+      then builtins.head vscodeShell.inputsFrom
+      else null;
+    hasTexLive =
+      firstInput
+      != null
+      && firstInput ? buildInputs
+      && lib.any (p: lib.hasInfix "texlive" (lib.getName p)) firstInput.buildInputs;
+  in
+    hasInputsFrom && hasTexLive;
 
   # Add more specific tests as needed, for example:
   # - Check for specific tools (biber, latexmk, etc.)
