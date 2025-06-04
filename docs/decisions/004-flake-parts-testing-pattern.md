@@ -44,76 +44,140 @@ The core question: **How should we test flake-parts module outputs in nix-unit?*
 ## Decision Outcome
 
 - **For flake-parts module outputs** (e.g., shells, packages, apps):
-  - Always test by using a dedicated **Test Harness Flake (`tests/flake.nix`)**. 
-    *   **Purpose:** Creates a minimal, isolated flake environment that imports and configures the module under test (e.g., `../modules/latex-utils.nix`).
-    *   **Structure:**
-        *   Declares only essential inputs (e.g., `nixpkgs`, `flake-parts`, potentially the module's source if not co-located or handled differently).
-        *   Uses `flake-parts.lib.mkFlake`.
-        *   Its `perSystem` block **must** include the module under test in its `imports` list (e.g., `imports = [ ../modules/latex-utils.nix ];`).
-        *   The `perSystem` block should also provide any minimal configuration options necessary for the imported module to produce the specific outputs that are being targeted by the unit tests. Often, if the module has well-defined defaults, simply importing it is sufficient.
-        *   Crucially, it does **not** inherit all inputs from the main project flake, only those explicitly passed when its outputs are evaluated (see next point).
-    *   **Rationale:** Isolates the module, making tests less brittle and easier to debug. It ensures that the module is tested with a controlled set of inputs.
-  - The **Test Files (e.g., `tests/yourTestName.nix`)** then:
-    *   Import the test harness flake definition: `testHarnessFlakeDef = import ./flake.nix;` (where `./flake.nix` refers to `tests/flake.nix`).
-    *   Utilize `mainFlakeResolvedInputs` (passed from the main project flake's `checks` definition, containing all resolved inputs of the main project flake).
-    *   Construct the arguments for the test harness flake's `outputs` function:
-      ```nix
-      testHarnessOutputsArgs = {
-        self = testHarnessFlakeDef; # The test harness flake definition itself
-        nixpkgs = mainFlakeResolvedInputs.nixpkgs;     # The actual nixpkgs flake
-        flake-parts = mainFlakeResolvedInputs.flake-parts; # The actual flake-parts flake
-        # If the module under test needs a reference to the main project flake (e.g., as 'latex-utils'):
-        latex-utils = mainFlakeResolvedInputs.self;    # The main project flake
-        # ... any other resolved inputs the test harness or module might need from the main flake ...
-      };
-      ```
-    *   Evaluate the test harness outputs using a helper: `outputs = import ./test-flake-helpers.nix { flakeDef = testHarnessFlakeDef; outputsArgs = testHarnessOutputsArgs; };`
-    *   Note on `test-flake-helpers.nix`: This helper is a standard and simple way to evaluate the test harness flake's `outputs` function. It takes the `flakeDef` and `outputsArgs` and calls `flakeDef.outputs outputsArgs`.
-    *   Tests then access the generated outputs of the test harness flake (e.g., `outputs.packages.${system}.foo`, `outputs.devShells.${system}.bar`).
+  - Always test by leveraging the **`nix-unit` integration with `flake-parts`**. This involves:
+    1.  **Main Flake Configuration (`flake.nix`):**
+        *   Import `inputs.nix-unit.modules.flake.default` into your `flake-parts.lib.mkFlake` call.
+        *   **Crucially, use `perSystem.nix-unit.inputs` to explicitly declare which of the main flake's resolved inputs should be passed to the test environment.** This is the key to ensuring inputs like `nixpkgs`, `flake-parts`, and the project's own `self` (often aliased, e.g., as `latex-utils`) are correctly propagated as flake objects.
+            ```nix
+            # In your main flake.nix
+            outputs = flakeInputs @ { flake-parts, nix-unit, systems, ... }:
+              flake-parts.lib.mkFlake { inputs = flakeInputs; } {
+                systems = import systems;
+                imports = [ flakeInputs.nix-unit.modules.flake.default /* ...other imports */ ];
+                perSystem = { config, pkgs, lib, system, inputs', ... }: { # Note: `inputs` (no prime) here is the perSystem one
+                  nix-unit = {
+                    inputs = { # These are the inputs made available to test files
+                      inherit (flakeInputs) nixpkgs flake-parts; # From main flake's resolved inputs
+                      latex-utils = flakeInputs.self; # Main flake's self, aliased
+                    };
+                    tests = {
+                      # Import your test files directly
+                      myAwesomeTest = import ./tests/myAwesomeTest.nix;
+                      anotherTest = import ./tests/anotherTest.nix;
+                    };
+                  };
+                  # ... other perSystem config ...
+                };
+              };
+            ```
+        *   **Important Note on Input Naming:** To avoid ambiguity with the `inputs` argument provided by `flake-parts` to the `perSystem` function, it's recommended to name the main flake's top-level `outputs` argument distinctively (e.g., `flakeInputs` as shown above, previously `inputsOuter`). This ensures that when you specify `inherit (flakeInputs) nixpkgs;` within `perSystem.nix-unit.inputs`, you are unambiguously referring to the main flake's resolved inputs.
+
+    2.  **Test Files (e.g., `tests/myAwesomeTest.nix`):**
+        *   These files should be authored as functions that accept the standard `nix-unit` arguments, including `pkgs`, `lib`, `system`, and importantly, an `inputs` argument. This `inputs` argument will be an attribute set containing the flake inputs you declared in `perSystem.nix-unit.inputs` (e.g., `inputs.nixpkgs`, `inputs.flake-parts`, `inputs.latex-utils`).
+            ```nix
+            # In tests/myAwesomeTest.nix
+            { pkgs, lib, system, inputs, ... }: let
+              # Test Harness Flake (still recommended for isolating module evaluation)
+              testHarnessFlakeDef = import ./flake.nix; # (tests/flake.nix)
+
+              testHarnessOutputsArgs = {
+                self = testHarnessFlakeDef;
+                # Source these from the `inputs` argument provided by nix-unit
+                nixpkgs = inputs.nixpkgs;
+                flake-parts = inputs.flake-parts;
+                latex-utils = inputs.latex-utils; # Or whatever you named your project's self
+                inherit system;
+              };
+
+              # Evaluate the test harness outputs
+              # test-flake-helpers.nix remains useful
+              testOutputs = import ./test-flake-helpers.nix {
+                flakeDef = testHarnessFlakeDef;
+                outputsArgs = testHarnessOutputsArgs;
+              };
+            in {
+              # Your actual test assertions using testOutputs
+              someTest = lib.isDerivation testOutputs.packages.${system}.somePackage;
+              devShellTest = testOutputs.devShells.${system}.default.name == "my-dev-shell";
+            }
+            ```
+
+    3.  **Test Harness Flake (`tests/flake.nix`):**
+        *   The role of a dedicated test harness flake remains highly recommended.
+        *   **Purpose:** Creates a minimal, isolated `flake-parts` environment that imports and configures only the module(s) under test (e.g., `../modules/latex-utils.nix`).
+        *   **Structure:**
+            *   Declares its own minimal `inputs` if it needs to fetch them independently (e.g., fixed versions of `nixpkgs`, `flake-parts` for extreme isolation, though typically it will receive these).
+            *   Its `outputs` function should accept these as arguments (e.g., `evalArgs @ { self, nixpkgs, flake-parts, latex-utils, system, ... }`).
+            *   The call to `flake-parts.lib.mkFlake` uses these passed arguments, for example:
+              ```nix
+              # Snippet for tests/flake.nix outputs function:
+              outputs = evalArgs @ { self, nixpkgs, flake-parts, latex-utils, system, ... }:
+                flake-parts.lib.mkFlake {
+                  inherit self; # From evalArgs.self
+                  inputs = { inherit nixpkgs flake-parts latex-utils; }; # From evalArgs, to be used as inputs'.<name> by the module
+                } {
+                  systems = [ system ]; # Use system from evalArgs
+                  imports = [
+                    # Example: if latex-utils is the module source passed in:
+                    latex-utils.flakeModule # Or a direct path: ../modules/latex-utils.nix
+                  ];
+                  # ... minimal config for your module ...
+                };
+              ```
+        *   **Rationale:** Isolates the module, making tests less brittle and easier to debug. It ensures that the module is tested with a controlled set of inputs, which are now reliably provided via `nix-unit`.
+
 - **For pure library helpers** (in `lib/`):
-  - Test by importing the helper directly.
+  - Test by importing the helper directly. These tests typically only need `pkgs` and `lib`.
 - **Never use `lib.evalModules` on a flake-parts module.**
 - **Never import the module file directly to test outputs that require flake-parts context.**
-- **Do not use the main project flake for output tests; use the test harness flake and helper for isolation and clarity.**
+- **Do not use the main project flake for output tests; use the test harness flake and helper for isolation and clarity.** This is still true, but the *inputs* to that harness are now reliably provided by `nix-unit`.
 
 ## Additional Clarification: Handling the `latex-utils` Input in the Test Harness Flake
 
-The test harness flake (`tests/flake.nix`) is intentionally designed to be minimal and decoupled from the main project flake. To achieve this, it does **not** declare a `latex-utils` input in its own `inputs` attribute set at the top level. Instead, it expects to be called with a resolved `latex-utils` input via the `outputsArgs` argument when evaluating outputs.
+The test harness flake (`tests/flake.nix`) is intentionally designed to be minimal and decoupled from the main project flake. It receives its necessary *flake inputs* (like `nixpkgs`, `flake-parts`, and the `latex-utils` flake object itself) via the `outputsArgs` passed to its `outputs` function. These `outputsArgs` are constructed in the individual test files (e.g., `tests/myAwesomeTest.nix`) using the `inputs` argument injected by `nix-unit`.
 
 This pattern is implemented as follows:
 
-- The `outputs` function of `tests/flake.nix` is defined to accept these arguments directly (e.g., `outputs = evalArgs @ { self, nixpkgs, flake-parts, latex-utils, ... }:`).
-- In the `flake-parts.lib.mkFlake` call within `tests/flake.nix`, the `inputs` attribute set is constructed using these passed-in arguments:
+- The `outputs` function of `tests/flake.nix` is defined to accept these arguments directly (e.g., `outputs = evalArgs @ { self, nixpkgs, flake-parts, latex-utils, system, ... }:`).
+- In the `flake-parts.lib.mkFlake` call within `tests/flake.nix`, the `inputs` attribute set (which `flake-parts` uses to provide `inputs'.<name>` to modules) is constructed using these passed-in arguments:
   ```nix
   # Inside tests/flake.nix
-  outputs = evalArgs @ { self, nixpkgs, flake-parts, latex-utils, ... }:
+  outputs = evalArgs @ { self, nixpkgs, flake-parts, latex-utils, system, ... }:
     flake-parts.lib.mkFlake {
       inherit self; # This is evalArgs.self (the test harness flake definition)
-      inputs = {    # These are the inputs the imported module will see
+      inputs = {    # These are the inputs the imported module will see as `inputs'.<name>`
         inherit nixpkgs flake-parts latex-utils; # These come from evalArgs
       };
     } {
-      systems = [ "x86_64-linux" ]; # Or parameterize from evalArgs
-      imports = [ ../modules/latex-utils.nix ]; # Module under test
+      systems = [ system ]; # Or parameterize from evalArgs
+      imports = [
+        # Example: if latex-utils is the module source passed in:
+        latex-utils.flakeModule # Or a direct path: ../modules/latex-utils.nix
+      ];
       # ... minimal config for the module under test ...
     };
   ```
-- This means the test harness flake can be used in tests by passing in the resolved `latex-utils` input (which is `mainFlakeResolvedInputs.self` from the main flake) and other necessary flake inputs like `nixpkgs` and `flake-parts` directly when its `outputs` function is called. This keeps the test harness flexible and focused only on the module under test.
-- This is a common and idiomatic pattern for flake-parts module testing, as it allows the test harness to remain stable and independent of changes to the main project flake's structure or dependencies.
+- This means the test harness flake (`tests/flake.nix`) is called from a test file (e.g., `tests/myAwesomeTest.nix`) with `nixpkgs`, `flake-parts`, and `latex-utils` that were originally sourced from the main flake's resolved inputs and correctly passed into the test file by `nix-unit`.
 
 **Why is this done?**
-- It ensures that tests are robust to changes in the main flake and can be run in isolation.
-- It avoids coupling the test harness to the main flake's input structure, making tests easier to maintain and reason about.
-- It matches upstream best practices for flake-parts module testing, as seen in other projects and the flake-parts documentation.
+- It ensures that tests are robust and use the exact same dependency versions as the main flake.
+- The `perSystem.nix-unit.inputs` mechanism is the idiomatic way to ensure flake inputs retain their integrity (e.g., `isFlake = true;` metadata) when passed into the test sandbox, which was the root cause of the "not a flake" error with previous manual passthrough methods.
+- It keeps the test harness focused only on the module under test, while `nix-unit` handles the reliable delivery of its flake dependencies.
 
-If you are writing or updating tests, always ensure that the test harness flake is called with the correct resolved inputs, including `latex-utils`, via the `outputsArgs` argument. This will ensure your tests remain stable and idiomatic.
+If you are writing or updating tests, always ensure that:
+1. Your main `flake.nix` uses `perSystem.nix-unit.inputs` to declare all flake inputs needed by your tests.
+2. Your test files (`tests/*.nix`) are functions accepting an `inputs` argument (among others like `pkgs`, `lib`, `system`) from which they will source these flake inputs.
+3. These sourced inputs are then passed to your test harness flake (`tests/flake.nix`) when its `outputs` are evaluated.
+
+This will ensure your tests remain stable, idiomatic, and correctly interact with the `flake-parts` and `nix-unit` ecosystems.
 
 ## Consequences
 
-- Test files for flake-parts outputs will import the test harness flake and use the helper to realize outputs for a system.
+- Test files for flake-parts outputs will correctly receive flake inputs via `nix-unit`'s `inputs` argument.
+- The test harness flake (`tests/flake.nix`) and helper (`tests/test-flake-helpers.nix`) remain essential for evaluating module outputs in an isolated `flake-parts` environment.
 - Pure library tests will continue to import helpers directly.
-- Documentation (`docs/unit-testing.md`) will reference this ADR, the test harness flake, and the helper for future contributors.
-- This pattern ensures maintainability, correctness, and alignment with upstream best practices.
+- Documentation (`docs/unit-testing.md`) will reference this ADR, the test harness flake, and the helper for future contributors, emphasizing the `perSystem.nix-unit.inputs` pattern.
+- This pattern ensures maintainability, correctness, and alignment with upstream best practices, and resolves previous "not a flake" errors.
 
 ## References
 - [flake-parts documentation](https://flake.parts/)
@@ -123,80 +187,81 @@ If you are writing or updating tests, always ensure that the test harness flake 
 
 ### 1. **Test Harness Flake (`tests/flake.nix`)**
 
-*   **Purpose:** Creates a minimal, isolated flake environment that imports and configures the module under test (e.g., `../modules/latex-utils.nix`).
+*   **Purpose:** Creates a minimal, isolated flake environment that imports and configures the module under test (e.g., `../modules/latex-utils.nix`). This structure remains valuable.
 *   **Structure:**
-    *   Declares only essential inputs (e.g., `nixpkgs`, `flake-parts`, potentially the module's source if not co-located or handled differently).
-    *   Uses `flake-parts.lib.mkFlake`.
-    *   Its `outputs` function should be structured to accept arguments like `self`, `nixpkgs`, `flake-parts`, and any specific project inputs (like `latex-utils`) that are passed from the test file's `testHarnessOutputsArgs`.
+    *   Declares its own minimal `inputs` if it needs to fetch them independently (e.g., fixed versions of `nixpkgs`, `flake-parts` for extreme isolation, though typically it will receive these).
+    *   Its `outputs` function should be structured to accept arguments like `self`, `nixpkgs`, `flake-parts`, `system`, and any specific project inputs (like `latex-utils`) that are passed from the test file's `testHarnessOutputsArgs`.
     *   The call to `flake-parts.lib.mkFlake` should then use these passed arguments, for example:
       ```nix
       # Snippet for tests/flake.nix outputs function:
-      outputs = evalArgs @ { self, nixpkgs, flake-parts, latex-utils, ... }:
+      outputs = evalArgs @ { self, nixpkgs, flake-parts, latex-utils, system, ... }:
         flake-parts.lib.mkFlake {
-          inherit self; # From evalArgs
-          inputs = { inherit nixpkgs flake-parts latex-utils; }; # From evalArgs
+          inherit self; # From evalArgs.self
+          inputs = { inherit nixpkgs flake-parts latex-utils; }; # From evalArgs, to be used as inputs'.<name> by the module
         } {
-          systems = [ "x86_64-linux" ];
-          imports = [ ../modules/latex-utils.nix ]; # Your module
+          systems = [ system ]; # Use system from evalArgs
+          imports = [
+            # Example: if latex-utils is the module source passed in:
+            latex-utils.flakeModule # Or a direct path: ../modules/latex-utils.nix
+          ];
           # ... minimal config for your module ...
         };
       ```
-    *   Its `perSystem` block **must** include the module under test in its `imports` list (e.g., `imports = [ ../modules/latex-utils.nix ];`).
-    *   The `perSystem` block should also provide any minimal configuration options necessary for the imported module to produce the specific outputs that are being targeted by the unit tests. Often, if the module has well-defined defaults, simply importing it is sufficient.
-    *   Crucially, it does **not** inherit all inputs from the main project flake automatically, only those explicitly passed when its outputs are evaluated (see next point).
-*   **Rationale:** Isolates the module, making tests less brittle and easier to debug. It ensures that the module is tested with a controlled set of inputs.
+*   **Rationale:** Isolates the module, making tests less brittle and easier to debug. It ensures that the module is tested with a controlled set of inputs, which are now reliably provided via `nix-unit`.
 
 ### 2. **Test Files (`tests/yourTestName.nix`)**
 
-*   **Imports:**
-    *   `testHarnessFlakeDef = import ./flake.nix;` (imports the test harness flake definition from `tests/flake.nix`).
-    *   `mainFlakeResolvedInputs`: This is assumed to be available in the scope where the test is defined (typically passed in by the main flake's `flake.nix` when it defines its `checks`). It contains all resolved inputs of the main project flake.
-*   **Constructing `outputsArgs`:**
+*   **Function Signature:** Must accept `inputs` as an argument, which `nix-unit` populates based on `perSystem.nix-unit.inputs` in the main `flake.nix`.
+    ```nix
+    # In tests/yourTestName.nix
+    { pkgs, lib, system, inputs, ... }: # 'inputs' is key!
+    let
+      # ...
+    in
+    {
+      # ... tests ...
+    }
+    ```
+*   **Constructing `testHarnessOutputsArgs`:**
     ```nix
     testHarnessOutputsArgs = {
       self = testHarnessFlakeDef; # The test harness flake definition
-      nixpkgs = mainFlakeResolvedInputs.nixpkgs;     # Resolved nixpkgs flake
-      flake-parts = mainFlakeResolvedInputs.flake-parts; # Resolved flake-parts
-      # Pass the main project flake if the module under test needs it:
-      latex-utils = mainFlakeResolvedInputs.self;    # Main project flake (resolved)
-      inherit system;
-      # ... any other inputs from mainFlakeResolvedInputs needed by the test harness ...
+      nixpkgs = inputs.nixpkgs;     # Sourced from nix-unit injected 'inputs'
+      flake-parts = inputs.flake-parts; # Sourced from nix-unit injected 'inputs'
+      latex-utils = inputs.latex-utils; # Sourced from nix-unit injected 'inputs' (main project flake)
+      inherit system; # Pass the system argument to the test harness
+      # ... any other non-flake args the test harness might need ...
     };
     ```
 *   **Evaluating Outputs:**
-    *   `outputs = import ./test-flake-helpers.nix { flakeDef = testHarnessFlakeDef; outputsArgs = testHarnessOutputsArgs; };` (evaluates the test harness outputs).
-*   **`test-flake-helpers.nix`:** This helper is a standard and simple way to evaluate the test harness flake's `outputs` function. It takes the `flakeDef` (the imported `./flake.nix`) and `outputsArgs` (containing `self = flakeDef`, and resolved inputs like `nixpkgs`, `flake-parts` from `mainFlakeResolvedInputs`) and calls `flakeDef.outputs outputsArgs`.
-*   **Accessing Outputs:** Tests then access the generated outputs of the test harness flake (e.g., `outputs.packages.${system}.foo`, `outputs.devShells.${system}.bar`).
+    *   `evaluatedTestOutputs = import ./test-flake-helpers.nix { flakeDef = testHarnessFlakeDef; outputsArgs = testHarnessOutputsArgs; };`
+*   **`test-flake-helpers.nix`:** This helper remains useful. It takes the `flakeDef` (the imported `./flake.nix`) and `outputsArgs` and calls `flakeDef.outputs outputsArgs`.
+*   **Accessing Outputs:** Tests then access the generated outputs of the test harness flake (e.g., `evaluatedTestOutputs.packages.${system}.foo`).
 
-### Understanding Resolved vs. Unresolved Flake Inputs in the Test Harness
+### Understanding Resolved vs. Unresolved Flake Inputs (and `nix-unit`)
 
-A common point of confusion can be how flake inputs are handled, especially when passed to a test harness.
+A common point of confusion can be how flake inputs are handled, especially when passed to a test harness. The `perSystem.nix-unit.inputs` mechanism is designed to correctly handle **resolved flake inputs**.
 
-*   **Unresolved Flake Input:** This is the declaration you write in your main `flake.nix` under the `inputs` attribute. For example, `inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";`. At this stage, it's essentially a pointer or a recipe for Nix to fetch the input.
+*   **Unresolved Flake Input:** This is the declaration you write in your main `flake.nix` under the `inputs` attribute (e.g., `inputs.nixpkgs.url = "...";`). It's a pointer.
 
-*   **Resolved Flake Input:** When Nix evaluates your flake (e.g., during `nix build`, `nix flake check`, or when the top-level `outputs` function is called), it *resolves* these declared inputs. This involves:
-    1.  Fetching the source code or flake from the specified URL or path.
-    2.  Making it available as a Nix value within the flake's evaluation context. This value is typically an attribute set that includes the input's store path, its own `outputs` (if it's a flake), and metadata like `isFlake = true;` and `sourceInfo`.
-    3.  The `flake.lock` file records the exact versions of these resolved inputs.
+*   **Resolved Flake Input:** When Nix evaluates your flake, it *resolves* these declared inputs, fetching them and making them available as Nix values (attribute sets with `isFlake = true;`, `sourceInfo`, `outputs`, etc.). The argument to your main flake's `outputs` function (e.g., `flakeInputs` in `outputs = flakeInputs @ { ... }`) contains these resolved inputs.
 
-The `inputs` argument received by your main flake's `outputs` function (e.g., `outputs = inputs @ { self, nixpkgs, flake-parts, ... }: ...`) contains these **resolved inputs**. So, `inputs.nixpkgs` here is not the URL string; it's the actual `nixpkgs` flake object.
+**Why the `perSystem.nix-unit.inputs` Pattern is Correct:**
 
-**Why the Test Harness Uses Resolved Inputs:**
+The `perSystem.nix-unit.inputs` option in your main `flake.nix` tells `nix-unit` to take specific *resolved* inputs from your main flake (e.g., `flakeInputs.nixpkgs`) and make them available to the sandboxed environment where your test files are evaluated.
 
-Our test harness pattern, as defined in this ADR, relies on passing these *resolved* inputs from the main flake to the test harness flake (`tests/flake.nix`). This is done via the `mainFlakeResolvedInputs` argument (which is simply the `inputs` from the main flake's `outputs` function).
-
-In `tests/yourTestName.nix`, when constructing `testHarnessOutputsArgs`:
+When your test file (e.g., `tests/myAwesomeTest.nix`) receives the `inputs` argument:
 ```nix
-testHarnessOutputsArgs = {
-  self = testHarnessFlakeDef;
-  nixpkgs = mainFlakeResolvedInputs.nixpkgs;     // This is the *resolved* nixpkgs flake
-  flake-parts = mainFlakeResolvedInputs.flake-parts; // Resolved flake-parts
-  latex-utils = mainFlakeResolvedInputs.self;    // The main project flake (resolved)
-  inherit system;
-  // ...
-};
+# In tests/myAwesomeTest.nix
+{ pkgs, lib, system, inputs, ... }:
+let
+  # inputs.nixpkgs here IS the resolved nixpkgs flake object
+  # inputs.flake-parts IS the resolved flake-parts flake object
+  # inputs.latex-utils IS the resolved main project flake (self)
+  nixpkgsFromTest = inputs.nixpkgs;
+  # ...
 ```
-And in `tests/flake.nix`, when `flake-parts.lib.mkFlake` is called:
+These are then passed to the test harness flake (`tests/flake.nix`) via `testHarnessOutputsArgs`. The test harness's `flake-parts.lib.mkFlake` call then uses these resolved inputs:
 ```nix
 # Inside tests/flake.nix outputs function
 outputs = evalArgs @ { self, nixpkgs, flake-parts, latex-utils, system, ... }:
@@ -204,22 +269,19 @@ outputs = evalArgs @ { self, nixpkgs, flake-parts, latex-utils, system, ... }:
     inherit self;
     inputs = { inherit nixpkgs flake-parts latex-utils; }; // These are the resolved inputs
   } {
-    systems = [ system ];
-    imports = [ ../modules/latex-utils.nix ];
-    // ...
+    # ...
   };
 ```
 This is the correct approach because:
-1.  `flake-parts.lib.mkFlake` itself expects its `inputs` argument (specifically, the values within the `inputs` attrset passed to it) to be actual flake objects or derivations, not unresolved URLs. It needs to be able to access their outputs or properties.
-2.  The module being tested (`../modules/latex-utils.nix`) will also expect `inputs'.nixpkgs`, `inputs'.flake-parts`, etc. (as provided by `flake-parts` to its `perSystem` function) to be the actual resolved flakes it can work with.
+1.  `flake-parts.lib.mkFlake` expects its `inputs` argument (specifically, the values within the `inputs` attrset passed to it, which become `inputs'.<name>` inside modules) to be actual flake objects.
+2.  The module being tested (`../modules/latex-utils.nix` or `latex-utils.flakeModule`) will also expect `inputs'.nixpkgs`, `inputs'.flake-parts`, etc., to be the actual resolved flakes.
+3.  The `perSystem.nix-unit.inputs` mechanism ensures these inputs are correctly propagated into the test sandbox *with their flake metadata intact*, which was the critical missing piece in previous manual passthrough attempts that led to the "Trying to retrieve system-dependent attributes for input nixpkgs, but this input is not a flake" error.
 
-Passing unresolved inputs would require the test harness flake to declare them again in its own `inputs` block and have Nix resolve them independently, which could lead to inconsistencies with the main flake's versions and defeats the purpose of testing with the exact same dependencies the main flake uses.
-
-Therefore, the use of `mainFlakeResolvedInputs` to channel the already resolved inputs from the main flake into the test harness is intentional and aligns with how `flake-parts` and nested flake evaluations are expected to work. The error "Trying to retrieve system-dependent attributes for input nixpkgs, but this input is not a flake" suggests an issue with how this resolved input is perceived or handled in the specific nested evaluation context of the tests, rather than an issue with the principle of using resolved inputs.
+The previous method of manually passing a `mainFlakeResolvedInputs` attribute set from the main `flake.nix` check definition directly to the test file's import arguments, while seemingly passing the resolved inputs, failed to preserve their "flake" nature within the final nested evaluation context of the test harness when executed by `nix flake check`. The `nix-unit`'s dedicated input propagation mechanism handles this correctly.
 
 - **Never use `lib.evalModules` on a flake-parts module.**
 - **Never import the module file directly to test outputs that require flake-parts context.**
-- **Do not use the main project flake for output tests; use the test harness flake and helper for isolation and clarity.**
+- **The recommended pattern is to use `perSystem.nix-unit.inputs` in the main flake, receive these via the `inputs` argument in test files, and then pass them to an isolated test harness flake (`tests/flake.nix`) for evaluating module outputs.**
 
 ---
 
@@ -227,39 +289,57 @@ Therefore, the use of `mainFlakeResolvedInputs` to channel the already resolved 
 
 This appendix outlines different strategies observed for testing Nix flake outputs, particularly in the context of `flake-parts` modules and `nix-unit`.
 
-### 1. `latex-utils` (This Project - Initial Approach)
+### 1. `latex-utils` (This Project - Problematic Initial Approach, Now Superseded)
 
-*   **Framework:** `flake-parts` is used for the main project flake and for the dedicated test harness flake (`tests/flake.nix`).
-*   **Input Handling for Tests:**
-    *   The main project flake's `outputs` function (in `flake.nix`) passes its entire resolved `inputs` attribute set (e.g., containing `nixpkgs`, `flake-parts`, `self`) as a custom argument (e.g., `mainFlakeResolvedInputs`) to the Nix files defining `nix-unit` test suites (e.g., `tests/devShellLatexUtils.nix`).
-    *   The individual test suite file then uses this `mainFlakeResolvedInputs` to pick out the necessary flake objects (`nixpkgs`, `flake-parts`, `self` aliased as `latex-utils`) and constructs an `outputsArgs` attribute set.
-    *   This `outputsArgs` (containing `self = testHarnessFlakeDef`, and the resolved flake inputs) is passed to the `outputs` function of the imported test harness flake definition (`testHarnessFlakeDef = import ./tests/flake.nix;`).
-    *   The test harness flake (`tests/flake.nix`) then calls `flake-parts.lib.mkFlake { self = /* ... */; inputs = { /* resolved inputs from outputsArgs */ }; } { imports = [ ../modules/latex-utils.nix ]; ... }`.
-*   **Invocation:** Tests are defined as Nix expressions that are directly imported into the main flake's `perSystem.checks` attribute set.
-*   **Challenge Encountered:** This approach led to errors where `nixpkgs`, despite being passed as a resolved input, was not recognized as a flake ("Trying to retrieve system-dependent attributes for input nixpkgs, but this input is not a flake") within the nested test harness evaluation, specifically when run via `nix flake check`.
+*   **Framework:** `flake-parts` for main project and test harness flake (`tests/flake.nix`).
+*   **Input Handling for Tests (Old Method):**
+    *   The main project flake's `checks` definition manually passed its entire resolved `inputs` attribute set (as `mainFlakeResolvedInputs`) as an argument to the Nix files defining `nix-unit` test suites (e.g., `tests/devShellLatexUtils.nix { inherit mainFlakeResolvedInputs; }`).
+    *   Test suite files then used `mainFlakeResolvedInputs` to construct `outputsArgs` for the test harness flake.
+*   **Invocation:** Tests defined as Nix expressions imported into `perSystem.checks`.
+*   **Challenge Encountered:** This approach consistently led to errors where `nixpkgs`, despite being passed as a resolved input, was not recognized as a flake ("Trying to retrieve system-dependent attributes for input nixpkgs, but this input is not a flake") within the nested test harness evaluation when run via `nix flake check`. **This method is now considered incorrect and superseded by the `nix-unit` integration pattern.**
 
 ### 2. `treefmt-nix` (External Example - Non-`flake-parts` for its own flake)
 
-*   **Framework:** This project structures its `flake.nix` outputs manually and does not use `flake-parts` for its own top-level flake definition (though it provides a `flakeModule` for others to consume).
+*   **Framework:** Manually structured `flake.nix` outputs (not using `flake-parts` for its own top-level).
 *   **Input Handling for Tests:**
-    *   When defining its `checks`, `treefmt-nix` provides a `pkgs` argument to its test files (e.g., `import ./checks { pkgs = import nixpkgs { inherit system; ... }; ... }`).
-    *   This `pkgs` is derived from a *fresh import* of its `nixpkgs` flake input, scoped to the specific system under test.
-    *   It does not directly pass down the main flake's top-level `nixpkgs` *flake object* to the test logic for deriving `pkgs`; it re-imports to get `pkgs`.
-*   **Invocation:** Tests are Nix expressions imported into `checks`.
+    *   Provides `pkgs` to test files via a fresh import of its `nixpkgs` input, scoped to the system: `import ./checks { pkgs = import nixpkgs { inherit system; ... }; ... }`.
+*   **Invocation:** Tests imported into `checks`. (Less relevant for `flake-parts` specific issues).
 
-### 3. `nix-unit` Official `flake-parts` Integration Pattern (Recommended)
+### 3. `nix-unit` Official `flake-parts` Integration Pattern (`latex-utils` - Current Successful Approach)
 
-*   **Framework:** This pattern is for projects using `flake-parts` for their main flake structure and `nix-unit` for testing.
+*   **Framework:** For projects using `flake-parts` for their main flake and `nix-unit` for testing.
 *   **Input Handling for Tests:**
-    *   The main project flake adds `nix-unit` to its inputs and imports `inputs.nix-unit.modules.flake.default` into its `flake-parts.lib.mkFlake` call.
-    *   Tests are typically defined in separate Nix files and then imported into the `perSystem.nix-unit.tests` attribute set in the main `flake.nix`.
-    *   **Key Mechanism:** The `perSystem.nix-unit.inputs` option is used. This option explicitly declares which of the main flake's resolved inputs (e.g., `nixpkgs`, `flake-parts`, the project's own `self`) should be made available to the sandboxed test execution environment.
-        *   Example: `perSystem.nix-unit.inputs = { inherit (inputs) nixpkgs flake-parts myProjectFlakeAlias; };` (where `inputs` is the main flake's resolved inputs).
-    *   The test files (e.g., `import ./tests/myTest.nix { inherit pkgs lib system inputs; }`) then receive these declared inputs directly as function arguments (e.g., an `inputs` argument containing `nixpkgs`, `flake-parts`, `myProjectFlakeAlias`).
-*   **Invocation:** The `nix-unit` module automatically sets up the necessary `checks` derivations. Tests are run by `nix flake check`.
-*   **Rationale/Benefit:** This explicit declaration via `perSystem.nix-unit.inputs` is designed to ensure that the specified flake inputs are correctly and robustly propagated into the isolated build/test sandbox used by `nix-unit`. This helps maintain their integrity as "flake" objects with all necessary metadata, which is crucial for `flake-parts` and Nixpkgs library functions operating within the tests. This pattern is considered best practice for testing `flake-parts` modules with `nix-unit`.
+    *   Main `flake.nix` imports `inputs.nix-unit.modules.flake.default`.
+    *   Test files are imported directly into `perSystem.nix-unit.tests`.
+    *   **Key Mechanism: `perSystem.nix-unit.inputs`** explicitly declares which main flake resolved inputs (e.g., `nixpkgs`, `flake-parts`, project's `self`) are made available to the test sandbox.
+        *   Example in main `flake.nix`:
+            ```nix
+            outputs = flakeInputs @ { ... }: # Renamed top-level inputs
+              flake-parts.lib.mkFlake { inputs = flakeInputs; } {
+                # ...
+                perSystem = { ... }: {
+                  nix-unit.inputs = {
+                    inherit (flakeInputs) nixpkgs flake-parts;
+                    latex-utils = flakeInputs.self;
+                  };
+                  nix-unit.tests = { myTest = import ./tests/myTest.nix; };
+                };
+              };
+            ```
+    *   Test files (e.g., `tests/myTest.nix`) receive these declared inputs via a function argument named `inputs`:
+        ```nix
+        # In tests/myTest.nix
+        { pkgs, lib, system, inputs, ... }:
+        let
+          # inputs.nixpkgs is the resolved nixpkgs flake
+          # inputs.flake-parts is the resolved flake-parts flake
+          # inputs.latex-utils is the resolved main project flake (self)
+        in { /* ... test definitions ... */ }
+        ```
+*   **Invocation:** `nix-unit` module sets up `checks`. Tests run by `nix flake check`.
+*   **Rationale/Benefit:** This explicit declaration via `perSystem.nix-unit.inputs`, combined with direct import of test files, ensures flake inputs are correctly propagated into the `nix-unit` sandbox, maintaining their integrity as "flake" objects. This was the solution to the "not a flake" errors.
 
-This comparative analysis highlights that explicitly managing the availability of flake inputs within the test execution context, as facilitated by the `nix-unit` `flake-parts` module's `inputs` option, is a more robust approach than manual passthrough, especially for tests run under `nix flake check`.
+This comparative analysis highlights that explicitly managing the availability of flake inputs within the test execution context, as facilitated by the `nix-unit` `flake-parts` module's `inputs` option and correct test file signature, is the robust and correct approach.
 
 This pattern ensures maintainability, correctness, and alignment with upstream best practices.
 

@@ -12,26 +12,29 @@
     git-hooks-nix.url = "github:cachix/git-hooks.nix";
   };
 
-  outputs = inputs @ {
+  outputs = flakeInputs @ {
     flake-parts,
     nix-unit,
     systems,
     ...
   }:
-    flake-parts.lib.mkFlake {inputs = inputs;} {
+    flake-parts.lib.mkFlake {inputs = flakeInputs;} {
       systems = import systems;
       imports = [
-        inputs.nix-unit.modules.flake.default
-        inputs.treefmt-nix.flakeModule
-        inputs.mission-control.flakeModule
-        inputs.flake-root.flakeModule
-        inputs.git-hooks-nix.flakeModule
+        flakeInputs.nix-unit.modules.flake.default
+        flakeInputs.treefmt-nix.flakeModule
+        flakeInputs.mission-control.flakeModule
+        flakeInputs.flake-root.flakeModule
+        flakeInputs.git-hooks-nix.flakeModule
       ];
       perSystem = {
         config,
         pkgs,
         lib,
         system,
+        inputs,
+        inputs',
+        self',
         ...
       }: {
         flake-root = {
@@ -39,6 +42,10 @@
         };
         nix-unit = {
           allowNetwork = true;
+          inputs = {
+            inherit (flakeInputs) nixpkgs flake-parts;
+            latex-utils = flakeInputs.self;
+          };
           tests =
             {
               findLatexPackages = import ./tests/findLatexPackages.nix {
@@ -54,17 +61,11 @@
               documentLevelPackages = import ./tests/documentLevelPackages.nix {
                 inherit pkgs lib;
               };
-              devShellLatexUtils = import ./tests/devShellLatexUtils.nix {
-                inherit pkgs lib;
-                mainFlakeResolvedInputs = inputs;
-              };
+              devShellLatexUtils = import ./tests/devShellLatexUtils.nix;
               normalizeExtraTexPackages = import ./tests/normalizeExtraTexPackages.nix {
                 inherit pkgs lib;
               };
-              devShellFragments = import ./tests/devShellFragments.nix {
-                inherit pkgs lib;
-                mainFlakeResolvedInputs = inputs;
-              };
+              devShellFragments = import ./tests/devShellFragments.nix;
             }
             // (import ./tests/testModuleLevel.nix {inherit pkgs lib;});
         };

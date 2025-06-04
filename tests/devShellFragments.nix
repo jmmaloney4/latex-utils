@@ -1,15 +1,18 @@
 {
   pkgs,
   lib,
-  mainFlakeResolvedInputs, # From main flake's `outputs` args
+  system, # Now provided by nix-unit test runner (from perSystem args)
+  inputs, # Now provided by nix-unit test runner (from perSystem.nix-unit.inputs)
   ...
 }: let
   flake = import ./flake.nix;
-  system = pkgs.stdenv.hostPlatform.system or "x86_64-linux";
+  # system = pkgs.stdenv.hostPlatform.system or "x86_64-linux"; # No longer needed, use arg
   testHarnessOutputsArgs = {
     self = flake;
-    nixpkgs = mainFlakeResolvedInputs.nixpkgs;
-    flake-parts = mainFlakeResolvedInputs.flake-parts;
+    nixpkgs = inputs.nixpkgs; # Sourced from nix-unit provided 'inputs'
+    flake-parts = inputs.flake-parts; # Sourced from nix-unit provided 'inputs'
+    latex-utils = inputs.latex-utils; # Sourced from nix-unit provided 'inputs' (aliased self)
+    inherit system; # Pass the system argument to the test harness
   };
   outputs = import ./test-flake-helpers.nix {
     flakeDef = flake;
