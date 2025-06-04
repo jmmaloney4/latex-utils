@@ -33,8 +33,8 @@ flowchart TD
     F --> G[texlive.combine]
     G -->|unified env| H[mkLatexPdfDocument]
     H --> I[PDF derivations]
-    G --> J[texlive-unified pkg]
-    J --> K[vscode-devshell]
+    G --> J[texlive pkg]
+    J --> K[vscodeShell]
 ```
 
 The **flake module** (in `modules/latex-utils.nix`) orchestrates discovery → normalisation → build. Library helpers (in `lib/`) implement the heavy lifting, while *per‑system* outputs wire everything into devshells, apps and CI artifacts.
@@ -79,8 +79,8 @@ All functions are pure Nix and live under `lib/`.
 | Output                        | Description                                                               |
 | ----------------------------- | ------------------------------------------------------------------------- |
 | `packages.<doc>`              | One package per document (`paper`, `slides`, …).
-| `packages.texlive-unified`    | Combined TeX Live env with *all* pkgs.
-| `packages.latexmk-unified`    | `latexmk` wrapper bound to the unified env.
+| `packages.texlive`            | Combined TeX Live env with *all* pkgs.
+| `packages.latexmk`            | `latexmk` wrapper bound to the unified env.
 | `devShells.full`              | Turn-key VS Code shell (enabled by `enableVSCode`)
 | `build.unifiedTexShell`       | Composable shell fragment (unified TeX, no VS Code integration)
 | `build.vscodeSettingsShell`   | Composable shell fragment (links VS Code settings.json)
@@ -92,7 +92,7 @@ All functions are pure Nix and live under `lib/`.
 
 1. **Discovery** – For each document the module calls `findLatexFiles` → `findLatexPackages` to build an attr‑set of required TeX pkgs.
 2. **Merge** – Document‑level and module‑level `extraTexPackages` are normalised and merged (document packages win on conflict).
-3. **Combine** – All unique packages feed `texlive.combine`, producing `texlive-unified`.
+3. **Combine** – All unique packages feed `texlive.combine`, producing `texlive`.
 4. **Build** – `mkLatexPdfDocument` compiles each source using `latexmk`, reusing the pre‑built font cache.
 5. **Expose** – Per‑system outputs wire PDF packages, devShells and helper apps.
 

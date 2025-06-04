@@ -119,7 +119,7 @@
           latex-worksheet-generator = pkgs.writeShellScriptBin "gen-worksheet" ''
             #!/usr/bin/env bash
             echo "Generating worksheet with unified TeX environment..."
-            ${self'.packages.latexmk-unified}/bin/latexmk -pdf worksheet.tex
+            ${self'.packages.latexmk}/bin/latexmk -pdf worksheet.tex
           '';
         };
 
@@ -135,7 +135,7 @@
               config.latex-utils.build.vscodeSettingsShell # Optional: links VS Code settings
             ];
             buildInputs = [
-              config.latex-utils.packages.texlive-unified # All packages from all documents
+              config.latex-utils.packages.texlive # All packages from all documents
               pkgs.pandoc # Document conversion
               pkgs.gnuplot # Plotting
               pkgs.imagemagick # Image manipulation

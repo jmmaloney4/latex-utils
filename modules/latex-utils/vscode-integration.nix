@@ -153,9 +153,9 @@
 
   # VSCode integration packages (only include derivations)
   vscodeIntegration = {
-    vscode-settings = vscodeSettings;
-    vscode-devshell = vscodeDevShell;
-    ltex-ls-wrapped = ltexLsWrapped;
+    vscodeSettings = vscodeSettings;
+    vscodeShell = vscodeDevShell;
+    ltex-ls = ltexLsWrapped;
   };
 
   # Application for generating custom VSCode settings

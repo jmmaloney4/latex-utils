@@ -36,8 +36,8 @@
   # Create packages for the unified TeX Live environment and latexmk
   # Always create these if we have module-level packages, even without documents
   unifiedPackages = {
-    texlive-unified = unifiedTexEnv;
-    latexmk-unified = pkgs.writeShellScriptBin "latexmk" ''
+    texlive = unifiedTexEnv;
+    latexmk = pkgs.writeShellScriptBin "latexmk" ''
       exec ${lib.getExe' unifiedTexEnv "latexmk"} "$@"
     '';
   };

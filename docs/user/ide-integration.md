@@ -61,8 +61,8 @@ perSystem = { self', pkgs, ... }: {
   devShells.default = pkgs.mkShell {
     buildInputs = [
       # Include the unified TeX Live environment for your IDE
-      self'.packages.texlive-unified
-      self'.packages.latexmk-unified
+      self'.packages.texlive
+      self'.packages.latexmk
     ];
   };
 };
@@ -84,8 +84,8 @@ perSystem = { self', pkgs, ... }: {
 
 The module creates a single TeX Live environment containing all packages from all documents and exposes it as:
 
-- **`texlive-unified`**: Complete TeX Live installation with all packages
-- **`latexmk-unified`**: Wrapper script for latexmk using the unified environment
+- **`texlive`**: Complete TeX Live installation with all packages
+- **`latexmk`**: Wrapper script for latexmk using the unified environment
 
 ## Complete Example
 

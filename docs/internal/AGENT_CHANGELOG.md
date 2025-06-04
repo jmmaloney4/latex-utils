@@ -1,3 +1,49 @@
+Timestamp: 2025-06-04T23:18:03Z
+Agent: Claude 3.5 Sonnet
+
+**PACKAGE NAME REFACTORING FOR CONCISE EXPORTS**
+
+Refactored exported package names to be more concise and user-friendly, improving the developer experience by removing redundant suffixes and prefixes.
+
+**Changes Made:**
+- **Package Name Updates**: Updated all exported package names to remove verbose suffixes:
+  - `texlive-unified` → `texlive`
+  - `latexmk-unified` → `latexmk` 
+  - `ltex-ls-wrapped` → `ltex-ls`
+  - `vscode-devshell` → `vscodeShell`
+  - `vscode-settings` → `vscodeSettings`
+
+**Files Affected:**
+- Modified: `modules/latex-utils/tex-environment.nix` (renamed `unifiedPackages` entries)
+- Modified: `modules/latex-utils/vscode-integration.nix` (renamed `vscodeIntegration` entries)
+- Updated: `README.md` (updated package references in examples)
+- Updated: `docs/internal/ARCHITECTURE.md` (updated output table and diagrams)
+- Updated: `docs/user/ide-integration.md` (updated package references)
+- Updated: `docs/user/consumer-flake-example.md` (updated package references)
+- Updated: `docs/user/comprehensive-example.nix` (updated package references)
+- Updated: `docs/user/example-module-packages.nix` (updated package reference)
+
+**Rationale:**
+The previous naming scheme included redundant qualifiers like `-unified` and `-wrapped` that didn't add meaningful information for end users. The new names are cleaner and follow common naming conventions:
+- `texlive` is self-explanatory as the unified TeX Live environment
+- `latexmk` directly indicates the latexmk wrapper
+- `ltex-ls` follows standard tool naming
+- `vscodeShell` and `vscodeSettings` use camelCase for compound names
+
+**Architecture Alignment:**
+- **Single Source of Truth**: Maintains consistency across all documentation
+- **Declarative API**: Provides cleaner, more intuitive package names that users can easily remember
+- **Unchanged Functionality**: No functional changes - only cosmetic naming improvements
+- **Backward Compatibility**: While this is a breaking change for package names, the functionality remains identical
+
+**Benefits:**
+- **Improved User Experience**: Shorter, more intuitive package names
+- **Reduced Cognitive Load**: Less verbose naming reduces mental overhead
+- **Consistent Naming**: Aligned package names with standard conventions
+- **Documentation Clarity**: All examples now use consistent, concise names
+
+---
+
 Timestamp: 2025-06-04T23:11:05Z
 Agent: Claude 3.5 Sonnet
 

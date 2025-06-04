@@ -80,7 +80,7 @@
 # 2. **Flexibility**: Each document can still add its own specific packages
 #    that aren't needed by others.
 #
-# 3. **Unified Environment**: The texlive-unified package and devShell include
+# 3. **Unified Environment**: The texlive package and devShell include
 #    ALL packages (module-level + all document-specific), so you can work on
 #    any document in the same environment.
 #

@@ -267,7 +267,7 @@ perSystem = { config, pkgs, lib, self', ... }: {
       enable = true;
       # Use latexindent from the unified TeX Live environment
       package = pkgs.writeShellScriptBin "latexindent" ''
-        exec ${lib.getExe' self'.packages.texlive-unified "latexindent"} "$@"
+        exec ${lib.getExe' self'.packages.texlive "latexindent"} "$@"
       '';
     };
   };
@@ -287,8 +287,8 @@ perSystem = { config, pkgs, lib, self', ... }: {
 
 ### Key Points
 
-- **Use the unified package**: `self'.packages.texlive-unified` contains all your autodiscovered packages
-- **Extract the binary**: `lib.getExe' self'.packages.texlive-unified "latexindent"` gets the latexindent path
+- **Use the unified package**: `self'.packages.texlive` contains all your autodiscovered packages
+- **Extract the binary**: `lib.getExe' self'.packages.texlive "latexindent"` gets the latexindent path
 - **Avoid shell mixing**: Don't include `config.treefmt.build.devShell` in `inputsFrom`
 - **Direct wrapper inclusion**: Use `config.treefmt.build.wrapper` in `buildInputs` instead
 

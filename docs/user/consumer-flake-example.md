@@ -32,8 +32,8 @@
         };
       in {
         # Manual VSCode settings package
-        packages.vscode-settings = pkgs.writeTextFile {
-          name = "vscode-settings";
+        packages.vscodeSettings = pkgs.writeTextFile {
+          name = "vscodeSettings";
           destination = "/.vscode/settings.json";
           text = vscodeSettingsJson;
         };
@@ -56,7 +56,7 @@
           shellHook = ''
             echo "🔧 Updating VSCode settings symlink..."
             mkdir -p .vscode
-            ln -sf "${self'.packages.vscode-settings}/.vscode/settings.json" .vscode/settings.json
+            ln -sf "${self'.packages.vscodeSettings}/.vscode/settings.json" .vscode/settings.json
             echo "✅ VSCode settings linked successfully!"
           '';
         };
