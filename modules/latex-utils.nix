@@ -32,147 +32,26 @@ in {
       lib,
       ...
     }: let
-      # Import helpers
-      findLatexFiles = import ../lib/findLatexFiles.nix {inherit pkgs lib;};
-      findLatexPackages = import ../lib/findLatexPackages.nix {inherit pkgs lib;};
-      normalizeHelpers = import ../lib/normalizeExtraTexPackages.nix {inherit pkgs lib;};
+      # Import document processing logic
+      documentProcessing = import ./latex-utils/document-processing.nix {
+        inherit pkgs lib documents moduleExtraTexPackages;
+      };
 
-      # First, normalize module-level extraTexPackages (once)
-      # For module-level, we don't have discovered packages yet, so pass empty attrset
-      moduleExtraPackagesNormalized = lib.addErrorContext "while normalizing module-level extraTexPackages" (
-        normalizeHelpers.normalizeExtraTexPackages {
-          extraTexPackages = moduleExtraTexPackages;
-          discoveredPackages = {}; # No discovered packages at module level
-        }
-      );
+      # Import TeX environment creation
+      texEnvironment = import ./latex-utils/tex-environment.nix {
+        inherit pkgs lib;
+        inherit (documentProcessing) unifiedAdditionalPackages;
+      };
 
-      # Process each document to get its discovered and extra packages
-      processedDocuments =
-        map (doc: let
-          # Get all LaTeX files for this document
-          searchPaths = findLatexFiles {
-            basePath = "${doc.src}/${doc.workingDirectory}";
-          };
-
-          # Extract packages from each file with better error handling
-          discovered =
-            builtins.foldl' (a: b: a // b) {}
-            (map
-              (p: let
-                pathStr = toString p;
-                contextMsg = "while discovering packages in ${pathStr} for document ${doc.name}";
-                rawDiscovered =
-                  if (builtins.pathExists p)
-                  then let
-                    contents = builtins.readFile p;
-                  in
-                    findLatexPackages {fileContents = contents;}
-                  else lib.warn "LaTeX file ${pathStr} not found for document ${doc.name}" {};
-              in
-                lib.addErrorContext contextMsg rawDiscovered)
-              (lib.lists.unique searchPaths));
-
-          # Normalize document-specific extraTexPackages
-          # Pass discovered packages for function-type extraTexPackages
-          docExtraPackagesNormalized = lib.addErrorContext "while normalizing extraTexPackages for document ${doc.name}" (
-            normalizeHelpers.normalizeExtraTexPackages {
-              extraTexPackages = doc.extraTexPackages;
-              discoveredPackages = discovered;
-            }
-          );
-
-          # Merge module-level and document-level extra packages
-          # Document-level takes precedence
-          mergedExtraPackages = moduleExtraPackagesNormalized // docExtraPackagesNormalized;
-        in {
-          inherit doc;
-          discovered = discovered;
-          extraNormalized = mergedExtraPackages;
-        })
-        documents;
-
-      # Collect all discovered packages from all documents
-      allDiscoveredPackages =
-        lib.lists.foldl (
-          acc: processedDoc:
-            acc // processedDoc.discovered
-        ) {}
-        processedDocuments;
-
-      # Collect all extra packages (including module-level)
-      # Module-level packages are already included in each document's extraNormalized
-      allExtraPackagesAttrs =
-        lib.lists.foldl (
-          acc: processedDoc:
-            acc // processedDoc.extraNormalized
-        ) {}
-        processedDocuments;
-
-      # For the unified environment, also ensure module-level packages are included
-      # (in case there are no documents)
-      unifiedAdditionalPackages =
-        moduleExtraPackagesNormalized // allDiscoveredPackages // allExtraPackagesAttrs;
-
-      # Create unified TeX Live environment with all packages (including base packages)
-      unifiedTexPackages =
-        {
-          inherit
-            (pkgs.texlive)
-            latex-bin
-            latexmk
-            latexindent
-            biblatex
-            biber
-            csquotes
-            luaotfload
-            fontspec
-            lm
-            cm
-            ec
-            tex-gyre
-            ;
-          scheme = pkgs.texlive.scheme-basic;
-        }
-        // unifiedAdditionalPackages;
-
-      unifiedTexEnv = pkgs.texlive.combine unifiedTexPackages;
-
-      # Modified mkDoc function to pass pre-normalized packages
-      mkDoc = doc: let
-        processedDoc = lib.lists.findFirst (p: p.doc == doc) null processedDocuments;
-        extraPackagesForDoc =
-          if processedDoc != null
-          then processedDoc.extraNormalized
-          else {};
-      in
-        (pkgs.callPackage ../lib/mkLatexPdfDocument.nix {}) (doc
-          // {
-            # Pass pre-normalized packages under a different parameter name
-            # to avoid double-normalization
-            _preNormalizedExtraPackages = extraPackagesForDoc;
-            # Don't pass extraTexPackages - let mkLatexPdfDocument use the raw one if needed
-          });
+      # Extract needed values from document processing
+      inherit (documentProcessing) processedDocuments mkDoc;
+      inherit (texEnvironment) unifiedTexEnv ltexLsWrapped unifiedPackages unifiedTexShell;
 
       docPkgs = builtins.listToAttrs (map (doc: {
           name = lib.removeSuffix ".pdf" doc.name;
           value = mkDoc doc;
         })
         documents);
-
-      # Create packages for the unified TeX Live environment and latexmk
-      # Always create these if we have module-level packages, even without documents
-      unifiedPackages = {
-        texlive-unified = unifiedTexEnv;
-        latexmk-unified = pkgs.writeShellScriptBin "latexmk" ''
-          exec ${lib.getExe' unifiedTexEnv "latexmk"} "$@"
-        '';
-      };
-
-      # Wrap ltex-ls to only see the unified TeX Live binaries
-      ltexLsWrapped = pkgs.writeShellScriptBin "ltex-ls" ''
-        export PATH=${lib.makeBinPath [unifiedTexEnv]}
-        exec ${pkgs.ltex-ls}/bin/ltex-ls "\$@"
-      '';
 
       # VSCode integration
       # Function to generate VSCode settings with custom overrides
@@ -255,12 +134,6 @@ in {
           text = mkVSCodeSettings overrides;
         };
 
-      # Helper dev shell fragment (no VS Code integration)
-      unifiedTexShell = pkgs.mkShell {
-        buildInputs = [unifiedTexEnv ltexLsWrapped];
-        shellHook = "echo 'Unified TeX Live environment ready.'";
-      };
-
       # VS Code settings shell fragment (composable)
       # Renamed from vscodeSettingsShell and updated for composition
       latexUtilsVSCodeFragment = pkgs.mkShell {
@@ -272,11 +145,6 @@ in {
           echo "VS Code settings linked (composable fragment)."
         '';
       };
-
-      # Thin latexmk wrapper
-      latexmkWrapper = pkgs.writeShellScriptBin "latexmk" ''
-        exec ${lib.getExe' unifiedTexEnv "latexmk"} "$@"
-      '';
 
       # Check: rebuild all PDFs and fail if any change
       latexCheck =
