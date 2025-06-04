@@ -29,7 +29,7 @@
     } ''
       set -e
       for pdf in ${toString (map (doc: mkDoc doc) documents)}; do
-        cp $pdf $out-$(basename $pdf)
+        cp "$pdf" "$out-$(basename "$pdf")"
       done
       # In real use, compare with committed PDFs or previous build
     '';

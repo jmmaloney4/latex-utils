@@ -94,6 +94,31 @@
       text = mkVSCodeSettings overrides;
     };
 
+  # Common helper function for VSCode setup shellHook
+  mkVSCodeSetupShellHook = {
+    extraMessage ? "",
+    showDetailedInfo ? false,
+  }: ''
+    mkdir -p .vscode
+    ln -sf "${vscodeSettings}/.vscode/settings.json" .vscode/settings.json
+    ${
+      if showDetailedInfo
+      then ''
+        echo "🔧 Setting up VSCode LaTeX integration..."
+        echo "✅ VSCode settings linked successfully!"
+        echo "📦 Using unified TeX Live environment with packages from:"
+        ${docCountMsg}${modulePkgMsg}
+      ''
+      else ''
+        echo "VS Code settings linked${
+          if extraMessage != ""
+          then " (${extraMessage})"
+          else ""
+        }."
+      ''
+    }
+  '';
+
   # Helper strings for shellHook conditional messages
   docCountMsg =
     if documents != []
@@ -116,25 +141,14 @@
   # Helper dev shell that sets up VSCode integration
   vscodeDevShell = pkgs.mkShell {
     buildInputs = [unifiedTexEnv ltexLsWrapped];
-    shellHook = ''
-      echo "🔧 Setting up VSCode LaTeX integration..."
-      mkdir -p .vscode
-      ln -sf "${vscodeSettings}/.vscode/settings.json" .vscode/settings.json
-      echo "✅ VSCode settings linked successfully!"
-      echo "📦 Using unified TeX Live environment with packages from:"
-      ${docCountMsg}${modulePkgMsg}
-    '';
+    shellHook = mkVSCodeSetupShellHook {showDetailedInfo = true;};
   };
 
   # VS Code settings shell fragment (composable)
   latexUtilsVSCodeFragment = pkgs.mkShell {
     name = "latex-utils-vscode-fragment";
     inputsFrom = [unifiedTexShell]; # Ensures unifiedTexShell environment is included
-    shellHook = ''
-      mkdir -p .vscode
-      ln -sf "${vscodeSettings}/.vscode/settings.json" .vscode/settings.json
-      echo "VS Code settings linked (composable fragment)."
-    '';
+    shellHook = mkVSCodeSetupShellHook {extraMessage = "composable fragment";};
   };
 
   # VSCode integration packages (only include derivations)
