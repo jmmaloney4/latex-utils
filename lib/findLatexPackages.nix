@@ -89,28 +89,35 @@ in
       # Returns a list of trimmed package names (from both sources).
       lineToPackageNames = (
         line: let
-          # Extract from \usepackage
-          m = builtins.match ''^.*\\usepackage([[][^]]*[]])?[ ]*[{]([^}]*)[}].*$'' line;
-          usepkgNames =
-            if m == null
-            then []
-            else
-              map (pkg: pkgs.lib.strings.trim pkg)
-              (pkgs.lib.strings.splitString "," (builtins.elemAt m 1));
-
-          # Extract from % CTAN: ...
-          ctanMatch = builtins.match ".*% CTAN:[ ]*([^%#]*)" line;
-          ctanNames =
-            if ctanMatch == null
-            then []
-            else
-              map (pkg: pkgs.lib.strings.trim pkg)
-              (pkgs.lib.strings.splitString "," (builtins.elemAt ctanMatch 0));
-
-          # Union of both sources, remove duplicates
-          allNames = pkgs.lib.lists.unique (usepkgNames ++ ctanNames);
+          # Skip lines that start with % (comments)
+          trimmedLine = pkgs.lib.strings.trim line;
+          isComment = pkgs.lib.strings.hasPrefix "%" trimmedLine;
         in
-          allNames
+          if isComment
+          then []
+          else let
+            # Extract from \usepackage
+            m = builtins.match ''^.*\\usepackage([[][^]]*[]])?[ ]*[{]([^}]*)[}].*$'' line;
+            usepkgNames =
+              if m == null
+              then []
+              else
+                map (pkg: pkgs.lib.strings.trim pkg)
+                (pkgs.lib.strings.splitString "," (builtins.elemAt m 1));
+
+            # Extract from % CTAN: ...
+            ctanMatch = builtins.match ".*% CTAN:[ ]*([^%#]*)" line;
+            ctanNames =
+              if ctanMatch == null
+              then []
+              else
+                map (pkg: pkgs.lib.strings.trim pkg)
+                (pkgs.lib.strings.splitString "," (builtins.elemAt ctanMatch 0));
+
+            # Union of both sources, remove duplicates
+            allNames = pkgs.lib.lists.unique (usepkgNames ++ ctanNames);
+          in
+            allNames
       );
 
       lines = splitString "\n" fileContents;

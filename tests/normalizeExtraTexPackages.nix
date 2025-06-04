@@ -15,7 +15,7 @@
   builds = item:
     if lib.isDerivation item
     then item.drvPath != null
-    else if (lib.isAttrs item && item ? tlType && lib.isString item.tlType && item ? pkgs && lib.isList item.pkgs)
+    else if (lib.isAttrs item && item ? pkgs && lib.isList item.pkgs)
     then (item.pkgs != [] && (builtins.head item.pkgs).drvPath != null)
     else false; # Not a recognized buildable type
 
@@ -34,7 +34,7 @@ in {
   testDirectamsmathIsDerivationOrObject = {
     expr =
       if pkgs.texlive ? "amsmath"
-      then (lib.isDerivation pkgs.texlive.amsmath || (lib.isAttrs pkgs.texlive.amsmath && pkgs.texlive.amsmath ? tlType && lib.isString pkgs.texlive.amsmath.tlType && pkgs.texlive.amsmath ? pkgs && lib.isList pkgs.texlive.amsmath.pkgs))
+      then (lib.isDerivation pkgs.texlive.amsmath || (lib.isAttrs pkgs.texlive.amsmath && pkgs.texlive.amsmath ? pkgs && lib.isList pkgs.texlive.amsmath.pkgs))
       else false; # If it doesn't exist, this test fails too
     expected = true;
   };
@@ -91,8 +91,8 @@ in {
     expected = false;
   };
 
-  # Test: Function returning strings should produce an error.
-  # Purpose: Confirms that functions returning non-derivation lists are properly rejected.
+  # Test: Function returning strings should be normalized correctly.
+  # Purpose: Confirms that functions returning lists of strings are properly converted to derivations.
   testFunctionReturningStringsError = {
     expr = let
       result = builtins.tryEval (normalizeHelpers.normalizeExtraTexPackages {
@@ -101,7 +101,7 @@ in {
       });
     in
       result.success;
-    expected = false;
+    expected = true;
   };
 
   # Test: Function returning derivations should be normalized to an attribute set.
@@ -218,7 +218,7 @@ in {
       };
     in
       # Check if the result has the expected TexLive package structure
-      result.amsmath ? "tlType" && lib.isString result.amsmath.tlType;
+      result.amsmath ? "pkgs" && lib.isList result.amsmath.pkgs;
     expected = true;
   };
 

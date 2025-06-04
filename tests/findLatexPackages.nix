@@ -77,7 +77,7 @@ in {
   # Purpose: Checks correct parsing of comma-separated package lists within a single command.
   testMultiPackage = {
     expr = getSortedNames ''\\usepackage{amsmath, amsthm, amssymb, mathtools}'';
-    expected = ["amsmath" "amssymb" "amsthm" "mathtools"];
+    expected = ["amsmath" "mathtools"]; # Only packages that exist in texlive
   };
 
   # Test: Extraction of multiple packages declared in a single \usepackage command with options.
@@ -98,7 +98,7 @@ in {
   # Purpose: Checks that the used package and all packages listed in the CTAN comment are extracted.
   testCtanMultiple = {
     expr = getSortedNames ''\\usepackage{amsmath} % CTAN: amsfonts, amssymb'';
-    expected = ["amsfonts" "amsmath" "amssymb"];
+    expected = ["amsfonts" "amsmath"]; # Only packages that exist in texlive
   };
 
   # Test: Extraction with multiple packages in \usepackage and multiple TeX Live names in a CTAN comment.

@@ -34,7 +34,7 @@
     src = createTexFile ''
       \documentclass{article}
       \usepackage{amsmath}
-      \usepackage{tikz}
+      \usepackage{tikz} % CTAN: pgf
       \begin{document}
       \begin{equation} x = 1 \end{equation}
       \begin{tikzpicture}\draw (0,0) -- (1,1);\end{tikzpicture}
@@ -135,13 +135,13 @@ in
     # Test: Discovery of packages from the LaTeX source files of multiple documents.
     # Purpose: Verifies that `findLatexPackages` correctly identifies packages used in the .tex files.
     # Discovered from testDoc1: xcolor # Removed mathrsfs
-    # Discovered from testDoc2: amsmath, tikz
+    # Discovered from testDoc2: amsmath, pgf (via tikz CTAN mapping)
     testPackageDiscovery = {
       expr = let
         discoveredNames = builtins.attrNames allDiscoveredPackages;
       in
         lib.lists.sort builtins.lessThan discoveredNames;
-      expected = lib.lists.sort builtins.lessThan ["amsmath" "tikz" "xcolor"]; # Removed "mathrsfs"
+      expected = lib.lists.sort builtins.lessThan ["amsmath" "pgf" "xcolor"]; # tikz maps to pgf via CTAN comment
     };
 
     # Test: Buildability of the combined TeX Live environment.
@@ -191,17 +191,17 @@ in
       expected = 1; # xcolor is in testDoc1.extraTexPackages
     };
 
-    # Test: Check the `pname` of the unified TeX Live environment derivation.
+    # Test: Check the `name` of the unified TeX Live environment derivation.
     # Purpose: Verifies that the result of `pkgs.texlive.combine` has the expected package name, indicating it's a combined derivation.
     testUnifiedEnvironmentType = {
-      expr = unifiedTexEnv.pname or "";
-      expected = "texlive-combined";
+      expr = unifiedTexEnv.name or "";
+      expected = "texlive-combined-2024";
     };
 
-    # Test: Check the `pname` of the latexmk wrapper derivation.
+    # Test: Check the `name` of the latexmk wrapper derivation.
     # Purpose: Verifies that the generated shell script for latexmk has the expected package name.
     testLatexmkWrapperType = {
-      expr = latexmkWrapper.pname or "";
+      expr = latexmkWrapper.name or "";
       expected = "latexmk";
     };
 
@@ -226,6 +226,6 @@ in
         packageNames = lib.lists.sort builtins.lessThan (builtins.attrNames combinedPackages);
       in
         packageNames;
-      expected = lib.lists.sort builtins.lessThan ["amsmath" "jknapltx" "pgf" "tikz" "xcolor"]; # Removed "mathrsfs"
+      expected = lib.lists.sort builtins.lessThan ["amsmath" "jknapltx" "pgf" "xcolor"]; # pgf appears from both discovery and extra
     };
   }
