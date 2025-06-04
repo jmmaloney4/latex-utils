@@ -18,7 +18,7 @@
     systems,
     ...
   }:
-    flake-parts.lib.mkFlake {inherit inputs;} {
+    flake-parts.lib.mkFlake {inputs = inputs;} {
       systems = import systems;
       imports = [
         inputs.nix-unit.modules.flake.default
@@ -54,9 +54,16 @@
               documentLevelPackages = import ./tests/documentLevelPackages.nix {
                 inherit pkgs lib;
               };
-              devShellFragment = import ./tests/devShellFragment.nix {inherit pkgs lib;};
+              devShellsFull = import ./tests/devShellsFull.nix {
+                inherit pkgs lib;
+                mainFlakeResolvedInputs = inputs;
+              };
               normalizeExtraTexPackages = import ./tests/normalizeExtraTexPackages.nix {
                 inherit pkgs lib;
+              };
+              devShellFragments = import ./tests/devShellFragments.nix {
+                inherit pkgs lib;
+                mainFlakeResolvedInputs = inputs;
               };
             }
             // (import ./tests/testModuleLevel.nix {inherit pkgs lib;});

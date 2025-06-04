@@ -126,17 +126,20 @@
         # DEVSHELLS
         devShells = {
           # Primary development shell with VSCode integration
-          default = self'.devShells.vscode;
+          default = config.latex-utils.devShells.full;
 
           # Custom shell with additional tools
           research = pkgs.mkShell {
+            inputsFrom = [
+              config.latex-utils.build.unifiedTexShell
+              config.latex-utils.build.vscodeSettingsShell # Optional: links VS Code settings
+            ];
             buildInputs = [
-              self'.packages.texlive-unified # All packages from all documents
+              config.latex-utils.packages.texlive-unified # All packages from all documents
               pkgs.pandoc # Document conversion
               pkgs.gnuplot # Plotting
               pkgs.imagemagick # Image manipulation
             ];
-
             shellHook = ''
               echo "🔬 Research LaTeX Environment"
               echo "📦 Unified TeX Live with all project packages"

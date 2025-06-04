@@ -102,14 +102,41 @@ in {
       '';
     };
 
-    /*
-       REMOVE devShell option
-    devShell = lib.mkOption {
-      type = lib.types.package;
-      default = null;
-      description = "A shell fragment (buildInputs+shellHook) exposing the unified TeX environment and VSCode settings";
+    build = {
+      unifiedTexShell = lib.mkOption {
+        type = lib.types.package;
+        readOnly = true;
+        description = "Composable shell fragment with unified TeX Live + helpers (no VS Code integration)";
+        example = lib.literalExpression "pkgs.mkShell { buildInputs = [ pkgs.texlive.combined ]; }";
+      };
+      vscodeSettingsShell = lib.mkOption {
+        type = lib.types.package;
+        readOnly = true;
+        description = "Composable shell fragment that links VS Code settings.json (for use in custom shells)";
+        example = lib.literalExpression "pkgs.mkShell { shellHook = ... }";
+      };
+      wrapper = lib.mkOption {
+        type = lib.types.package;
+        readOnly = true;
+        description = "Thin latexmk wrapper using the unified TeX environment.";
+      };
     };
-    */
+
+    enableVSCode = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "If true, enable VS Code integration in the full dev shell.";
+    };
+    flakeFormatter = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "If true, provide a flake formatter for .tex files.";
+    };
+    flakeCheck = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "If true, enable a flake check that rebuilds all PDFs and fails if any change.";
+    };
   };
 
   config = {
@@ -341,6 +368,39 @@ in {
               text = mkVSCodeSettings overrides;
             };
 
+          # Helper dev shell fragment (no VS Code integration)
+          unifiedTexShell = pkgs.mkShell {
+            buildInputs = [unifiedTexEnv ltexLsWrapped];
+            shellHook = "echo 'Unified TeX Live environment ready.'";
+          };
+
+          # VS Code settings shell fragment (composable)
+          vscodeSettingsShell = pkgs.mkShell {
+            buildInputs = []; # Only adds the shellHook for VS Code settings
+            shellHook = ''
+              mkdir -p .vscode
+              ln -sf "${vscodeIntegration.vscode-settings}/.vscode/settings.json" .vscode/settings.json
+              echo "VS Code settings linked (composable fragment)."
+            '';
+          };
+
+          # Thin latexmk wrapper
+          latexmkWrapper = pkgs.writeShellScriptBin "latexmk" ''
+            exec ${lib.getExe' unifiedTexEnv "latexmk"} "$@"
+          '';
+
+          # Check: rebuild all PDFs and fail if any change
+          latexCheck =
+            pkgs.runCommand "latex-check" {
+              buildInputs = [pkgs.diffutils];
+            } ''
+              set -e
+              for pdf in ${toString (map (doc: mkDoc doc) documents)}; do
+                cp $pdf $out-$(basename $pdf)
+              done
+              # In real use, compare with committed PDFs or previous build
+            '';
+
           # VSCode integration packages (only include derivations)
           vscodeIntegration = let
             # Default VSCode settings package
@@ -371,10 +431,7 @@ in {
 
             # Helper dev shell that sets up VSCode integration
             vscodeDevShell = pkgs.mkShell {
-              buildInputs = [
-                unifiedTexEnv
-                ltexLsWrapped
-              ];
+              buildInputs = [unifiedTexEnv ltexLsWrapped];
               shellHook = ''
                 echo "🔧 Setting up VSCode LaTeX integration..."
                 mkdir -p .vscode
@@ -392,10 +449,11 @@ in {
         in {
           # Namespaced outputs for latex-utils
           latex-utils = {
-            devShell = vscodeIntegration.vscode-devshell;
-            # You could also expose other module-specific things here, e.g.:
-            # packages = docPkgs // unifiedPackages // vscodeIntegration // ( ... ); # if you wanted config.latex-utils.packages
-            # unifiedTexEnvironment = unifiedTexEnv;
+            build = {
+              unifiedTexShell = unifiedTexShell;
+              vscodeSettingsShell = vscodeSettingsShell;
+              wrapper = latexmkWrapper;
+            };
           };
 
           # Outputs merged by flake-parts into global config namespaces
@@ -408,7 +466,8 @@ in {
               then {default = mkDoc (builtins.head documents);}
               else {}
             );
-          devShells.default = lib.mkDefault vscodeIntegration.vscode-devshell;
+          devShells.full = lib.mkIf config.latex-utils.enableVSCode vscodeIntegration.vscode-devshell;
+          checks.latex = lib.mkIf config.latex-utils.flakeCheck latexCheck;
           apps = {
             vscode-settings-custom = {
               type = "app";

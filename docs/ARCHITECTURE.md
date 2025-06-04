@@ -9,11 +9,11 @@
 `latex-utils` is a **flake‑parts** module plus helper libraries that turn a directory of LaTeX sources into **reproducible Nix packages**, automatically resolve TeX Live dependencies, and expose a unified TeX tool‑chain for editors and CI pipelines fileciteturn1file0. The project exists to:
 
 * remove boiler‑plate from LaTeX builds;
-* guarantee identical PDFs across machines using Nix’s immutability;
+* guarantee identical PDFs across machines using Nix's immutability;
 * scale from a single paper to many documents without duplicated config;
 * provide editor/IDE integration out‑of‑the‑box.
 
-Typical downstream users add the module, list their documents, and run `nix build`—that’s it fileciteturn1file1.
+Typical downstream users add the module, list their documents, and run `nix build`—that's it fileciteturn1file1.
 
 ---
 
@@ -59,7 +59,7 @@ The **flake module** (in `modules/latex-utils.nix`) orchestrates discovery → n
 
 | Option                             | Type                   | Purpose                                                                                                           |
 | ---------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| **`latex-utils.documents`**        | list of submodules     | Declare each PDF to build; fields: `name`, `src`, `inputFile`, `extraTexPackages`, etc. fileciteturn1file15    |
+| **`latex-utils.documents`**        | list of submodules     | Declare each PDF to build; fields: `name`, `src`, `inputFile`, `extraTexPackages`, etc. fileciteturn1file15    |
 | **`latex-utils.extraTexPackages`** | homogeneous list \| fn | Global TeX pkgs for *all* docs. Accepts strings, derivations or a function `discovered: …` fileciteturn1file16 |
 
 > **Edge‑case:** lists must be homogeneous—mixing strings and derivations triggers a validation error fileciteturn1file17.
@@ -81,7 +81,9 @@ All functions are pure Nix and live under `lib/` fileciteturn1file12.
 | `packages.<doc>`              | One package per document (`paper`, `slides`, …).                          |
 | `packages.texlive-unified`    | Combined TeX Live env with *all* pkgs fileciteturn1file9.              |
 | `packages.latexmk-unified`    | `latexmk` wrapper bound to the unified env.                               |
-| `devShells.vscode`            | VS Code shell incl. LaTeX Workshop + LTeX settings fileciteturn1file9. |
+| `devShells.full`              | Turn-key VS Code shell (enabled by `enableVSCode`)                        |
+| `build.unifiedTexShell`       | Composable shell fragment (unified TeX, no VS Code integration)           |
+| `build.vscodeSettingsShell`   | Composable shell fragment (links VS Code settings.json)                   |
 | `apps.vscode-settings-custom` | Generate customised VS Code settings via CLI fileciteturn1file14.      |
 
 ---

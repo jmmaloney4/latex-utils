@@ -93,15 +93,19 @@
             config.mission-control.devShell
             config.pre-commit.devShell
             config.treefmt.build.devShell
-            self'.devShells.vscode  # 🎉 One line replaces all the manual setup!
+            config.latex-utils.devShells.full  # 🎉 One line replaces all the manual setup!
           ];
-          
-          # No manual TeX Live setup needed - comes from VSCode devshell
-          # No manual VSCode settings - automatically generated and linked
-          # No path configuration needed - uses unified environment
         };
-        
-        # ... rest of config ...
+        # To compose your own shell fragment(s):
+        # devShells.myCustom = pkgs.mkShell {
+        #   inputsFrom = [
+        #     config.latex-utils.build.unifiedTexShell
+        #     config.latex-utils.build.vscodeSettingsShell # Optional: links VS Code settings
+        #   ];
+        #   buildInputs = [ /* your extra tools */ ];
+        # };
+        # To disable VS Code integration:
+        # latex-utils.enableVSCode = false;
       };
     };
 }

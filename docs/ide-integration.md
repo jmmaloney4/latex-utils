@@ -16,68 +16,41 @@ For **Visual Studio Code** users, latex-utils automatically provides pre-configu
 
 ### Quick VSCode Setup
 
-**Option 1: Use the ready-made dev shell**
+**Option 1: Use the turn-key VS Code shell**
 ```nix
-{
-  imports = [ inputs.latex-utils.modules.latex-utils ];
-  latex-utils.documents = [ /* your documents */ ];
-  
-  perSystem = { self', ... }: {
-    devShells.default = self'.devShells.vscode;  # Uses latex-utils VSCode shell
-  };
-}
+perSystem = { config, ... }: {
+  devShells.default = config.latex-utils.devShells.full;
+};
 ```
 
-**Option 2: Integrate with your existing dev shell**
+**Option 2: Compose your own shell with the fragments**
 ```nix
-perSystem = { self', pkgs, ... }: {
+perSystem = { config, pkgs, ... }: {
   devShells.default = pkgs.mkShell {
     inputsFrom = [
-      self'.devShells.vscode  # Get VSCode integration from latex-utils
-      # your other shells
+      config.latex-utils.build.unifiedTexShell
+      config.latex-utils.build.vscodeSettingsShell # Optional: links VS Code settings
     ];
-    buildInputs = [
-      # your additional tools
-    ];
+    buildInputs = [ pkgs.pandoc ];
   };
 };
 ```
+- Use only `unifiedTexShell` for a pure TeX environment (no VS Code integration).
+- Add `vscodeSettingsShell` to also link `.vscode/settings.json` in your custom shell.
 
-**Option 3: Manual VSCode settings**
+### Enabling/Disabling VS Code Integration
+
+By default, VS Code integration is enabled. To disable it (e.g., for CI):
 ```nix
-perSystem = { self', pkgs, ... }: {
-  devShells.default = pkgs.mkShell {
-    buildInputs = [
-      self'.packages.texlive-unified
-    ];
-    shellHook = ''
-      # Link VSCode settings
-      mkdir -p .vscode
-      ln -sf "${self'.packages.vscode-settings}/.vscode/settings.json" .vscode/settings.json
-    '';
-  };
-};
+latex-utils.enableVSCode = false;
 ```
 
-### Custom VSCode Settings
+When disabled, `devShells.full` will not include VS Code settings or shell hooks.
 
-You can override the default settings:
-
-```nix
-perSystem = { self', pkgs, ... }: {
-  packages.my-vscode-settings = self'.packages.vscode-settings-with-overrides {
-    "ltex.language" = "en-GB";  # British English
-    "latex-workshop.latex.autoBuild.run" = "never";  # Disable auto-build
-  };
-  
-  devShells.default = pkgs.mkShell {
-    shellHook = ''
-      mkdir -p .vscode
-      ln -sf "${self'.packages.my-vscode-settings}/.vscode/settings.json" .vscode/settings.json
-    '';
-  };
-};
-```
+### Summary
+- Use `devShells.full` for out-of-the-box VS Code integration.
+- Use `build.unifiedTexShell` and `build.vscodeSettingsShell` for composable, editor-agnostic shells.
+- Control VS Code integration with `enableVSCode`.
 
 ## Manual IDE Integration Setup
 
