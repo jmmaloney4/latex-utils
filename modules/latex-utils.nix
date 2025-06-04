@@ -73,69 +73,82 @@
   moduleExtraTexPackages = config.latex-utils.extraTexPackages;
   # perSystem logic will be injected below
 in {
-  options.latex-utils = {
-    documents = lib.mkOption {
-      type = lib.types.listOf docType;
-      default = [];
-      description = "List of LaTeX documents to build as packages";
-    };
+  options = {
+    latex-utils = {
+      documents = lib.mkOption {
+        type = lib.types.listOf docType;
+        default = [];
+        description = "List of LaTeX documents to build as packages";
+      };
 
-    extraTexPackages = lib.mkOption {
-      type = extraTexPackagesType;
-      default = [];
-      description = ''
-        Extra TeX Live packages to include for ALL documents and environments.
-        These packages are merged with document-specific packages.
+      extraTexPackages = lib.mkOption {
+        type = extraTexPackagesType;
+        default = [];
+        description = "" "
+          Extra TeX Live packages to include for ALL documents and environments.
+          These packages are merged with document-specific packages.
 
-        Can be:
-        - List of package names (strings): ["mathrsfs" "xcolor"]
-        - List of derivations: [pkgs.texlive.mathrsfs pkgs.myCustomTexPackage]
-        - Function returning derivation list: (discovered: [pkgs.texlive.xcolor])
+          Can be:
+          - List of package names (strings): [" mathrsfs " " xcolor "]
+          - List of derivations: [pkgs.texlive.mathrsfs pkgs.myCustomTexPackage]
+          - Function returning derivation list: (discovered: [pkgs.texlive.xcolor])
 
-        Note: Lists must be homogeneous (all strings OR all derivations).
-        Functions must return lists of derivations.
-        Document-specific packages take precedence in case of conflicts.
-      '';
-      example = lib.literalExpression ''
-        # Common packages for all documents
-        ["amsmath" "amssymb" "mathtools" "unicode-math"]
-      '';
-    };
+          Note: Lists must be homogeneous (all strings OR all derivations).
+          Functions must return lists of derivations.
+          Document-specific packages take precedence in case of conflicts.
+        " "";
+        example = lib.literalExpression "" "
+          # Common packages for all documents
+          [" amsmath " " amssymb " " mathtools " " unicode-math "]
+        " "";
+      };
 
-    build = {
       unifiedTexShell = lib.mkOption {
         type = lib.types.package;
         readOnly = true;
         description = "Composable shell fragment with unified TeX Live + helpers (no VS Code integration)";
         example = lib.literalExpression "pkgs.mkShell { buildInputs = [ pkgs.texlive.combined ]; }";
       };
-      vscodeSettingsShell = lib.mkOption {
+
+      vscodeShell = lib.mkOption {
         type = lib.types.package;
         readOnly = true;
-        description = "Composable shell fragment that links VS Code settings.json (for use in custom shells)";
-        example = lib.literalExpression "pkgs.mkShell { shellHook = ... }";
+        description = "Composable shell fragment that includes unifiedTexShell and links VS Code settings.json";
+        example = lib.literalExpression "pkgs.mkShell { inputsFrom = [ config.latex-utils.unifiedTexShell ]; shellHook = ... }";
       };
-      wrapper = lib.mkOption {
-        type = lib.types.package;
-        readOnly = true;
-        description = "Thin latexmk wrapper using the unified TeX environment.";
+
+      build = {
+        wrapper = lib.mkOption {
+          type = lib.types.package;
+          readOnly = true;
+          description = "Thin latexmk wrapper using the unified TeX environment.";
+        };
+      };
+
+      enableVSCode = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "If true, enable VS Code integration in the full dev shell.";
+      };
+      flakeFormatter = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "If true, provide a flake formatter for .tex files.";
+      };
+      flakeCheck = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "If true, enable a flake check that rebuilds all PDFs and fails if any change.";
       };
     };
 
-    enableVSCode = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = "If true, enable VS Code integration in the full dev shell.";
-    };
-    flakeFormatter = lib.mkOption {
-      type = lib.types.bool;
-      default = false;
-      description = "If true, provide a flake formatter for .tex files.";
-    };
-    flakeCheck = lib.mkOption {
-      type = lib.types.bool;
-      default = false;
-      description = "If true, enable a flake check that rebuilds all PDFs and fails if any change.";
+    devShells = {
+      latex-utils = lib.mkOption {
+        type = lib.types.package;
+        readOnly = true;
+        description = "Complete, ready-to-use devshell with VSCode integration, composed from vscodeShell.";
+        example = lib.literalExpression "pkgs.mkShell { inputsFrom = [ config.latex-utils.vscodeShell ]; }";
+      };
     };
   };
 
@@ -375,8 +388,10 @@ in {
           };
 
           # VS Code settings shell fragment (composable)
-          vscodeSettingsShell = pkgs.mkShell {
-            buildInputs = []; # Only adds the shellHook for VS Code settings
+          # Renamed from vscodeSettingsShell and updated for composition
+          latexUtilsVSCodeFragment = pkgs.mkShell {
+            name = "latex-utils-vscode-fragment";
+            inputsFrom = [unifiedTexShell]; # Ensures unifiedTexShell environment is included
             shellHook = ''
               mkdir -p .vscode
               ln -sf "${vscodeIntegration.vscode-settings}/.vscode/settings.json" .vscode/settings.json
@@ -449,9 +464,13 @@ in {
         in {
           # Namespaced outputs for latex-utils
           latex-utils = {
+            # unifiedTexShell is now directly under latex-utils namespace
+            unifiedTexShell = unifiedTexShell;
+            # vscodeShell is now directly under latex-utils namespace
+            vscodeShell = latexUtilsVSCodeFragment;
+
             build = {
-              unifiedTexShell = unifiedTexShell;
-              vscodeSettingsShell = vscodeSettingsShell;
+              # build still exists for wrapper
               wrapper = latexmkWrapper;
             };
           };
@@ -460,13 +479,19 @@ in {
           packages =
             docPkgs
             // unifiedPackages
-            // vscodeIntegration
+            // vscodeIntegration # vscodeIntegration might become partially redundant or simplified
             // (
               if documents != []
               then {default = mkDoc (builtins.head documents);}
               else {}
             );
-          devShells.full = lib.mkIf config.latex-utils.enableVSCode vscodeIntegration.vscode-devshell;
+
+          # New devShells.latex-utils, replacing devShells.full
+          devShells.latex-utils = lib.mkIf config.latex-utils.enableVSCode (pkgs.mkShell {
+            name = "latex-utils-devshell";
+            inputsFrom = [latexUtilsVSCodeFragment]; # Composed from the new vscode fragment
+          });
+
           checks.latex = lib.mkIf config.latex-utils.flakeCheck latexCheck;
           apps = {
             vscode-settings-custom = {
