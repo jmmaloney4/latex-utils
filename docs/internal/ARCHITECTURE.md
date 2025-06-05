@@ -143,7 +143,7 @@ Coding guidelines: keep Nix expressions pure, favour attr‑sets over lists of t
 * **Local dev** – `nix develop` drops you into a shell with `latexmk`, `lualatex`, etc.
 * **CI/CD** – any Nix‑capable runner (e.g. GitHub Actions, Garnix) can run `nix flake check` and cache results.
 * **Binary cache** – enable Cachix/Garnix to avoid recompiling TeX Live.
-* **VS Code** – `devShells.vscode` auto‑links `.vscode/settings.json` so agents and humans share a consistent environment.
+* **VS Code** – `devShells.latex-utils` auto‑links `.vscode/settings.json` so agents and humans share a consistent environment.
 
 ---
 

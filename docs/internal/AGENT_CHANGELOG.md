@@ -1075,7 +1075,7 @@ These changes align with general software best practices by improving the qualit
 
 - Refactored `tests/devShellFragment.nix` to use a self-contained "module-only" testing strategy.
 - The test now directly imports `modules/latex-utils.nix` and evaluates its `perSystem` function with minimal mock inputs.
-- This isolates the test from the top-level `flake.nix` evaluation, making it more robust for testing the module's direct outputs like `devShells.latex-utils` and `devShells.vscode`.
+- This isolates the test from the top-level `flake.nix` evaluation, making it more robust for testing the module's direct outputs like `devShells.latex-utils` and `config.latex-utils.vscodeShell`.
 - Corrected attribute access to use unquoted names like `devShells.latex-utils`. 
 ---
 

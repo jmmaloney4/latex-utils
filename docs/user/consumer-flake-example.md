@@ -164,7 +164,7 @@ perSystem = { self', pkgs, ... }: {
    - Remove custom VSCode settings package
 
 2. **Update devShell**:
-   - Add `self'.devShells.vscode` to `inputsFrom`
+   - Add `self'.devShells.latex-utils` to `inputsFrom`
    - Remove manual TeX Live packages from `buildInputs`
    - Remove VSCode setup from `shellHook`
 

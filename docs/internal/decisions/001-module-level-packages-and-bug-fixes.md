@@ -81,7 +81,7 @@ mkLatexPdfDocument (doc // {
 ### Resilient devShells
 Always provide devShells with informative messages:
 ```nix
-devShells.vscode = 
+devShells.latex-utils =
   if hasAnyConfig && vscodeIntegration ? vscode-devshell
   then vscodeIntegration.vscode-devshell
   else fallbackShellWithHelpfulMessage;

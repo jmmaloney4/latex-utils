@@ -125,12 +125,12 @@ The module creates a single TeX Live environment containing all packages from al
     ];
     
     perSystem = { self', pkgs, ... }: {
-      # Option A: Use the provided VSCode dev shell
-      devShells.default = self'.devShells.vscode;
+      # Option A: Use the provided latex-utils dev shell with VS Code integration
+      devShells.default = self'.devShells.latex-utils;
       
       # Option B: Integrate with your existing setup
       # devShells.default = pkgs.mkShell {
-      #   inputsFrom = [ self'.devShells.vscode ];
+      #   inputsFrom = [ self'.devShells.latex-utils ];
       #   buildInputs = [ /* your other tools */ ];
       # };
     };
