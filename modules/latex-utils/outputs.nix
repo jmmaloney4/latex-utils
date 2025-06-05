@@ -33,6 +33,17 @@
       done
       # In real use, compare with committed PDFs or previous build
     '';
+
+  # Aggregate package that builds all documents
+  documentsPackage = lib.optionalAttrs (documents != []) {
+    documents = pkgs.runCommand "latex-documents" {} ''
+      mkdir -p $out
+      ${lib.concatMapStrings (doc: ''
+          cp "${mkDoc doc}" "$out/${doc.name}"
+        '')
+        documents}
+    '';
+  };
 in {
   # Per-System derivations that will be transposed to outputs.latex-utils.${system}.*
   # These are accessible within perSystem as config.latex-utils.*
@@ -46,6 +57,7 @@ in {
     docPkgs
     // unifiedPackages
     // vscodeIntegration
+    // documentsPackage
     // (
       if documents != []
       then {default = mkDoc (builtins.head documents);}

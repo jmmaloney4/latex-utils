@@ -127,6 +127,14 @@ Coding guidelines: keep Nix expressions pure, favour attr‑sets over lists of t
 2. **Old TeX Live packages** – pre‑2024 nixpkgs lack the modern wrapper; update nixpkgs if you see missing `pkgs` attributes.
 3. **Undetected packages** – add `% CTAN:` comments or use `extraTexPackages`.
 4. **Font discovery** – ensure fonts are in TeX Live; external system fonts are ignored inside the sandbox.
+5. **Flake-Parts `inputs` vs `inputs'` in `perSystem`**:
+    *   **Context**: When defining or importing `flake-parts` modules that use `perSystem`, `flake-parts` has a specific way of handling flake inputs.
+    *   **Issue**: A common error is `error: inputs (without ') is not a perSystem module argument, but a module argument of the top level config.` This typically means that a module's `perSystem` function (or a function it calls) is trying to accept an argument named `inputs` (e.g., `perSystem = { inputs, pkgs, ...}:`) to refer to the flake's top-level inputs.
+    *   **`flake-parts` Convention**:
+        *   Inside a `perSystem = { ... }:` block, `flake-parts` makes the flake's top-level inputs available via an argument named `inputs'` (inputs with a prime).
+        *   The argument `inputs` (without a prime) within `perSystem` usually refers to the `inputs` passed to `flake-parts.lib.mkFlake` (i.e., `mkFlake { inputs = ...; }`).
+    *   **Resolution**: If a module's `perSystem` logic needs to access the flake's own top-level inputs, it should expect an argument named `inputs'`. If it defines its own `perSystem` function as `({ inputs, ... }):`, this `inputs` will shadow or conflict with `flake-parts`' provision if not handled carefully, especially when modules are imported into other `flake-parts` structures (like test harnesses).
+    *   **Symptoms in Testing**: This issue often surfaces when testing a `flake-parts` module using a test harness that itself is a `flake-parts` flake (as per ADR 004). Even if the test harness correctly passes all inputs, the module under test might fail if its internal `perSystem` definition has this `inputs` argument naming conflict. The fix usually lies in refactoring the module under test, not the test harness.
 
 ---
 

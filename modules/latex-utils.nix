@@ -31,6 +31,8 @@ in {
       config,
       pkgs,
       lib,
+      inputs',
+      system,
       ...
     }: let
       # Import document processing logic

@@ -68,6 +68,9 @@
                 inherit pkgs lib;
               };
               devShellFragments = import ./tests/devShellFragments.nix;
+              documentsPackage = import ./tests/documentsPackage.nix {
+                inherit pkgs lib system inputs;
+              };
             }
             // (import ./tests/testModuleLevel.nix {inherit pkgs lib;});
         };
