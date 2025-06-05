@@ -27,7 +27,8 @@
         flakeInputs.flake-root.flakeModule
         flakeInputs.git-hooks-nix.flakeModule
         flakeInputs.flake-parts.flakeModules.modules
-        ./modules/latex-utils.nix
+        # Note: ./modules/latex-utils.nix is auto-discovered by flake-parts.modules
+        # and published as outputs.modules.flake.latex-utils
       ];
       perSystem = {
         config,
@@ -112,6 +113,7 @@
       # For backward compatibility, as per ADR-007
       flake = {
         flakeModule = import ./modules/latex-utils.nix;
+        modules.flake.latex-utils = ./modules/latex-utils.nix;
       };
     };
 }
