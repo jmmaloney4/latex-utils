@@ -816,3 +816,20 @@ To ensure fast, reliable, and reproducible font discovery for LuaLaTeX and XeLaT
 ## Library Functions
 
 The following utility functions are available in the `lib/`
+
+## Documentation
+
+The docs are written in Markdown under `docs/` and rendered with [mkdocs](https://www.mkdocs.org/).
+
+Build them with:
+
+```bash
+nix build .#documentation
+```
+
+For a live preview while editing, run:
+
+```bash
+nix run .#watch-documentation
+```
+

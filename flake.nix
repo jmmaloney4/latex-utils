@@ -10,6 +10,7 @@
     mission-control.url = "github:Platonic-Systems/mission-control";
     flake-root.url = "github:srid/flake-root";
     git-hooks-nix.url = "github:cachix/git-hooks.nix";
+    mkdocs-flake.url = "github:applicative-systems/mkdocs-flake";
   };
 
   outputs = flakeInputs @ {
@@ -27,6 +28,7 @@
         flakeInputs.flake-root.flakeModule
         flakeInputs.git-hooks-nix.flakeModule
         flakeInputs.flake-parts.flakeModules.modules
+        flakeInputs.mkdocs-flake.flakeModule
         # Note: ./modules/latex-utils.nix is auto-discovered by flake-parts.modules
         # and published as outputs.modules.flake.latex-utils
       ];
@@ -43,6 +45,7 @@
         flake-root = {
           projectRootFile = "flake.nix";
         };
+        documentation.mkdocs-root = ./docs;
         nix-unit = {
           allowNetwork = true;
           inputs = {
