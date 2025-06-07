@@ -49,9 +49,9 @@ with pkgs.lib.debug; let
       else [];
     filesWithExtensions = filter (name: lists.any (ext: strings.hasSuffix ext name) extensions) files;
     fullPaths = map (name: rootPath + "/${name}") filesWithExtensions;
-    recuriveFiles = builtins.concatLists (map (name: processDirectory (rootPath + "/${name}") extensions) directories);
+    recursiveFiles = builtins.concatLists (map (name: processDirectory (rootPath + "/${name}") extensions) directories);
   in
-    fullPaths ++ recuriveFiles;
+    fullPaths ++ recursiveFiles;
 in
   {
     basePath,
