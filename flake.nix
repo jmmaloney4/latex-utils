@@ -45,7 +45,7 @@
         flake-root = {
           projectRootFile = "flake.nix";
         };
-        documentation.mkdocs-root = ./docs;
+        documentation.mkdocs-root = ./.;
         nix-unit = {
           allowNetwork = true;
           inputs = {
