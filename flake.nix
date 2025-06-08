@@ -110,6 +110,7 @@
               enable = true;
               package = config.treefmt.build.wrapper;
             };
+            hooks.statix.enable = true;
           };
         };
       };
