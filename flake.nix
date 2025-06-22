@@ -75,6 +75,11 @@
               documentsPackage = import ./tests/documentsPackage.nix {
                 inherit pkgs lib system inputs;
               };
+              # Documentation validation tests
+              documentationValidation = import ./tests/documentationValidation.nix;
+              accessPathValidation = import ./tests/accessPathValidation.nix;
+              packageReferenceValidation = import ./tests/packageReferenceValidation.nix;
+              documentationIntegrationCheck = import ./tests/documentationIntegrationCheck.nix;
             }
             // (import ./tests/testModuleLevel.nix {inherit pkgs lib;});
         };

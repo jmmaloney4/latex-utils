@@ -19,34 +19,38 @@
   }:
     flake-parts.lib.mkFlake {inherit inputs;} {
       systems = ["x86_64-linux"];
-      imports = [flakeInputs.flake-parts.flakeModules.easySetup];
+      imports = [
+        inputs.latex-utils.modules.flake.latex-utils
+      ];
+
+      # Configure latex-utils at module level (NOT in perSystem)
+      latex-utils.documents = [
+        {
+          name = "mydocument.pdf";
+          src = ./.;
+          # inputFile = "main.tex";
+          # extraTexPackages = [ "amscls" "beamer" ];
+          # Or, using derivations:
+          # extraTexPackages = [ pkgs.texlive.amscls pkgs.texlive.beamer ];
+        }
+      ];
+
       perSystem = {
         config,
         pkgs,
         ...
       }: {
-        imports = [inputs.latex-utils.modules.flake.latex-utils];
-        latex-utils.documents = [
-          {
-            name = "mydocument.pdf";
-            src = ./.;
-            # inputFile = "main.tex";
-            # extraTexPackages = [ "amscls" "beamer" ];
-            # Or, using derivations:
-            # extraTexPackages = [ pkgs.texlive.amscls pkgs.texlive.beamer ];
-          }
-        ];
         # Use the turn-key VS Code shell:
         devShells.default = config.devShells.latex-utils;
         # Or compose your own shell fragments:
         # devShells.myCustom = pkgs.mkShell {
         #   inputsFrom = [
-        #     config.latex-utils.build.unifiedTexShell
-        #     config.latex-utils.build.vscodeSettingsShell # Optional: links VS Code settings
+        #     config.latex-utils.unifiedTexShell
+        #     config.latex-utils.vscodeShell # Optional: adds VS Code integration
         #   ];
         #   buildInputs = [ /* your extra tools */ ];
         # };
-        # To disable VS Code integration:
+        # To disable VS Code integration (at module level):
         # latex-utils.enableVSCode = false;
       };
     };

@@ -16,7 +16,53 @@
       systems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
 
       imports = [
-        inputs.latex-utils.flakeModule
+        inputs.latex-utils.modules.flake.latex-utils
+      ];
+
+      # Module-level packages that apply to ALL documents
+      latex-utils.extraTexPackages = [
+        # Common math packages used by all documents
+        "amsmath"
+        "amssymb"
+        "mathtools"
+        "unicode-math"
+
+        # Common formatting packages
+        "geometry"
+        "fancyhdr"
+        "lastpage"
+
+        # Bibliography support for all
+        "biblatex"
+        "biber"
+      ];
+
+      latex-utils.documents = [
+        {
+          name = "paper1.pdf";
+          src = ./paper1;
+          # This document gets all module-level packages PLUS these:
+          extraTexPackages = [
+            "tikz"
+            "pgfplots" # Only needed for paper1
+          ];
+        }
+        {
+          name = "paper2.pdf";
+          src = ./paper2;
+          # This document gets all module-level packages PLUS these:
+          extraTexPackages = discovered:
+          # Dynamic package selection based on discovered packages
+            if builtins.hasAttr "algorithm" discovered
+            then ["algorithmicx" "algpseudocode"]
+            else [];
+        }
+        {
+          name = "thesis.pdf";
+          src = ./thesis;
+          # This document only uses module-level packages
+          # No document-specific extras needed
+        }
       ];
 
       perSystem = {
@@ -24,51 +70,8 @@
         pkgs,
         ...
       }: {
-        # Module-level packages that apply to ALL documents
-        latex-utils.extraTexPackages = [
-          # Common math packages used by all documents
-          "amsmath"
-          "amssymb"
-          "mathtools"
-          "unicode-math"
-
-          # Common formatting packages
-          "geometry"
-          "fancyhdr"
-          "lastpage"
-
-          # Bibliography support for all
-          "biblatex"
-          "biber"
-        ];
-
-        latex-utils.documents = [
-          {
-            name = "paper1.pdf";
-            src = ./paper1;
-            # This document gets all module-level packages PLUS these:
-            extraTexPackages = [
-              "tikz"
-              "pgfplots" # Only needed for paper1
-            ];
-          }
-          {
-            name = "paper2.pdf";
-            src = ./paper2;
-            # This document gets all module-level packages PLUS these:
-            extraTexPackages = discovered:
-            # Dynamic package selection based on discovered packages
-              if builtins.hasAttr "algorithm" discovered
-              then ["algorithmicx" "algpseudocode"]
-              else [];
-          }
-          {
-            name = "thesis.pdf";
-            src = ./thesis;
-            # This document only uses module-level packages
-            # No document-specific extras needed
-          }
-        ];
+        # DevShells are per-system outputs
+        devShells.default = config.devShells.latex-utils;
       };
     };
 }

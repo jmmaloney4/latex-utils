@@ -56,22 +56,23 @@
        imports = [
          inputs.latex-utils.modules.flake.latex-utils # Use standard flake-parts module path
        ];
+       
+       # Configure latex-utils options at module level (NOT in perSystem)
+       latex-utils.documents = [
+         {
+           name = "paper.pdf";
+           src = ./.;
+           # inputFile = "main.tex"; # optional, defaults to main.tex
+           # extraTexPackages = []; # optional, for packages not auto-detected
+         }
+         {
+           name = "slides.pdf";
+           src = ./slides;
+           inputFile = "slides.tex";
+         }
+       ];
+       
        perSystem = { config, pkgs, system, ... }: {
-         # Configure latex-utils options
-         latex-utils.documents = [
-           {
-             name = "paper.pdf";
-             src = ./.;
-             # inputFile = "main.tex"; # optional, defaults to main.tex
-             # extraTexPackages = []; # optional, for packages not auto-detected
-           }
-           {
-             name = "slides.pdf";
-             src = ./slides;
-             inputFile = "slides.tex";
-           }
-         ];
-         
          # Use the ready-to-go devShell with VSCode integration
          devShells.default = config.devShells.latex-utils;
        };
@@ -117,13 +118,15 @@ latex-utils provides **composable shell fragments** that you can mix and match t
 For most users, simply use the provided complete devshell:
 
 ```nix
-perSystem = { config, ... }: {
-  # Configure your documents
+{
+  # Configure your documents at module level
   latex-utils.documents = [ /* ... */ ];
   
-  # Use the complete shell as your default
-  devShells.default = config.devShells.latex-utils;
-};
+  perSystem = { config, ... }: {
+    # Use the complete shell as your default
+    devShells.default = config.devShells.latex-utils;
+  };
+}
 ```
 
 Then run: `nix develop`
@@ -133,22 +136,24 @@ Then run: `nix develop`
 If you don't want VSCode integration:
 
 ```nix
-perSystem = { config, pkgs, ... }: {
-  # Configure your documents  
+{
+  # Configure your documents at module level  
   latex-utils.documents = [ /* ... */ ];
   
-  # Disable VSCode integration
+  # Disable VSCode integration at module level
   latex-utils.enableVSCode = false;
   
-  # Create custom shell with just TeX environment
-  devShells.my-latex = pkgs.mkShell {
-    inputsFrom = [ config.latex-utils.unifiedTexShell ];
-    buildInputs = [ pkgs.git pkgs.my-custom-tool ];
-    shellHook = ''
-      echo "Custom LaTeX environment ready!"
-    '';
+  perSystem = { config, pkgs, ... }: {
+    # Create custom shell with just TeX environment
+    devShells.my-latex = pkgs.mkShell {
+      inputsFrom = [ config.latex-utils.unifiedTexShell ];
+      buildInputs = [ pkgs.git pkgs.my-custom-tool ];
+      shellHook = ''
+        echo "Custom LaTeX environment ready!"
+      '';
+    };
   };
-};
+}
 ```
 
 #### 3. Extend the VSCode Shell
@@ -156,23 +161,25 @@ perSystem = { config, pkgs, ... }: {
 Add your own tools to the VSCode-integrated environment:
 
 ```nix
-perSystem = { config, pkgs, ... }: {
-  # Configure your documents
+{
+  # Configure your documents at module level
   latex-utils.documents = [ /* ... */ ];
   
-  # Extend the VSCode shell with additional tools
-  devShells.extended-latex = pkgs.mkShell {
-    inputsFrom = [ config.latex-utils.vscodeShell ];
-    buildInputs = [ 
-      pkgs.pandoc       # Document conversion
-      pkgs.imagemagick  # Image processing
-      pkgs.inkscape     # Vector graphics
-    ];
-    shellHook = ''
-      echo "Extended LaTeX + VSCode environment with extra tools!"
-    '';
+  perSystem = { config, pkgs, ... }: {
+    # Extend the VSCode shell with additional tools
+    devShells.extended-latex = pkgs.mkShell {
+      inputsFrom = [ config.latex-utils.vscodeShell ];
+      buildInputs = [ 
+        pkgs.pandoc       # Document conversion
+        pkgs.imagemagick  # Image processing
+        pkgs.inkscape     # Vector graphics
+      ];
+      shellHook = ''
+        echo "Extended LaTeX + VSCode environment with extra tools!"
+      '';
+    };
   };
-};
+}
 ```
 
 #### 4. Multiple Specialized Shells
@@ -180,33 +187,36 @@ perSystem = { config, pkgs, ... }: {
 Create different shells for different workflows:
 
 ```nix
-perSystem = { config, pkgs, ... }: {
+{
+  # Configure documents at module level
   latex-utils.documents = [ /* ... */ ];
   
-  devShells = {
-    # Minimal TeX-only shell
-    tex-only = pkgs.mkShell {
-      inputsFrom = [ config.latex-utils.unifiedTexShell ];
-    };
-    
-    # Full IDE-integrated shell
-    ide = pkgs.mkShell {
-      inputsFrom = [ config.latex-utils.vscodeShell ];
-    };
-    
-    # Writing shell with additional tools
-    writing = pkgs.mkShell {
-      inputsFrom = [ config.latex-utils.vscodeShell ];
-      buildInputs = [ pkgs.aspell pkgs.languagetool ];
-    };
-    
-    # Presentation shell
-    slides = pkgs.mkShell {
-      inputsFrom = [ config.latex-utils.unifiedTexShell ];
-      buildInputs = [ pkgs.pdf2svg pkgs.poppler_utils ];
+  perSystem = { config, pkgs, ... }: {
+    devShells = {
+      # Minimal TeX-only shell
+      tex-only = pkgs.mkShell {
+        inputsFrom = [ config.latex-utils.unifiedTexShell ];
+      };
+      
+      # Full IDE-integrated shell
+      ide = pkgs.mkShell {
+        inputsFrom = [ config.latex-utils.vscodeShell ];
+      };
+      
+      # Writing shell with additional tools
+      writing = pkgs.mkShell {
+        inputsFrom = [ config.latex-utils.vscodeShell ];
+        buildInputs = [ pkgs.aspell pkgs.languagetool ];
+      };
+      
+      # Presentation shell
+      slides = pkgs.mkShell {
+        inputsFrom = [ config.latex-utils.unifiedTexShell ];
+        buildInputs = [ pkgs.pdf2svg pkgs.poppler_utils ];
+      };
     };
   };
-};
+}
 ```
 
 Then use: `nix develop .#tex-only`, `nix develop .#writing`, etc.
@@ -254,33 +264,35 @@ This happens because treefmt's devShell provides its own TeX Live environment th
 Instead of including treefmt's devShell in `inputsFrom`, configure treefmt to use a custom latexindent wrapper that references your unified TeX Live environment:
 
 ```nix
-perSystem = { config, pkgs, lib, self', ... }: {
-  # Configure your LaTeX documents
+{
+  # Configure your LaTeX documents at module level
   latex-utils.documents = [ /* ... */ ];
   
-  # Configure treefmt with custom latexindent from unified TeX environment
-  treefmt.config = {
-    inherit (config.flake-root) projectRootFile;
-    package = pkgs.treefmt;
-    programs.alejandra.enable = true;
-    programs.latexindent = {
-      enable = true;
-      # Use latexindent from the unified TeX Live environment
-      package = self'.packages.latexindent;
+  perSystem = { config, pkgs, lib, self', ... }: {
+    # Configure treefmt with custom latexindent from unified TeX environment
+    treefmt.config = {
+      inherit (config.flake-root) projectRootFile;
+      package = pkgs.treefmt;
+      programs.alejandra.enable = true;
+      programs.latexindent = {
+        enable = true;
+        # Use latexindent from the unified TeX Live environment
+        package = self'.packages.latexindent;
+      };
+    };
+    
+    devShells.default = pkgs.mkShell {
+      # DON'T include treefmt's devShell to avoid TeX Live conflicts
+      inputsFrom = [ config.latex-utils.vscodeShell ];
+      
+      # Include treefmt wrapper directly
+      buildInputs = [ 
+        config.treefmt.build.wrapper
+        # ... your other tools
+      ];
     };
   };
-  
-  devShells.default = pkgs.mkShell {
-    # DON'T include treefmt's devShell to avoid TeX Live conflicts
-    inputsFrom = [ config.latex-utils.vscodeShell ];
-    
-    # Include treefmt wrapper directly
-    buildInputs = [ 
-      config.treefmt.build.wrapper
-      # ... your other tools
-    ];
-  };
-};
+}
 ```
 
 ### Key Points
@@ -502,7 +514,7 @@ You can now specify common TeX Live packages at the module level that will be in
 
 ```nix
 {
-  # Define packages once for all documents
+  # Define packages once for all documents at module level
   latex-utils.extraTexPackages = [
     "amsmath"
     "amssymb"
@@ -532,7 +544,7 @@ Module-level `extraTexPackages` supports the same flexible formats as document-l
 
 ```nix
 {
-  # Using derivations
+  # Using derivations at module level
   latex-utils.extraTexPackages = [
     pkgs.texlive.amsmath
     pkgs.texlive.unicode-math
@@ -776,37 +788,37 @@ To ensure fast, reliable, and reproducible font discovery for LuaLaTeX and XeLaT
         # inputs.treefmt-nix.flakeModule   # Optional: For code formatting
       ];
 
-      perSystem = { config, pkgs, system, lib, ... }:
+      # Module-level configuration (NOT in perSystem)
+      latex-utils.extraTexPackages = [
+        "amsmath"
+        "geometry"
+        "hyperref"
+      ];
+
+      latex-utils.documents = [
         {
-          latex-utils.extraTexPackages = [
-            "amsmath"
-            "geometry"
-            "hyperref"
-          ];
+          name = "thesis.pdf";
+          src = ./.;
+          # Uses module packages + any discovered packages
+        }
+        {
+          name = "poster.pdf";
+          src = ./poster;
+          inputFile = "poster.tex";
+          # Add poster-specific packages
+          extraTexPackages = ["tikzposter" "tikz"];
+        }
+      ];
 
-          latex-utils.documents = [
-            {
-              name = "thesis.pdf";
-              src = ./.;
-              # Uses module packages + any discovered packages
-            }
-            {
-              name = "poster.pdf";
-              src = ./poster;
-              inputFile = "poster.tex";
-              # Add poster-specific packages
-              extraTexPackages = ["tikzposter" "tikz"];
-            }
-          ];
-
-          # Use the unified VSCode dev shell provided by latex-utils
-          devShells.default = config.devShells.latex-utils;
-          # Or create your own composition:
-          # devShells.my-latex = pkgs.mkShell {
-          #   inputsFrom = [ config.latex-utils.vscodeShell ];
-          #   buildInputs = [ pkgs.pandoc ];
-          # };
-        };
+      perSystem = { config, pkgs, system, lib, ... }: {
+        # Use the unified VSCode dev shell provided by latex-utils
+        devShells.default = config.devShells.latex-utils;
+        # Or create your own composition:
+        # devShells.my-latex = pkgs.mkShell {
+        #   inputsFrom = [ config.latex-utils.vscodeShell ];
+        #   buildInputs = [ pkgs.pandoc ];
+        # };
+      };
     };
 }
 ```
