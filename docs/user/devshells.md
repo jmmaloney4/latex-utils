@@ -17,18 +17,23 @@ latex-utils exposes two main ways to get a development shell:
 ## Example: Composing with the Fragments
 
 ```nix
-perSystem = { config, pkgs, ... }: {
-  devShells.myCustom = pkgs.mkShell {
-    inputsFrom = [
-      config.latex-utils.unifiedTexShell
-      config.latex-utils.vscodeShell # Optional: adds VS Code integration
-    ];
-    buildInputs = [ pkgs.pandoc pkgs.zathura ];
-    shellHook = \'\'
-      echo "Custom LaTeX shell with extra tools!"
-    \'\';
+{
+  # Configure documents at module level
+  latex-utils.documents = [ /* ... */ ];
+  
+  perSystem = { config, pkgs, ... }: {
+    devShells.myCustom = pkgs.mkShell {
+      inputsFrom = [
+        config.latex-utils.unifiedTexShell
+        config.latex-utils.vscodeShell # Optional: adds VS Code integration
+      ];
+      buildInputs = [ pkgs.pandoc pkgs.zathura ];
+      shellHook = ''
+        echo "Custom LaTeX shell with extra tools!"
+      '';
+    };
   };
-};
+}
 ```
 
 ## Enabling/Disabling VS Code Integration
@@ -36,6 +41,7 @@ perSystem = { config, pkgs, ... }: {
 By default, VS Code integration is enabled. To disable it (e.g., for CI or headless use):
 
 ```nix
+# At module level
 latex-utils.enableVSCode = false;
 ```
 
@@ -51,9 +57,9 @@ When disabled, `config.devShells.latex-utils` will not include VS Code settings 
 
 | Output                        | Description                                 |
 |-------------------------------|---------------------------------------------|
-| `latex-utils.unifiedTexShell` | Composable fragment, TeX environment only |
-| `latex-utils.vscodeShell`     | Composable fragment, TeX + VS Code integration |
-| `devShells.latex-utils`       | Complete shell with VS Code integration         |
+| `config.latex-utils.unifiedTexShell` | Unified TeX environment (composable fragment) |
+| `config.latex-utils.vscodeShell`     | TeX environment + VS Code integration (composable fragment) |
+| `config.devShells.latex-utils`       | Complete dev shell with VS Code integration |
 | `enableVSCode`                | Boolean flag to enable/disable integration  |
 
 See the main README and IDE integration guide for more details. 

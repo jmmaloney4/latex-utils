@@ -20,7 +20,84 @@
       systems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
 
       imports = [
-        inputs.latex-utils.flakeModule
+        inputs.latex-utils.modules.flake.latex-utils
+      ];
+
+      # MODULE-LEVEL PACKAGES
+      # These apply to ALL documents and environments
+      latex-utils.extraTexPackages = discovered:
+        [
+          # Always include these base packages
+          "amsmath"
+          "amssymb"
+          "mathtools"
+          "geometry"
+          "hyperref"
+          "biblatex"
+        ]
+        ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
+          # Platform-specific packages
+          "darwin-tex-utils" # hypothetical package
+        ];
+
+      # DOCUMENTS
+      latex-utils.documents = [
+        # Document 1: Simple document with string-based extras
+        {
+          name = "simple-report.pdf";
+          src = ./simple-report;
+          extraTexPackages = [
+            "xcolor" # Additional color support
+            "listings" # Code listings
+          ];
+        }
+
+        # Document 2: Advanced with derivation-based extras
+        {
+          name = "research-paper.pdf";
+          src = ./research-paper;
+          extraTexPackages = [
+            pkgs.texlive.tikz # Using derivation directly
+            pkgs.texlive.pgfplots # For plots
+          ];
+        }
+
+        # Document 3: Dynamic package selection with function
+        {
+          name = "thesis.pdf";
+          src = ./thesis;
+          extraTexPackages = discovered:
+          # Add algorithm packages if algorithms are used
+            if builtins.hasAttr "algorithm" discovered
+            then [
+              "algorithmicx"
+              "algpseudocode"
+              "algorithm2e"
+            ]
+            # Add chemistry packages if chemistry is used
+            else if builtins.hasAttr "chemfig" discovered
+            then [
+              "chemformula"
+              "chemmacros"
+            ]
+            # Default packages
+            else [
+              "glossaries"
+              "makeindex"
+            ];
+        }
+
+        # Document 4: Mixed derivations and strings
+        {
+          name = "presentation.pdf";
+          src = ./presentation;
+          inputFile = "slides.tex";
+          extraTexPackages = [
+            "beamer" # String format
+            pkgs.texlive.pgfpages # Derivation format
+            "xcolor"
+          ];
+        }
       ];
 
       perSystem = {
@@ -29,142 +106,78 @@
         pkgs,
         ...
       }: {
-        # MODULE-LEVEL PACKAGES
-        # These apply to ALL documents and environments
-        latex-utils.extraTexPackages = discovered:
-          [
-            # Always include these base packages
-            "amsmath"
-            "amssymb"
-            "mathtools"
-            "geometry"
-            "hyperref"
-            "biblatex"
-          ]
-          ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
-            # Platform-specific packages
-            "darwin-tex-utils" # hypothetical package
-          ];
+        # DEVELOPMENT SHELLS
+        devShells = {
+          # Default shell with full VSCode integration
+          default = config.devShells.latex-utils;
 
-        # DOCUMENTS
-        latex-utils.documents = [
-          # Document 1: Simple document with string-based extras
-          {
-            name = "simple-report.pdf";
-            src = ./simple-report;
-            extraTexPackages = [
-              "xcolor" # Additional color support
-              "listings" # Code listings
-            ];
-          }
-
-          # Document 2: Advanced with derivation-based extras
-          {
-            name = "research-paper.pdf";
-            src = ./research-paper;
-            extraTexPackages = [
-              pkgs.texlive.tikz # Using derivation directly
-              pkgs.texlive.pgfplots # For plots
-            ];
-          }
-
-          # Document 3: Dynamic package selection with function
-          {
-            name = "thesis.pdf";
-            src = ./thesis;
-            extraTexPackages = discovered:
-            # Add algorithm packages if algorithms are used
-              if builtins.hasAttr "algorithm" discovered
-              then [
-                "algorithmicx"
-                "algpseudocode"
-                "algorithm2e"
-              ]
-              # Add chemistry packages if chemistry is used
-              else if builtins.hasAttr "chemfig" discovered
-              then [
-                "chemformula"
-                "chemmacros"
-              ]
-              # Default packages
-              else [
-                "glossaries"
-                "makeindex"
-              ];
-          }
-
-          # Document 4: No extra packages (uses only module-level)
-          {
-            name = "minimal.pdf";
-            src = ./minimal;
-            # No extraTexPackages - relies entirely on module-level
-          }
-        ];
-
-        # PACKAGES
-        # Demonstrating available outputs
-        packages = {
-          # Custom VSCode settings with language override
-          custom-vscode-de = pkgs.writeTextFile {
-            name = "vscode-settings-de";
-            destination = "/.vscode/settings.json";
-            text = builtins.toJSON {
-              "ltex.language" = "de-DE";
-              "ltex.additionalRules.motherTongue" = "de-DE";
-              "latex-workshop.message.warning.show" = false;
-            };
+          # Minimal TeX shell without VSCode
+          minimal = pkgs.mkShell {
+            name = "minimal-latex-shell";
+            inputsFrom = [config.latex-utils.unifiedTexShell];
+            buildInputs = [pkgs.git];
           };
 
-          # Example using the unified TeX environment directly
-          latex-worksheet-generator = pkgs.writeShellScriptBin "gen-worksheet" ''
+          # Writing-focused shell
+          writing = pkgs.mkShell {
+            name = "writing-focused-shell";
+            inputsFrom = [config.latex-utils.vscodeShell];
+            buildInputs = [
+              pkgs.aspell # Spell checking
+              pkgs.languagetool # Grammar checking
+              pkgs.hunspell # Additional spell checking
+            ];
+            shellHook = ''
+              echo "📝 Writing environment ready!"
+              echo "Available tools: aspell, languagetool, hunspell"
+            '';
+          };
+
+          # Research shell with additional tools
+          research = pkgs.mkShell {
+            name = "research-shell";
+            inputsFrom = [config.latex-utils.vscodeShell];
+            buildInputs = [
+              pkgs.pandoc # Document conversion
+              pkgs.zotero # Reference management
+              pkgs.imagemagick # Image processing
+              pkgs.inkscape # Vector graphics
+              pkgs.gnuplot # Plotting
+            ];
+            shellHook = ''
+              echo "🔬 Research environment ready!"
+              echo "Available tools: pandoc, imagemagick, inkscape, gnuplot"
+            '';
+          };
+        };
+
+        # CUSTOM PACKAGES
+        packages = {
+          # Custom latexmk wrapper with specific flags
+          latexmk-fast = pkgs.writeShellScriptBin "latexmk-fast" ''
+            exec ${pkgs.lib.getExe' self'.packages.texlive "latexmk"} \
+              -pdf -pdflatex="pdflatex -interaction=nonstopmode" \
+              -use-make "$@"
+          '';
+
+          # Document validation script
+          validate-docs = pkgs.writeShellScriptBin "validate-docs" ''
             #!/usr/bin/env bash
-            echo "Generating worksheet with unified TeX environment..."
-            ${self'.packages.latexmk}/bin/latexmk -pdf worksheet.tex
+            set -e
+            echo "🔍 Validating LaTeX documents..."
+
+            # Check for common LaTeX errors
+            for tex_file in $(find . -name "*.tex"); do
+              echo "Checking $tex_file..."
+              # Add your validation logic here
+              ${pkgs.lib.getExe' self'.packages.texlive "chktex"} "$tex_file" || true
+            done
+
+            echo "✅ Validation complete!"
           '';
         };
 
-        # DEVSHELLS
-        devShells = {
-          # Primary development shell with VSCode integration
-          default = config.latex-utils.devShells.full;
-
-          # Custom shell with additional tools
-          research = pkgs.mkShell {
-            inputsFrom = [
-              config.latex-utils.build.unifiedTexShell
-              config.latex-utils.build.vscodeSettingsShell # Optional: links VS Code settings
-            ];
-            buildInputs = [
-              config.latex-utils.packages.texlive # All packages from all documents
-              pkgs.pandoc # Document conversion
-              pkgs.gnuplot # Plotting
-              pkgs.imagemagick # Image manipulation
-            ];
-            shellHook = ''
-              echo "🔬 Research LaTeX Environment"
-              echo "📦 Unified TeX Live with all project packages"
-              echo ""
-              echo "Available tools:"
-              echo "  latexmk   - Build any document"
-              echo "  pandoc    - Convert between formats"
-              echo "  gnuplot   - Create plots"
-              echo "  convert   - Process images"
-            '';
-          };
-
-          # Minimal shell (demonstrates fallback when no docs configured)
-          minimal = pkgs.mkShell {
-            buildInputs = [
-              pkgs.texlive.combined.scheme-basic
-            ];
-            shellHook = ''
-              echo "📄 Minimal LaTeX Environment"
-              echo "ℹ️  Configure documents in latex-utils.documents for full features"
-            '';
-          };
-        };
-
-        # APPS
+        # CUSTOM APPLICATIONS
         apps = {
           # Quick document builder
           build-all = {
@@ -216,5 +229,4 @@
 # 5. **Unified environment** includes all packages from all sources
 # 6. **Platform-specific** package handling with functions
 # 7. **Custom apps** can leverage the unified environment
-# 8. **VSCode integration** works out of the box
 
