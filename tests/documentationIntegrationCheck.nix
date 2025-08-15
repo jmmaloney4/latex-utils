@@ -180,6 +180,47 @@
   quickstartOutput = testExample "quickstart" quickstartExample;
   comprehensiveOutput = testExample "comprehensive" comprehensiveExample;
   templateOutput = testExample "template" templateExample;
+
+  # Import test harness helpers
+  flake = import ./flake.nix;
+  testHarnessOutputsArgs = {
+    self = flake;
+    nixpkgs = inputs.nixpkgs;
+    flake-parts = inputs.flake-parts;
+    latex-utils = inputs.latex-utils;
+    inherit system;
+  };
+  outputs = import ./test-flake-helpers.nix {
+    flakeDef = flake;
+    outputsArgs = testHarnessOutputsArgs;
+  };
+
+  # Create a test flake with documents to check integration
+  testFlakeWithDocs = import ./test-flake-helpers.nix {
+    flakeDef = {
+      inputs = {
+        nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+        flake-parts.url = "github:hercules-ci/flake-parts";
+      };
+      outputs = outputsArgs @ {
+        flake-parts,
+        nixpkgs,
+        ...
+      }:
+        flake-parts.lib.mkFlake {
+          self = outputsArgs.self;
+          inputs = {
+            inherit (outputsArgs) nixpkgs flake-parts;
+          };
+        } {
+          systems = ["x86_64-linux"];
+          imports = [../modules/latex-utils.nix];
+          latex-utils.documents = [];
+        };
+    };
+    outputsArgs = testHarnessOutputsArgs;
+  };
+
 in {
   # Test: Quickstart example produces expected outputs
   testQuickstartExampleWorks = {
@@ -284,6 +325,22 @@ in {
       comprehensiveOutput ? packages
       && comprehensiveOutput.packages.${system} ? "thesis"
       && comprehensiveOutput.packages.${system} ? "poster";
+    expected = true;
+  };
+
+  testLatexmkrcOutputPresent = {
+    expr =
+      testFlakeWithDocs ? packages
+      && testFlakeWithDocs.packages ? ${system}
+      && testFlakeWithDocs.packages.${system} ? "latexmkrc";
+    expected = true;
+  };
+
+  testVscodeRecipesOutputPresent = {
+    expr =
+      testFlakeWithDocs ? packages
+      && testFlakeWithDocs.packages ? ${system}
+      && testFlakeWithDocs.packages.${system} ? "vscode-latex-workshop-recipes";
     expected = true;
   };
 }

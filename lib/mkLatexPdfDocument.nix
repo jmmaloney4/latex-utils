@@ -51,6 +51,8 @@ Parameters (passed as an attribute set):
     Custom build phase script. Overrides the default `latexmk` call.
   installPhase (string, optional):
     Custom install phase script. Overrides the default PDF move.
+  engine (string, optional, default: "lualatex"):
+    Default engine passed to latexmk (one of: "lualatex", "xelatex", "pdflatex").
 
 Returns:
   derivation: A Nix derivation that builds the LaTeX document into a PDF file.
@@ -73,6 +75,7 @@ args @ {
   texPackages ? {},
   scheme ? pkgs.texlive.scheme-basic,
   silent ? false,
+  engine ? "lualatex",
   ...
 }:
 with lib; let
@@ -202,7 +205,7 @@ in
 
         ${getExe' texEnv "latexmk"} \
           -f -interaction=nonstopmode \
-          -pdf -lualatex -bibtex \
+          -pdf -${engine} -bibtex \
           -jobname=output \
           ${inputFile}
       '';

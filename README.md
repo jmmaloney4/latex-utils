@@ -29,6 +29,7 @@
 - Create a unified TeX Live environment for IDEs.
 - VSCode integration via settings fragments.
 - Shell fragments compose with other environments.
+- Configurable default latexmk engine with generated `.latexmkrc` and VS Code recipes.
 
 ---
 
@@ -67,6 +68,7 @@
        ];
 
        perSystem = { config, pkgs, system, ... }: {
+         # One-liner: use the ready-made dev shell
          devShells.default = config.devShells.latex-utils;
        };
      };
@@ -105,6 +107,8 @@ latex-utils supplies shell fragments to create custom development environments.
 
 ### Usage Patterns
 
+- Prefer a single fragment. `config.latex-utils.vscodeShell` already includes the unified TeX environment. Composing both fragments just duplicates shellHook messages.
+
 Use the complete dev shell:
 
 ```nix
@@ -116,8 +120,6 @@ Use the complete dev shell:
   };
 }
 ```
-
-Run `nix develop` to enter the shell.
 
 Compose your own shell without VSCode integration:
 
@@ -152,39 +154,6 @@ Extend the VSCode shell:
         pkgs.imagemagick
         pkgs.inkscape
       ];
-      shellHook = ''
-        echo "Extended LaTeX + VSCode environment with extra tools!"
-      '';
-    };
-  };
-}
-```
-
-Create specialized shells:
-
-```nix
-{
-  latex-utils.documents = [ /* ... */ ];
-
-  perSystem = { config, pkgs, ... }: {
-    devShells = {
-      tex-only = pkgs.mkShell {
-        inputsFrom = [ config.latex-utils.unifiedTexShell ];
-      };
-
-      ide = pkgs.mkShell {
-        inputsFrom = [ config.latex-utils.vscodeShell ];
-      };
-
-      writing = pkgs.mkShell {
-        inputsFrom = [ config.latex-utils.vscodeShell ];
-        buildInputs = [ pkgs.aspell pkgs.languagetool ];
-      };
-
-      slides = pkgs.mkShell {
-        inputsFrom = [ config.latex-utils.unifiedTexShell ];
-        buildInputs = [ pkgs.pdf2svg pkgs.poppler_utils ];
-      };
     };
   };
 }
@@ -192,11 +161,13 @@ Create specialized shells:
 
 ### Configuration Options
 
-| Option                           | Type                | Default | Description                                   |
-|----------------------------------|---------------------|---------|-----------------------------------------------|
-| `latex-utils.enableVSCode`       | `bool`              | `true`  | Enable VSCode integration in dev shells       |
-| `latex-utils.documents`          | `list`              | `[]`    | Documents to build                            |
-| `latex-utils.extraTexPackages`   | `list` or function  | `[]`    | Additional packages for all documents         |
+| Option                           | Type                | Default     | Description                                   |
+|----------------------------------|---------------------|-------------|-----------------------------------------------|
+| `latex-utils.enableVSCode`       | `bool`              | `true`      | Enable VSCode integration in dev shells       |
+| `latex-utils.documents`          | `list`              | `[]`        | Documents to build                            |
+| `latex-utils.extraTexPackages`   | `list` or function  | `[]`        | Additional packages for all documents         |
+| `latex-utils.latexmk.engine`     | `enum`              | `"lualatex"` | Default engine: `lualatex`/`xelatex`/`pdflatex` |
+| `latex-utils.latexmk.emitRc`     | `bool`              | `true`      | Emit `.latexmkrc` into shells                 |
 
 Shell fragments can be accessed from flake outputs:
 
@@ -244,8 +215,7 @@ Configure treefmt to use a latexindent wrapper that points to the unified enviro
 Key points
 - `self'.packages.texlive` contains all discovered packages.
 - `lib.getExe' self'.packages.texlive "latexindent"` extracts the binary path.
-- Do not include `config.treefmt.build.devShell` in `inputsFrom`.
-- Use `config.treefmt.build.wrapper` in `buildInputs` instead.
+- Use `config.devShells.latex-utils` or `config.latex-utils.vscodeShell` instead of composing both fragments.
 
 ---
 
@@ -510,6 +480,18 @@ latex-utils builds a TeX Live environment that contains all required packages.
 devShells.default = config.devShells.latex-utils;
 ```
 
+### Engine and Recipes
+
+- Set default engine (for CLI, VS Code, and recipes):
+
+```nix
+latex-utils.latexmk.engine = "xelatex"; # or "lualatex", "pdflatex"
+```
+
+- Generated outputs:
+  - `packages.latexmkrc` → provides `.latexmkrc` (engine, outDir, bib) for consistent builds
+  - `packages.vscode-latex-workshop-recipes` → recipe snippet aligned with the engine
+
 ### Disabling VS Code Integration
 
 ```nix
@@ -521,7 +503,6 @@ latex-utils.enableVSCode = false;
 ```nix
 devShells.myCustomShell = pkgs.mkShell {
   inputsFrom = [
-    config.latex-utils.unifiedTexShell
     config.latex-utils.vscodeShell
   ];
   buildInputs = [ pkgs.pandoc ];
@@ -568,6 +549,8 @@ latex-utils prebuilds a fontconfig cache containing all fonts from your TeX envi
         "hyperref"
       ];
 
+      latex-utils.latexmk.engine = "lualatex"; # default
+
       latex-utils.documents = [
         {
           name = "thesis.pdf";
@@ -583,10 +566,6 @@ latex-utils prebuilds a fontconfig cache containing all fonts from your TeX envi
 
       perSystem = { config, pkgs, system, lib, ... }: {
         devShells.default = config.devShells.latex-utils;
-        # devShells.my-latex = pkgs.mkShell {
-        #   inputsFrom = [ config.latex-utils.vscodeShell ];
-        #   buildInputs = [ pkgs.pandoc ];
-        # };
       };
     };
 }

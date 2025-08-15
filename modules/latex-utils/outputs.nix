@@ -10,10 +10,12 @@
   # TeX environment outputs
   unifiedPackages,
   unifiedTexShell,
+  latexmkrcPackage,
   # VSCode integration outputs
   vscodeIntegration,
   latexUtilsVSCodeFragment,
   vscodeSettingsCustomApp,
+  vscodeRecipesPackage,
 }: let
   # Create document packages
   docPkgs = builtins.listToAttrs (map (doc: {
@@ -57,6 +59,10 @@ in {
     docPkgs
     // unifiedPackages
     // vscodeIntegration
+    // {
+      latexmkrc = latexmkrcPackage;
+      vscode-latex-workshop-recipes = vscodeRecipesPackage;
+    }
     // documentsPackage
     // (
       if documents != []

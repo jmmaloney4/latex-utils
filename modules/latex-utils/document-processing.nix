@@ -3,6 +3,7 @@
   lib,
   documents,
   moduleExtraTexPackages,
+  engine ? "lualatex",
 }: let
   # Import helpers
   findLatexFiles = import ../../lib/findLatexFiles.nix {inherit pkgs lib;};
@@ -106,6 +107,7 @@ in {
         # Pass pre-normalized packages under a different parameter name
         # to avoid double-normalization
         _preNormalizedExtraPackages = extraPackagesForDoc;
+        engine = engine;
         # Don't pass extraTexPackages - let mkLatexPdfDocument use the raw one if needed
       });
 }

@@ -6,6 +6,7 @@
   unifiedTexShell,
   documents,
   moduleExtraTexPackages,
+  engine ? "lualatex",
 }: let
   # Function to generate VSCode settings with custom overrides
   mkVSCodeSettings = overrides: let
@@ -24,6 +25,9 @@
             "-interaction=nonstopmode" # Don't stop on errors (good for IDE)
             "-file-line-error" # Error format: file:line:error (IDE-friendly)
             "-synctex=1" # Enable SyncTeX for editor-PDF sync
+
+            # Choose engine
+            "-${engine}"
 
             # Build organization
             "-output-directory=.latex-build" # Put ALL build artifacts in .latex-build/
@@ -94,6 +98,38 @@
       text = mkVSCodeSettings overrides;
     };
 
+  # Generate LaTeX Workshop recipes JSON aligned with engine
+  vscodeRecipesJson = builtins.toJSON {
+    "latex-workshop.latex.recipes" = [
+      {
+        name = "latexmk (${engine})";
+        tools = ["latexmk-${engine}"];
+      }
+    ];
+    "latex-workshop.latex.tools" = [
+      {
+        name = "latexmk-${engine}";
+        command = "${unifiedTexEnv}/bin/latexmk";
+        args = [
+          "-pdf"
+          "-interaction=nonstopmode"
+          "-file-line-error"
+          "-synctex=1"
+          "-${engine}"
+          "-output-directory=.latex-build"
+          "%DOC%"
+        ];
+        env = [];
+      }
+    ];
+  };
+
+  vscodeRecipesPackage = pkgs.writeTextFile {
+    name = "vscode-latex-workshop-recipes";
+    destination = "/.vscode/settings.json";
+    text = vscodeRecipesJson;
+  };
+
   # Common helper function for VSCode setup shellHook
   mkVSCodeSetupShellHook = {
     extraMessage ? "",
@@ -104,17 +140,23 @@
     ${
       if showDetailedInfo
       then ''
-        echo "🔧 Setting up VSCode LaTeX integration..."
-        echo "✅ VSCode settings linked successfully!"
-        echo "📦 Using unified TeX Live environment with packages from:"
-        ${docCountMsg}${modulePkgMsg}
+        if [ -z "${"''${LATEX_UTILS_VSCODE_READY:-}"}" ]; then
+          export LATEX_UTILS_VSCODE_READY=1
+          echo "🔧 Setting up VSCode LaTeX integration..."
+          echo "✅ VSCode settings linked successfully!"
+          echo "📦 Using unified TeX Live environment with packages from:"
+          ${docCountMsg}${modulePkgMsg}
+        fi
       ''
       else ''
-        echo "VS Code settings linked${
-          if extraMessage != ""
-          then " (${extraMessage})"
-          else ""
-        }."
+        if [ -z "${"''${LATEX_UTILS_VSCODE_READY:-}"}" ]; then
+          export LATEX_UTILS_VSCODE_READY=1
+          echo "VS Code settings linked${
+            if extraMessage != ""
+            then " (${extraMessage})"
+            else ""
+          }."
+        fi
       ''
     }
   '';
@@ -154,6 +196,7 @@
   # VSCode integration packages (only include derivations)
   vscodeIntegration = {
     vscodeSettings = vscodeSettings;
+    vscodeRecipes = vscodeRecipesPackage;
     vscodeShell = vscodeDevShell;
     ltex-ls = ltexLsWrapped;
   };
@@ -176,5 +219,6 @@ in {
     latexUtilsVSCodeFragment
     vscodeIntegration
     vscodeSettingsCustomApp
+    vscodeRecipesPackage
     ;
 }

@@ -18,6 +18,8 @@
   moduleExtraTexPackages = config.latex-utils.extraTexPackages;
   enableVSCode = config.latex-utils.enableVSCode;
   flakeCheck = config.latex-utils.flakeCheck;
+  engine = config.latex-utils.latexmk.engine or "lualatex";
+  emitRc = config.latex-utils.latexmk.emitRc or true;
 in {
   # Import options from the options module
   inherit (optionsModule) options;
@@ -38,18 +40,22 @@ in {
       # Import document processing logic
       documentProcessing = import ./latex-utils/document-processing.nix {
         inherit pkgs lib documents moduleExtraTexPackages;
+        engine = engine;
       };
 
       # Import TeX environment creation
       texEnvironment = import ./latex-utils/tex-environment.nix {
         inherit pkgs lib;
         inherit (documentProcessing) unifiedAdditionalPackages;
+        engine = engine;
+        emitRc = emitRc;
       };
 
       # Import VSCode integration
       vscodeIntegration = import ./latex-utils/vscode-integration.nix {
         inherit pkgs lib documents moduleExtraTexPackages;
         inherit (texEnvironment) unifiedTexEnv ltexLsWrapped unifiedTexShell;
+        engine = engine;
       };
 
       # Import output assembly
@@ -58,9 +64,9 @@ in {
         # Document processing outputs
         inherit (documentProcessing) mkDoc;
         # TeX environment outputs
-        inherit (texEnvironment) unifiedPackages unifiedTexShell;
+        inherit (texEnvironment) unifiedPackages unifiedTexShell latexmkrcPackage;
         # VSCode integration outputs
-        inherit (vscodeIntegration) vscodeIntegration latexUtilsVSCodeFragment vscodeSettingsCustomApp;
+        inherit (vscodeIntegration) vscodeIntegration latexUtilsVSCodeFragment vscodeSettingsCustomApp vscodeRecipesPackage;
       };
     in
       lib.mkMerge [outputsModule];

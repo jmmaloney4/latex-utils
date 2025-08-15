@@ -69,6 +69,9 @@
     "latexmk"
     # From various examples
     "ltex-ls"
+    # New outputs added
+    "latexmkrc"
+    "vscode-latex-workshop-recipes"
   ];
 
   # Check if a package reference exists in the test flake outputs
@@ -140,6 +143,17 @@ in {
       testFlakeWithDocs ? latex-utils
       && testFlakeWithDocs.latex-utils ? ${system}
       && testFlakeWithDocs.latex-utils.${system} ? vscodeShell;
+    expected = true;
+  };
+
+  # New: latexmkrc and recipes outputs exist
+  testLatexmkrcOutputExists = {
+    expr = packageExists "latexmkrc";
+    expected = true;
+  };
+
+  testVscodeRecipesOutputExists = {
+    expr = packageExists "vscode-latex-workshop-recipes";
     expected = true;
   };
 
