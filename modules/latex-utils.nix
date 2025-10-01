@@ -62,7 +62,7 @@ in {
         # Document processing outputs
         inherit (documentProcessing) mkDoc;
         # TeX environment outputs
-        inherit (texEnvironment) unifiedPackages unifiedTexShell latexmkWrapper;
+        inherit (texEnvironment) unifiedPackages unifiedTexShell;
         # VSCode integration outputs
         inherit (vscodeIntegration) vscodeIntegration latexUtilsVSCodeFragment vscodeSettingsCustomApp vscodeRecipesPackage;
       };
