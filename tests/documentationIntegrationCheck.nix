@@ -220,7 +220,6 @@
     };
     outputsArgs = testHarnessOutputsArgs;
   };
-
 in {
   # Test: Quickstart example produces expected outputs
   testQuickstartExampleWorks = {
@@ -325,14 +324,6 @@ in {
       comprehensiveOutput ? packages
       && comprehensiveOutput.packages.${system} ? "thesis"
       && comprehensiveOutput.packages.${system} ? "poster";
-    expected = true;
-  };
-
-  testLatexmkrcOutputPresent = {
-    expr =
-      testFlakeWithDocs ? packages
-      && testFlakeWithDocs.packages ? ${system}
-      && testFlakeWithDocs.packages.${system} ? "latexmkrc";
     expected = true;
   };
 

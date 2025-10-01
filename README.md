@@ -29,7 +29,7 @@
 - Create a unified TeX Live environment for IDEs.
 - VSCode integration via settings fragments.
 - Shell fragments compose with other environments.
-- Configurable default latexmk engine with generated `.latexmkrc` and VS Code recipes.
+- Configurable default latexmk engine shared by the dev shell wrapper and VS Code recipes.
 
 ---
 
@@ -167,7 +167,6 @@ Extend the VSCode shell:
 | `latex-utils.documents`          | `list`              | `[]`        | Documents to build                            |
 | `latex-utils.extraTexPackages`   | `list` or function  | `[]`        | Additional packages for all documents         |
 | `latex-utils.latexmk.engine`     | `enum`              | `"lualatex"` | Default engine: `lualatex`/`xelatex`/`pdflatex` |
-| `latex-utils.latexmk.emitRc`     | `bool`              | `true`      | Emit `.latexmkrc` into shells                 |
 
 Shell fragments can be accessed from flake outputs:
 
@@ -489,8 +488,10 @@ latex-utils.latexmk.engine = "xelatex"; # or "lualatex", "pdflatex"
 ```
 
 - Generated outputs:
-  - `packages.latexmkrc` → provides `.latexmkrc` (engine, outDir, bib) for consistent builds
-  - `packages.vscode-latex-workshop-recipes` → recipe snippet aligned with the engine
+  - `packages.latexmk` → wrapper script that injects shared defaults (engine, outDir, synctex, bibtex)
+  - `packages.vscode-latex-workshop-recipes` → recipe snippet aligned with the engine and wrapper
+
+- When you enter the dev shell we set `LATEXMK_OPTS` to the same defaults, so CLI and `direnv` workflows match VS Code out of the box.
 
 ### Disabling VS Code Integration
 

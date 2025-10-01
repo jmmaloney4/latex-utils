@@ -1977,11 +1977,38 @@ Files affected:
 
 ---
 
+Timestamp: 2025-10-01T00:45:00Z
+Agent ID: codex-gpt5
+Description:
+- Replaced the generated `.latexmkrc` workflow with a `latexmk` wrapper that injects the shared defaults (engine, SyncTeX, output directory, recorder, bibtex) and exports them through `LATEXMK_OPTS`.
+- Updated the unified TeX shell to include the wrapper on `PATH`, set `LATEXMK_OPTS` only when unset, and removed the filesystem symlink step that overwrote user files.
+- Pointed VS Code recipes/settings at the wrapper so editors inherit the same behaviour without duplicating flags.
+- Removed the `latex-utils.latexmk.emitRc` option, deleted the `packages.latexmkrc` export, refreshed tests/documentation to reflect the new approach, and added ADR 010 to capture the decision.
+
+Rationale:
+- Prevent clobbering repository-local `.latexmkrc` files while still providing consistent defaults across CLI, VS Code, and dev shells.
+- Consolidate engine/out-dir configuration in a single wrapper to reduce drift between tooling paths.
+
+Files affected:
+- modules/latex-utils/options.nix
+- modules/latex-utils/tex-environment.nix
+- modules/latex-utils/vscode-integration.nix
+- modules/latex-utils/outputs.nix
+- modules/latex-utils.nix
+- tests/latexmkEngineAndOutputs.nix
+- tests/packageReferenceValidation.nix
+- tests/documentationIntegrationCheck.nix
+- README.md
+- docs/internal/ARCHITECTURE.md
+- docs/internal/decisions/010-latexmk-wrapper-defaults.md (new)
+- docs/internal/AGENT_CHANGELOG.md (this entry)
+
+---
+
 
 
 *End of log.* 
 ---
-
 
 
 

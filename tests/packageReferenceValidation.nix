@@ -69,8 +69,6 @@
     "latexmk"
     # From various examples
     "ltex-ls"
-    # New outputs added
-    "latexmkrc"
     "vscode-latex-workshop-recipes"
   ];
 
@@ -146,12 +144,7 @@ in {
     expected = true;
   };
 
-  # New: latexmkrc and recipes outputs exist
-  testLatexmkrcOutputExists = {
-    expr = packageExists "latexmkrc";
-    expected = true;
-  };
-
+  # VS Code recipe output remains available
   testVscodeRecipesOutputExists = {
     expr = packageExists "vscode-latex-workshop-recipes";
     expected = true;

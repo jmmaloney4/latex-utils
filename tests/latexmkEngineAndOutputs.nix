@@ -65,14 +65,13 @@
   # Shared test helpers
   testHelpers = import ../lib/testHelpers.nix {inherit pkgs lib;};
   inherit (testHelpers) builds;
-
 in {
   # New outputs presence
-  testLatexmkrcPackageExists = {
+  testLatexmkWrapperPackageExists = {
     expr =
       testFlakeWithEngine ? packages
       && testFlakeWithEngine.packages ? ${system}
-      && testFlakeWithEngine.packages.${system} ? "latexmkrc";
+      && testFlakeWithEngine.packages.${system} ? "latexmk";
     expected = true;
   };
 
@@ -85,13 +84,24 @@ in {
   };
 
   # Buildability
-  testLatexmkrcBuilds = {
-    expr = builds testFlakeWithEngine.packages.${system}."latexmkrc";
+  testLatexmkWrapperBuilds = {
+    expr = builds testFlakeWithEngine.packages.${system}."latexmk";
     expected = true;
   };
 
   testVscodeRecipesBuilds = {
     expr = builds testFlakeWithEngine.packages.${system}."vscode-latex-workshop-recipes";
+    expected = true;
+  };
+
+  # Wrapper configuration contains the requested engine and output directory
+  testLatexmkWrapperContainsEngineDefaults = {
+    expr = let
+      wrapper = builtins.readFile "${testFlakeWithEngine.packages.${system}."latexmk"}/bin/latexmk";
+    in
+      builtins.match "(?s).*xelatex.*" wrapper
+      != null
+      && builtins.match "(?s).*-output-directory=.latex-build.*" wrapper != null;
     expected = true;
   };
 }

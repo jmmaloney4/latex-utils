@@ -1,6 +1,6 @@
 # ADR 010: Replace Generated `.latexmkrc` With Shell Wrapper Defaults
 *Date:* 2025-10-01
-*Status:* proposed
+*Status:* accepted
 
 ## Context
 PR #22 introduced an auto-generated `.latexmkrc` that synchronizes the selected LaTeX engine, SyncTeX, and output directory across CLI, dev shells, and VS Code. The implementation currently symlinks that file into every project on shell entry, which will overwrite any user-managed `.latexmkrc`. We need a safer way to provide consistent defaults without touching a repository's files.

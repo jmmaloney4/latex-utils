@@ -10,7 +10,6 @@
   # TeX environment outputs
   unifiedPackages,
   unifiedTexShell,
-  latexmkrcPackage,
   # VSCode integration outputs
   vscodeIntegration,
   latexUtilsVSCodeFragment,
@@ -60,7 +59,6 @@ in {
     // unifiedPackages
     // vscodeIntegration
     // {
-      latexmkrc = latexmkrcPackage;
       vscode-latex-workshop-recipes = vscodeRecipesPackage;
     }
     // documentsPackage

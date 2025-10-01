@@ -4,6 +4,7 @@
   unifiedTexEnv,
   ltexLsWrapped,
   unifiedTexShell,
+  latexmkWrapper,
   documents,
   moduleExtraTexPackages,
   engine ? "lualatex",
@@ -18,28 +19,8 @@
       # LaTeX Workshop configuration using unified environment
       "latex-workshop.latex.toolchain" = [
         {
-          command = "${unifiedTexEnv}/bin/latexmk";
-          args = [
-            # Core compilation options
-            "-pdf" # Generate PDF output
-            "-interaction=nonstopmode" # Don't stop on errors (good for IDE)
-            "-file-line-error" # Error format: file:line:error (IDE-friendly)
-            "-synctex=1" # Enable SyncTeX for editor-PDF sync
-
-            # Choose engine
-            "-${engine}"
-
-            # Build organization
-            "-output-directory=.latex-build" # Put ALL build artifacts in .latex-build/
-
-            # Enhanced IDE experience
-            "-recorder" # Create .fls file for dependency tracking
-            "-silent" # Quieter output (less noise in IDE)
-            "-bibtex" # Ensure bibliography processing
-
-            # Document placeholder
-            "%DOC%"
-          ];
+          command = "${latexmkWrapper}/bin/latexmk";
+          args = ["%DOC%"];
         }
       ];
 
@@ -109,16 +90,8 @@
     "latex-workshop.latex.tools" = [
       {
         name = "latexmk-${engine}";
-        command = "${unifiedTexEnv}/bin/latexmk";
-        args = [
-          "-pdf"
-          "-interaction=nonstopmode"
-          "-file-line-error"
-          "-synctex=1"
-          "-${engine}"
-          "-output-directory=.latex-build"
-          "%DOC%"
-        ];
+        command = "${latexmkWrapper}/bin/latexmk";
+        args = ["%DOC%"];
         env = [];
       }
     ];
@@ -140,7 +113,7 @@
     ${
       if showDetailedInfo
       then ''
-        if [ -z "${"''${LATEX_UTILS_VSCODE_READY:-}"}" ]; then
+        if [ -z "''${LATEX_UTILS_VSCODE_READY:-}" ]; then
           export LATEX_UTILS_VSCODE_READY=1
           echo "🔧 Setting up VSCode LaTeX integration..."
           echo "✅ VSCode settings linked successfully!"
@@ -149,13 +122,13 @@
         fi
       ''
       else ''
-        if [ -z "${"''${LATEX_UTILS_VSCODE_READY:-}"}" ]; then
+        if [ -z "''${LATEX_UTILS_VSCODE_READY:-}" ]; then
           export LATEX_UTILS_VSCODE_READY=1
           echo "VS Code settings linked${
-            if extraMessage != ""
-            then " (${extraMessage})"
-            else ""
-          }."
+          if extraMessage != ""
+          then " (${extraMessage})"
+          else ""
+        }."
         fi
       ''
     }
@@ -182,7 +155,7 @@
 
   # Helper dev shell that sets up VSCode integration
   vscodeDevShell = pkgs.mkShell {
-    buildInputs = [unifiedTexEnv ltexLsWrapped];
+    buildInputs = [latexmkWrapper unifiedTexEnv ltexLsWrapped];
     shellHook = mkVSCodeSetupShellHook {showDetailedInfo = true;};
   };
 

@@ -60,11 +60,6 @@
           description = "Default LaTeX engine for latexmk. Affects CLI builds, VS Code settings, and generated recipes.";
           example = "xelatex";
         };
-        emitRc = lib.mkOption {
-          type = lib.types.bool;
-          default = true;
-          description = "Emit a .latexmkrc with engine and out-dir settings for consistent CLI/VS Code builds.";
-        };
       };
     };
 
