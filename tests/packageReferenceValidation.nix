@@ -59,19 +59,6 @@
     outputsArgs = testHarnessOutputsArgs;
   };
 
-  # List of package references mentioned in documentation that we should validate
-  documentedPackageReferences = [
-    # From README.md treefmt example
-    "latexindent"
-    # From README.md unified environment descriptions
-    "texlive"
-    # From consumer example and ide integration
-    "latexmk"
-    # From various examples
-    "ltex-ls"
-    "vscode-latex-workshop-recipes"
-  ];
-
   # Check if a package reference exists in the test flake outputs
   packageExists = pkgName:
     testFlakeWithDocs ? packages
@@ -144,9 +131,9 @@ in {
     expected = true;
   };
 
-  # VS Code recipe output remains available
-  testVscodeRecipesOutputExists = {
-    expr = packageExists "vscode-latex-workshop-recipes";
+  # VS Code settings package remains available
+  testVscodeSettingsOutputExists = {
+    expr = packageExists "vscodeSettings";
     expected = true;
   };
 

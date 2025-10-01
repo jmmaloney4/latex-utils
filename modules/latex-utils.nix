@@ -64,7 +64,7 @@ in {
         # TeX environment outputs
         inherit (texEnvironment) unifiedPackages unifiedTexShell;
         # VSCode integration outputs
-        inherit (vscodeIntegration) vscodeIntegration latexUtilsVSCodeFragment vscodeSettingsCustomApp vscodeRecipesPackage;
+        inherit (vscodeIntegration) vscodeIntegration latexUtilsVSCodeFragment vscodeSettingsCustomApp;
       };
     in
       lib.mkMerge [outputsModule];

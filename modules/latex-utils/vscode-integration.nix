@@ -9,6 +9,9 @@
   moduleExtraTexPackages,
   engine ? "lualatex",
 }: let
+  recipeName = "latexmk (${engine})";
+  toolName = "latexmk-${engine}";
+
   # Function to generate VSCode settings with custom overrides
   mkVSCodeSettings = overrides: let
     defaultSettings = {
@@ -17,12 +20,21 @@
       "ltex.server.path" = "${ltexLsWrapped}/bin/ltex-ls";
 
       # LaTeX Workshop configuration using unified environment
-      "latex-workshop.latex.toolchain" = [
+      "latex-workshop.latex.tools" = [
         {
+          name = toolName;
           command = "${latexmkWrapper}/bin/latexmk";
           args = ["%DOC%"];
+          env = [];
         }
       ];
+      "latex-workshop.latex.recipes" = [
+        {
+          name = recipeName;
+          tools = [toolName];
+        }
+      ];
+      "latex-workshop.latex.recipe.default" = recipeName;
 
       # Auto-build configuration
       "latex-workshop.latex.autoBuild.run" = "onFileChange";
@@ -78,30 +90,6 @@
       destination = "/.vscode/settings.json";
       text = mkVSCodeSettings overrides;
     };
-
-  # Generate LaTeX Workshop recipes JSON aligned with engine
-  vscodeRecipesJson = builtins.toJSON {
-    "latex-workshop.latex.recipes" = [
-      {
-        name = "latexmk (${engine})";
-        tools = ["latexmk-${engine}"];
-      }
-    ];
-    "latex-workshop.latex.tools" = [
-      {
-        name = "latexmk-${engine}";
-        command = "${latexmkWrapper}/bin/latexmk";
-        args = ["%DOC%"];
-        env = [];
-      }
-    ];
-  };
-
-  vscodeRecipesPackage = pkgs.writeTextFile {
-    name = "vscode-latex-workshop-recipes";
-    destination = "/.vscode/settings.json";
-    text = vscodeRecipesJson;
-  };
 
   # Common helper function for VSCode setup shellHook
   mkVSCodeSetupShellHook = {
@@ -169,7 +157,6 @@
   # VSCode integration packages (only include derivations)
   vscodeIntegration = {
     vscodeSettings = vscodeSettings;
-    vscodeRecipes = vscodeRecipesPackage;
     vscodeShell = vscodeDevShell;
     ltex-ls = ltexLsWrapped;
   };
@@ -192,6 +179,5 @@ in {
     latexUtilsVSCodeFragment
     vscodeIntegration
     vscodeSettingsCustomApp
-    vscodeRecipesPackage
     ;
 }

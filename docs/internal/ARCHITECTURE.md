@@ -83,7 +83,7 @@ All functions are pure Nix and live under `lib/`.
 | `packages.texlive`            | Combined TeX Live env with *all* pkgs.
 | `packages.latexmk`            | `latexmk` wrapper bound to the unified env with shared defaults.
 | `packages.latexindent`        | `latexindent` wrapper bound to the unified environment
-| `packages.vscode-latex-workshop-recipes` | LaTeX Workshop recipes snippet aligned to engine
+| `packages.vscodeSettings` | VS Code settings JSON aligned to engine, recipes, and wrapper
 | `devShells.full`              | Turn-key VS Code shell (enabled by `enableVSCode`)
 | `build.unifiedTexShell`       | Composable shell fragment (unified TeX, no VS Code integration)
 | `build.vscodeSettingsShell`   | Composable shell fragment (links VS Code settings.json)

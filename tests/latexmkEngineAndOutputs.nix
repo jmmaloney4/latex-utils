@@ -24,7 +24,7 @@
   };
 
   latexmkPackage = texEnvironment.unifiedPackages.latexmk;
-  vscodeRecipesPackage = vscodeIntegration.vscodeRecipesPackage;
+  vscodeSettingsPackage = vscodeIntegration.vscodeSettings;
 
   # Shared test helpers
   testHelpers = import ../lib/testHelpers.nix {inherit pkgs lib;};
@@ -36,8 +36,8 @@ in {
     expected = true;
   };
 
-  testVscodeRecipesPackageExists = {
-    expr = lib.isDerivation vscodeRecipesPackage;
+  testVscodeSettingsPackageExists = {
+    expr = lib.isDerivation vscodeSettingsPackage;
     expected = true;
   };
 
@@ -47,8 +47,24 @@ in {
     expected = true;
   };
 
-  testVscodeRecipesBuilds = {
-    expr = builds vscodeRecipesPackage;
+  testVscodeSettingsPackageBuilds = {
+    expr = builds vscodeSettingsPackage;
+    expected = true;
+  };
+
+  testVscodeSettingsContainsRecipeDefaults = {
+    expr = builds (pkgs.runCommand "vscode-settings-check" {buildInputs = [pkgs.jq];} ''
+      set -euo pipefail
+      settings_file="${vscodeSettingsPackage}/.vscode/settings.json"
+      jq --exit-status '
+        (."latex-workshop.latex.recipe.default" == "latexmk (xelatex)")
+        and ((."latex-workshop.latex.recipes" | length) == 1)
+        and ((."latex-workshop.latex.recipes"[0] | .name == "latexmk (xelatex)" and .tools == ["latexmk-xelatex"]))
+        and ((."latex-workshop.latex.tools" | length) == 1)
+        and ((."latex-workshop.latex.tools"[0] | .name == "latexmk-xelatex" and (.command | endswith("/bin/latexmk"))))
+      ' "$settings_file" >/dev/null
+      touch "$out"
+    '');
     expected = true;
   };
 

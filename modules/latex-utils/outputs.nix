@@ -14,7 +14,6 @@
   vscodeIntegration,
   latexUtilsVSCodeFragment,
   vscodeSettingsCustomApp,
-  vscodeRecipesPackage,
 }: let
   # Create document packages
   docPkgs = builtins.listToAttrs (map (doc: {
@@ -58,9 +57,6 @@ in {
     docPkgs
     // unifiedPackages
     // vscodeIntegration
-    // {
-      vscode-latex-workshop-recipes = vscodeRecipesPackage;
-    }
     // documentsPackage
     // (
       if documents != []

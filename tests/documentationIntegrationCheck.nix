@@ -327,11 +327,11 @@ in {
     expected = true;
   };
 
-  testVscodeRecipesOutputPresent = {
+  testVscodeSettingsOutputPresent = {
     expr =
       testFlakeWithDocs ? packages
       && testFlakeWithDocs.packages ? ${system}
-      && testFlakeWithDocs.packages.${system} ? "vscode-latex-workshop-recipes";
+      && testFlakeWithDocs.packages.${system} ? "vscodeSettings";
     expected = true;
   };
 }

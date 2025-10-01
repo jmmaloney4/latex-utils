@@ -489,7 +489,7 @@ latex-utils.latexmk.engine = "xelatex"; # or "lualatex", "pdflatex"
 
 - Generated outputs:
   - `packages.latexmk` → wrapper script that injects shared defaults (engine, outDir, synctex, bibtex)
-  - `packages.vscode-latex-workshop-recipes` → recipe snippet aligned with the engine and wrapper
+  - `packages.vscodeSettings` → VS Code settings JSON with LaTeX Workshop recipes/tools wired to the wrapper
 
 - When you enter the dev shell we set `LATEXMK_OPTS` to the same defaults, so CLI and `direnv` workflows match VS Code out of the box.
 
