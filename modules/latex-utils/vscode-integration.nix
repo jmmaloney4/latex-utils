@@ -25,7 +25,7 @@
           name = toolName;
           command = "${latexmkWrapper}/bin/latexmk";
           args = ["%DOC%"];
-          env = [];
+          env = {};
         }
       ];
       "latex-workshop.latex.recipes" = [
@@ -37,7 +37,7 @@
       "latex-workshop.latex.recipe.default" = recipeName;
 
       # Auto-build configuration
-      "latex-workshop.latex.autoBuild.run" = "onFileChange";
+      "latex-workshop.latex.autoBuild.run" = "onSave";
 
       # Output and cleanup configuration
       "latex-workshop.latex.outDir" = ".latex-build";
@@ -70,7 +70,7 @@
       "latex-workshop.view.pdf.internal.synctex.keybinding" = "double-click";
 
       # Forward search configuration (editor -> PDF)
-      "latex-workshop.synctex.afterBuild.enabled" = true;
+      "latex-workshop.synctex.afterBuild.enabled" = false;
     };
     settings = defaultSettings // overrides;
   in
