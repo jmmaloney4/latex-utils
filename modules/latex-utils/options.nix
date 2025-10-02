@@ -52,6 +52,15 @@
         default = false;
         description = "Whether to enable a flake check that rebuilds all PDFs";
       };
+
+      latexmk = {
+        engine = lib.mkOption {
+          type = lib.types.enum ["lualatex" "xelatex" "pdflatex"];
+          default = "lualatex";
+          description = "Default LaTeX engine for latexmk. Affects CLI builds, VS Code settings, and generated recipes.";
+          example = "xelatex";
+        };
+      };
     };
 
     # Per-System Options (Using flake-parts transposition)

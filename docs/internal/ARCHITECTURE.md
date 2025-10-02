@@ -61,6 +61,7 @@ The **flake module** (in `modules/latex-utils.nix`) orchestrates discovery → n
 | ---------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | **`latex-utils.documents`**        | list of submodules     | Declare each PDF to build; fields: `name`, `src`, `inputFile`, `extraTexPackages`, etc.
 | **`latex-utils.extraTexPackages`** | homogeneous list \| fn | Global TeX pkgs for *all* docs. Accepts strings, derivations or a function `discovered: …`.
+| **`latex-utils.latexmk.engine`**   | enum                   | Default engine for CLI, VS Code settings and recipes (`lualatex`/`xelatex`/`pdflatex`).
 
 > **Edge‑case:** lists must be homogeneous—mixing strings and derivations triggers a validation error.
 
@@ -80,8 +81,9 @@ All functions are pure Nix and live under `lib/`.
 | ----------------------------- | ------------------------------------------------------------------------- |
 | `packages.<doc>`              | One package per document (`paper`, `slides`, …).
 | `packages.texlive`            | Combined TeX Live env with *all* pkgs.
-| `packages.latexmk`            | `latexmk` wrapper bound to the unified env.
+| `packages.latexmk`            | `latexmk` wrapper bound to the unified env with shared defaults.
 | `packages.latexindent`        | `latexindent` wrapper bound to the unified environment
+| `packages.vscodeSettings` | VS Code settings JSON aligned to engine, recipes, and wrapper
 | `devShells.full`              | Turn-key VS Code shell (enabled by `enableVSCode`)
 | `build.unifiedTexShell`       | Composable shell fragment (unified TeX, no VS Code integration)
 | `build.vscodeSettingsShell`   | Composable shell fragment (links VS Code settings.json)

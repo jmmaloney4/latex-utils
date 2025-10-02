@@ -80,6 +80,9 @@
               accessPathValidation = import ./tests/accessPathValidation.nix;
               packageReferenceValidation = import ./tests/packageReferenceValidation.nix;
               documentationIntegrationCheck = import ./tests/documentationIntegrationCheck.nix;
+              latexmkEngineAndOutputs = import ./tests/latexmkEngineAndOutputs.nix {
+                inherit pkgs lib system inputs;
+              };
             }
             // (import ./tests/testModuleLevel.nix {inherit pkgs lib;});
         };

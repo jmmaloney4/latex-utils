@@ -18,6 +18,7 @@
   moduleExtraTexPackages = config.latex-utils.extraTexPackages;
   enableVSCode = config.latex-utils.enableVSCode;
   flakeCheck = config.latex-utils.flakeCheck;
+  engine = config.latex-utils.latexmk.engine or "lualatex";
 in {
   # Import options from the options module
   inherit (optionsModule) options;
@@ -38,18 +39,21 @@ in {
       # Import document processing logic
       documentProcessing = import ./latex-utils/document-processing.nix {
         inherit pkgs lib documents moduleExtraTexPackages;
+        engine = engine;
       };
 
       # Import TeX environment creation
       texEnvironment = import ./latex-utils/tex-environment.nix {
         inherit pkgs lib;
         inherit (documentProcessing) unifiedAdditionalPackages;
+        engine = engine;
       };
 
       # Import VSCode integration
       vscodeIntegration = import ./latex-utils/vscode-integration.nix {
         inherit pkgs lib documents moduleExtraTexPackages;
-        inherit (texEnvironment) unifiedTexEnv ltexLsWrapped unifiedTexShell;
+        inherit (texEnvironment) unifiedTexEnv ltexLsWrapped unifiedTexShell latexmkWrapper;
+        engine = engine;
       };
 
       # Import output assembly

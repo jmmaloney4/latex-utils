@@ -59,18 +59,6 @@
     outputsArgs = testHarnessOutputsArgs;
   };
 
-  # List of package references mentioned in documentation that we should validate
-  documentedPackageReferences = [
-    # From README.md treefmt example
-    "latexindent"
-    # From README.md unified environment descriptions
-    "texlive"
-    # From consumer example and ide integration
-    "latexmk"
-    # From various examples
-    "ltex-ls"
-  ];
-
   # Check if a package reference exists in the test flake outputs
   packageExists = pkgName:
     testFlakeWithDocs ? packages
@@ -140,6 +128,12 @@ in {
       testFlakeWithDocs ? latex-utils
       && testFlakeWithDocs.latex-utils ? ${system}
       && testFlakeWithDocs.latex-utils.${system} ? vscodeShell;
+    expected = true;
+  };
+
+  # VS Code settings package remains available
+  testVscodeSettingsOutputExists = {
+    expr = packageExists "vscodeSettings";
     expected = true;
   };
 
