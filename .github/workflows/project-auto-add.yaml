@@ -1,0 +1,42 @@
+name: add new items to project
+on:
+  pull_request:
+    types: [opened]
+  issues:
+    types: [opened]
+jobs:
+  add-to-project:
+    runs-on: self-hosted
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - name: Install GitHub CLI and extension
+        run: |
+          nix shell nixpkgs#gh nixpkgs#jq -c bash -c '
+            gh extension install github/gh-projects
+          '
+      - name: Get item GraphQL ID
+        id: item
+        run: |
+          nix shell nixpkgs#gh nixpkgs#jq -c bash -c '
+            if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+              gh pr view ${{ github.event.pull_request.number }} --json id -q .id > id.txt
+            else
+              gh issue view ${{ github.event.issue.number }} --json id -q .id > id.txt
+            fi
+            echo "id=$(cat id.txt)" >> "$GITHUB_OUTPUT"
+          '
+      - name: Add to GitHub Project
+        run: |
+          nix shell nixpkgs#gh -c bash -c '
+            gh projects item-add \
+              --owner jmmaloney4 \
+              --project-number 4 \
+              --content-id "${{ steps.item.outputs.id }}"
+          '
