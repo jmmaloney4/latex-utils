@@ -92,11 +92,8 @@
             }
             // (import ./tests/testModuleLevel.nix {inherit pkgs lib;});
         };
-        # treefmt config is now managed by jackpkgs.fmt module
-        # alejandra and latexindent are enabled by default via jackpkgs
-        treefmt.config = {
-          programs.latexindent.enable = true;
-        };
+        # treefmt config is managed by jackpkgs.fmt module
+        # alejandra and latexindent are enabled by default
         jackpkgs.fmt = {
           excludes = [
             "template/**"

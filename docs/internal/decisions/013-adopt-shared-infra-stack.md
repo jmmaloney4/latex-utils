@@ -64,7 +64,7 @@ Migrate latex-utils to the shared infrastructure stack in two phases. Adopt jack
   - Adds `jackpkgs` as an input, increasing flake evaluation closure
   - garnix.io provided multi-arch builds (x86_64-linux, aarch64-linux, aarch64-darwin) out of the box; toolbox nix.yml must be configured to match or accept a subset
   - jackpkgs fmt module enables formatters latex-utils doesn't need (ruff, biome, rustfmt, etc.) -- harmless but adds to closure
-  - Toolbox pin must be manually updated (no Renovate support for workflow `uses:` pins yet in this repo)
+  - Renovate's `github-actions` manager will automatically update workflow `uses:` pins (e.g., `jmmaloney4/toolbox/.github/workflows/nix.yml@main` → a SHA hash) once configured
 
 ## Technical Details
 
