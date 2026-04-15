@@ -2,20 +2,23 @@
   description = "Easily compile latex documents with nix flakes.";
 
   inputs = {
-    nixpkgs.url = github:NixOS/nixpkgs/nixos-unstable;
-    flake-parts.url = github:hercules-ci/flake-parts;
-    systems.url = "github:nix-systems/default";
-    nix-unit.url = github:nix-community/nix-unit;
-    treefmt-nix.url = "github:numtide/treefmt-nix";
+    nixpkgs.follows = "jackpkgs/nixpkgs";
+
+    jackpkgs = {
+      url = "github:jmmaloney4/jackpkgs";
+    };
+    flake-parts.follows = "jackpkgs/flake-parts";
+    systems.follows = "jackpkgs/systems";
+    nix-unit.follows = "jackpkgs/nix-unit";
+    flake-root.follows = "jackpkgs/flake-root";
     mission-control.url = "github:Platonic-Systems/mission-control";
-    flake-root.url = "github:srid/flake-root";
-    git-hooks-nix.url = "github:cachix/git-hooks.nix";
     mkdocs-flake.url = "github:applicative-systems/mkdocs-flake";
   };
 
   outputs = flakeInputs @ {
     flake-parts,
     nix-unit,
+    jackpkgs,
     systems,
     ...
   }:
@@ -23,15 +26,18 @@
       systems = import systems;
       imports = [
         flakeInputs.nix-unit.modules.flake.default
-        flakeInputs.treefmt-nix.flakeModule
         flakeInputs.mission-control.flakeModule
-        flakeInputs.flake-root.flakeModule
-        flakeInputs.git-hooks-nix.flakeModule
         flakeInputs.flake-parts.flakeModules.modules
         flakeInputs.mkdocs-flake.flakeModule
+
+        # jackpkgs modules (all -- unused modules like python/nodejs/pulumi are
+        # no-ops unless explicitly enabled)
+        jackpkgs.flakeModules.default
+
         # Note: ./modules/latex-utils.nix is auto-discovered by flake-parts.modules
         # and published as outputs.modules.flake.latex-utils
       ];
+      jackpkgs.pulumi.enable = false;
       perSystem = {
         config,
         pkgs,
@@ -86,12 +92,13 @@
             }
             // (import ./tests/testModuleLevel.nix {inherit pkgs lib;});
         };
-        treefmt = {
-          config = {
-            package = pkgs.treefmt;
-            programs.alejandra.enable = true;
-            programs.latexindent.enable = true;
-          };
+        # treefmt config is managed by jackpkgs.fmt module
+        # alejandra and latexindent are enabled by default
+        jackpkgs.fmt = {
+          excludes = [
+            "template/**"
+          ];
+          mdformat.validate = false; # LaTeX markdown in docs
         };
         mission-control = {
           scripts = {
@@ -109,15 +116,6 @@
               config.pre-commit.devShell
               config.treefmt.build.devShell
             ];
-          };
-        };
-        pre-commit = {
-          check.enable = true;
-          settings = {
-            hooks.treefmt = {
-              enable = true;
-              package = config.treefmt.build.wrapper;
-            };
           };
         };
       };

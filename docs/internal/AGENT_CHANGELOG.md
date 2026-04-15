@@ -1,3 +1,21 @@
+Timestamp: 2026-04-15T05:18:26Z
+Agent: Hermes (glm-5.1 via zai)
+
+**ADR 013: ADOPT SHARED INFRASTRUCTURE STACK**
+
+Created `docs/internal/decisions/013-adopt-shared-infra-stack.md` proposing migration from standalone CI/Nix infrastructure to the shared org stack (jackpkgs flake-parts modules + toolbox reusable GitHub Actions workflows).
+
+Investigated all five sibling repos (garden, jackpkgs, toolbox, zeus, yard) to document the shared patterns and produce a gap analysis. Key changes proposed:
+- Replace garnix.io with toolbox nix.yml reusable workflow
+- Add jackpkgs as flake input, adopt its fmt and pre-commit modules (remove inline treefmt-nix and git-hooks-nix)
+- Add Renovate config inheriting from toolbox presets
+- Phase 2: claude/claude-review, adr-management, nix-flake-update, project-auto-add workflows
+
+Files affected:
+- Added: `docs/internal/decisions/013-adopt-shared-infra-stack.md`
+
+---
+
 Timestamp: 2025-06-22T16:16:00Z
 Agent: Claude 3.5 Sonnet (via Cursor)
 

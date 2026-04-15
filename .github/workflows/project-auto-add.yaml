@@ -1,0 +1,13 @@
+name: 📌 add to project
+on:
+  pull_request:
+    types: [opened]
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+jobs:
+  add-to-project:
+    uses: jmmaloney4/toolbox/.github/workflows/add-to-project.yml@main
+    with:
+      runs-on: self-hosted
