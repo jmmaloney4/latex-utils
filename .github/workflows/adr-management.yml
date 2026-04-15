@@ -1,0 +1,21 @@
+name: 📝 adr management
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'docs/internal/decisions/**'
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  adr-management:
+    if: github.actor != 'github-actions[bot]'
+    uses: jmmaloney4/toolbox/.github/workflows/adr-management.yml@main
+    with:
+      runs-on: self-hosted
+      repository: ${{ github.repository }}
+      ref: ${{ github.event.pull_request.head.sha }}
+      base_ref: ${{ github.event.pull_request.base.ref }}
+      adr_glob: 'docs/internal/decisions/*.md'
+      pr_number: ${{ github.event.pull_request.number }}
+      pr_url: ${{ github.event.pull_request.html_url }}
