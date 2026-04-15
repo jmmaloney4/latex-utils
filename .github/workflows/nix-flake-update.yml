@@ -1,0 +1,20 @@
+name: nix flake update
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 0' # runs weekly on Sunday at 00:00
+jobs:
+  nix-flake-update:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+      - name: Update flake.lock
+        uses: DeterminateSystems/update-flake-lock@main
+        with:
+          branch: nix-flake-update
+          commit-msg: nix flake update
+          pr-title: "nix flake update"
+          pr-assignees: jmmaloney4
