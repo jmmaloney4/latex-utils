@@ -1,0 +1,5 @@
+{
+  extends: [
+    "github>jmmaloney4/toolbox//renovate/all.json"
+  ]
+}
