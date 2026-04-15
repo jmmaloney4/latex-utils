@@ -8,8 +8,8 @@
       url = "github:jmmaloney4/jackpkgs";
     };
     flake-parts.follows = "jackpkgs/flake-parts";
-    systems.url = "github:nix-systems/default";
-    nix-unit.url = "github:nix-community/nix-unit";
+    systems.follows = "jackpkgs/systems";
+    nix-unit.follows = "jackpkgs/nix-unit";
     flake-root.follows = "jackpkgs/flake-root";
     mission-control.url = "github:Platonic-Systems/mission-control";
     mkdocs-flake.url = "github:applicative-systems/mkdocs-flake";
