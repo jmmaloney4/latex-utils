@@ -1,5 +1,5 @@
 {
   extends: [
-    "github>jmmaloney4/toolbox//renovate/all.json"
+    "github>jmmaloney4/sector7//renovate/all.json"
   ]
 }

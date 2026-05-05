@@ -12,7 +12,7 @@ latex-utils currently operates with a standalone CI and Nix infrastructure:
 - **nix-unit:** Direct input with 14 test suites (no input sanitization)
 - **Flake inputs:** All standalone -- nixpkgs pinned independently, no shared module library
 
-Five other repos in the org (garden, jackpkgs, toolbox, zeus, yard) have converged on a shared infrastructure stack built around `jmmaloney4/jackpkgs` (flake-parts module library) and `jmmaloney4/toolbox` (reusable GitHub Actions workflows). latex-utils is the sole outlier.
+Five other repos in the org (garden, jackpkgs, toolbox, zeus, yard) have converged on a shared infrastructure stack built around `jmmaloney4/jackpkgs` (flake-parts module library) and `jmmaloney4/sector7` (reusable GitHub Actions workflows). latex-utils is the sole outlier.
 
 The divergence creates maintenance overhead: formatter configs, pre-commit hooks, and CI pipelines must be maintained independently rather than inheriting improvements from the shared modules.
 
@@ -27,8 +27,8 @@ Migrate latex-utils to the shared infrastructure stack in two phases. Adopt jack
    - Inline `treefmt-nix` config with `jackpkgs` fmt module (keeps alejandra + latexindent, gains consistent default excludes)
    - Inline `git-hooks-nix` config with `jackpkgs` pre-commit module
    - Remove `treefmt-nix` and `git-hooks-nix` as direct inputs (provided transitively through jackpkgs)
-3. **Replace garnix.io with `.github/workflows/nix.yml`** calling `jmmaloney4/toolbox/.github/workflows/nix.yml@<pin>`. Delete `garnix.yaml`.
-4. **Add Renovate config** (`.github/renovate.json5`) inheriting from `jmmaloney4/toolbox//renovate/all.json`.
+3. **Replace garnix.io with `.github/workflows/nix.yml`** calling `jmmaloney4/sector7/.github/workflows/nix.yml@<pin>`. Delete `garnix.yaml`.
+4. **Add Renovate config** (`.github/renovate.json5`) inheriting from `jmmaloney4/sector7//renovate/all.json`.
 
 ### Phase 2: CI Enhancements (recommended)
 
@@ -64,7 +64,7 @@ Migrate latex-utils to the shared infrastructure stack in two phases. Adopt jack
   - Adds `jackpkgs` as an input, increasing flake evaluation closure
   - garnix.io provided multi-arch builds (x86_64-linux, aarch64-linux, aarch64-darwin) out of the box; toolbox nix.yml must be configured to match or accept a subset
   - jackpkgs fmt module enables formatters latex-utils doesn't need (ruff, biome, rustfmt, etc.) -- harmless but adds to closure
-  - Renovate's `github-actions` manager will automatically update workflow `uses:` pins (e.g., `jmmaloney4/toolbox/.github/workflows/nix.yml@main` → a SHA hash) once configured
+  - Renovate's `github-actions` manager will automatically update workflow `uses:` pins (e.g., `jmmaloney4/sector7/.github/workflows/nix.yml@main` → a SHA hash) once configured
 
 ## Technical Details
 
@@ -123,7 +123,7 @@ Added:
 ## Supersedes / Dependencies
 
 - depends on: `jmmaloney4/jackpkgs` (flake-parts modules)
-- depends on: `jmmaloney4/toolbox` (reusable GitHub Actions workflows)
+- depends on: `jmmaloney4/sector7` (reusable GitHub Actions workflows)
 
 ## Appendices
 
