@@ -32,7 +32,6 @@ in {
       config,
       pkgs,
       lib,
-      inputs',
       system,
       ...
     }: let
