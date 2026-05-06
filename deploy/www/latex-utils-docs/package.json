@@ -1,0 +1,21 @@
+{
+	"name": "latex-utils-docs-deploy",
+	"private": true,
+	"version": "0.1.0",
+	"type": "module",
+	"scripts": {
+		"typecheck": "tsc --noEmit",
+		"preview": "pulumi preview",
+		"up": "pulumi up",
+		"destroy": "pulumi destroy"
+	},
+	"dependencies": {
+		"@jmmaloney4/sector7": "github:jmmaloney4/sector7#main&path:/packages/sector7",
+		"@pulumi/cloudflare": "6.12.0",
+		"@pulumi/pulumi": "3.226.0"
+	},
+	"devDependencies": {
+		"@types/node": "22.19.11",
+		"typescript": "5.9.3"
+	}
+}

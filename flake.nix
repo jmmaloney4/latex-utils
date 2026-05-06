@@ -37,7 +37,22 @@
         # Note: ./modules/latex-utils.nix is auto-discovered by flake-parts.modules
         # and published as outputs.modules.flake.latex-utils
       ];
-      jackpkgs.pulumi.enable = false;
+      jackpkgs = {
+        nodejs = {
+          enable = true;
+          pnpmDepsHash = "";
+        };
+        pulumi = {
+          enable = true;
+          backendUrl = "gs://jmmaloney4-pulumi-state";
+          secretsProvider =
+            "gcpkms://projects/jmmaloney4-admin/locations/us-east5/keyRings/pulumi-secrets-ring/cryptoKeys/pulumi-secrets-key";
+          stacks = [{
+            path = "deploy/www/latex-utils-docs";
+            stacks = [ "dev" "prod" ];
+          }];
+        };
+      };
       perSystem = {
         config,
         pkgs,
@@ -119,6 +134,7 @@
         jackpkgs.fmt = {
           excludes = [
             "template/**"
+            "deploy/**"
           ];
           mdformat.validate = false; # LaTeX markdown in docs
         };
