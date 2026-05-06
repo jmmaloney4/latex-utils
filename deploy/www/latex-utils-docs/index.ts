@@ -7,7 +7,6 @@ const accountId = config.require("accountId");
 const zoneId = config.require("zoneId");
 const domain = config.require("domain");
 const environment = config.require("environment");
-const siteDir = config.require("siteDir");
 const r2BucketName =
   config.get("r2BucketName") || `latex-utils-docs-${environment}`;
 

@@ -8,4 +8,3 @@ description: Cloudflare Workers Site deployment for latex-utils documentation
 config:
   latex-utils-docs:accountId: 622586854078fb4b8547f4d2289c15ab
   latex-utils-docs:zoneId: 4481aa2ba837295997c98f84a1ab3066
-  latex-utils-docs:siteDir: ../../../result-docs
