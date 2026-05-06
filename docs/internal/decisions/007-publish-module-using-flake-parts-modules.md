@@ -34,7 +34,7 @@ We will migrate the latex-utils flake to publish its module using the idiomatic 
 - The legacy `flake.flakeModules.latex-utils` path (which was an alias to `flakeModule`) will be removed.
 - Updating all internal documentation, templates, and examples to instruct consumers to primarily use the new canonical path `inputs.latex-utils.modules.flake.latex-utils` for new usage, while acknowledging `inputs.latex-utils.flakeModule` for older setups or direct import needs.
 - Testing both publishing paths with consumer flakes and CI.
-- Documenting the migration, including the backward compatibility measure, in the agent changelog and notifying downstream users as needed.
+- Documenting the migration, including the backward compatibility measure, in release notes or relevant project documentation and notifying downstream users as needed.
 
 ## Alternatives Considered
 

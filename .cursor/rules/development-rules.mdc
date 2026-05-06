@@ -7,8 +7,7 @@ alwaysApply: true
 
 Comprehensive development rules for the latex-utils project enforcing:
 1. Reading architecture/ADRs before any LLM writes code
-2. Automatic agent-log entries for every LLM-driven change  
-3. Folder-structure hygiene (no orphan modules; keep logs and ADRs in place)
+2. Folder-structure hygiene (no orphan modules; keep ADRs and internal docs in place)
 
 # Flake Output Testing Guidelines (latex-utils)
 
@@ -72,58 +71,6 @@ If you do not follow this pattern, you will get errors like `attribute 'build' m
 - In your plan or commit message, include a 2–3 bullet summary of how your change aligns with the existing architecture
 - If no `docs/internal/ARCHITECTURE.md` exists, you must raise an issue to request one
 
-**Agent Changelog Requirements**
-
-1. **General Rule**
-
-   * Every change made by an LLM agent **must** be recorded in `docs/internal/AGENT_CHANGELOG.md` **before** committing any code or files.
-
-2. **Entry Contents**
-
-   * Each log entry should include:
-
-     * **Timestamp:** A UTC timestamp in ISO 8601 format (e.g., `Timestamp: 2025-06-03T06:00:00Z`).
-     * **Agent ID:** The identifier of the agent making the change.
-     * **Description:** A detailed summary of the actions taken, why they were taken (rationale), and all files or architectural areas affected.
-   * Use a clear separator (for example, `\n\n---\n\n`) to mark the end of one entry and the start of the next.
-
-3. **Timestamp Generation**
-
-   * Generate the UTC timestamp on the fly (for instance, via a shell variable or in-memory), and insert it directly into the log entry.
-   * Example Bash command to produce the correct format:
-
-     ```bash
-     date -u +"%Y-%m-%dT%H:%M:%SZ"
-     ```
-   * Do **not** create any temporary files just for timestamps.
-
-4. **Entry Format and Quality**
-
-   * Each entry must be **complete and well-formed**. If it is missing information or is too vague, the change can be rejected or sent back for clarification.
-   * Aim for **frequent, granular updates** so that each small logical change is separately documented.
-
-5. **Related or Ongoing Changes**
-
-   * If you are making a sequence of related edits (e.g., several small commits toward the same feature), you may hold off on adding a final log entry until all parts of that logical change are done.
-   * In that case, build a **single entry** that covers the entire group of changes, and ask the user to confirm once before appending it.
-
-6. **Updating Existing Entries**
-
-   * When additional changes are made that build on or correct an earlier entry, **reuse** the existing entry block.
-   * Expand or modify that entry so it still accurately describes all actions taken up to that point—do **not** create a brand-new entry for every tiny follow-up.
-
-7. **Review and Confirmation**
-
-   * **Always** present the proposed `AGENT_CHANGELOG.md` entry to the user and request their confirmation before actually writing or updating the file.
-   * The user may ask to defer or combine entries if multiple small edits are still in progress.
-
----
-
-**Changelog Integrity**
-
-* The `docs/internal/AGENT_CHANGELOG.md` file is intended to be managed by automated agents.
-* **Manual edits** should be extremely rare. If a manual correction is unavoidable (for example, fixing a formatting mistake), document that correction explicitly—either in your commit message or in a related ADR—so that it’s clear why it deviated from the automated process.
-
 ## File Organization and Structure
 
 **Module Hygiene:**
@@ -133,7 +80,7 @@ If you do not follow this pattern, you will get errors like `attribute 'build' m
 - No orphaned modules allowed
 
 **Documentation Structure:**
-- Internal documentation like designs, ADRs, and agent logs are stored in `docs/internal/`.
+- Internal documentation like designs, ADRs, and investigations is stored in `docs/internal/`.
 - User-facing documentation is stored in `docs/user/` along with the repository `README.md`.
 
 ## Change Management
@@ -164,7 +111,6 @@ If you do not follow this pattern, you will get errors like `attribute 'build' m
 **Before Commit:**
 
 - [ ] Architecture documentation has been read
-- [ ] Agent changelog entry exists
 - [ ] No orphaned modules introduced
 - [ ] Tests exist for template changes
 - [ ] Library functions are documented
