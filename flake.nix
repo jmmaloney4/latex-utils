@@ -38,10 +38,11 @@
         # and published as outputs.modules.flake.latex-utils
       ];
       jackpkgs = {
-        nodejs = {
-          enable = true;
-          pnpmDepsHash = "";
-        };
+        # Node.js module requires pnpm-lock.yaml + pnpmDepsHash.
+        # Enable after running `pnpm install` in deploy/www/latex-utils-docs/
+        # and setting the hash from the nix build error message.
+        nodejs.enable = false;
+
         pulumi = {
           enable = true;
           backendUrl = "gs://jmmaloney4-pulumi-state";
