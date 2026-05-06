@@ -29,34 +29,38 @@
   '';
 
   # Create a test flake with documents to generate packages
-  testFlakeWithDocs = import ./test-flake-helpers.nix {
-    flakeDef = {
-      inputs = {
-        nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-        flake-parts.url = "github:hercules-ci/flake-parts";
-      };
-      outputs = outputsArgs @ {
-        flake-parts,
-        nixpkgs,
-        ...
-      }:
-        flake-parts.lib.mkFlake {
-          self = outputsArgs.self;
-          inputs = {
-            inherit (outputsArgs) nixpkgs flake-parts;
-          };
-        } {
-          systems = ["x86_64-linux"];
-          imports = [../modules/latex-utils.nix];
-          latex-utils.documents = [
-            {
-              name = "test.pdf";
-              src = minimalTexSrc;
-            }
-          ];
-        };
+  inlineFlakeDef = {
+    inputs = {
+      nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+      flake-parts.url = "github:hercules-ci/flake-parts";
     };
-    outputsArgs = testHarnessOutputsArgs;
+    outputs = outputsArgs @ {
+      flake-parts,
+      nixpkgs,
+      system ? builtins.currentSystem or "x86_64-linux",
+      ...
+    }:
+      flake-parts.lib.mkFlake {
+        self = outputsArgs.self // {
+          inputs = { inherit (outputsArgs) nixpkgs flake-parts; };
+        };
+        inputs = {
+          inherit (outputsArgs) nixpkgs flake-parts;
+        };
+      } {
+        systems = [system];
+        imports = [../modules/latex-utils.nix];
+        latex-utils.documents = [
+          {
+            name = "test.pdf";
+            src = minimalTexSrc;
+          }
+        ];
+      };
+  };
+  testFlakeWithDocs = import ./test-flake-helpers.nix {
+    flakeDef = inlineFlakeDef;
+    outputsArgs = testHarnessOutputsArgs // { inherit system; self = inlineFlakeDef; };
   };
 
   # Check if a package reference exists in the test flake outputs

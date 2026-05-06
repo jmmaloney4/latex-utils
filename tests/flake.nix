@@ -1,14 +1,13 @@
 {
   description = "Test harness flake for latex-utils module output testing";
 
+  # These URL declarations are ignored at runtime — they exist so that
+  # `nix flake check` and other tooling can parse this as a valid flake.
+  # The actual resolved flakes are passed via `outputsArgs` and patched
+  # onto `self.inputs` inside `mkFlake`.
   inputs = {
-    # These are the declared inputs of the test harness flake itself.
-    # They will be satisfied by the `inputs` attribute set constructed below
-    # from `evalArgs`.
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
-    # `latex-utils` is NOT declared here as an input URL, because it's dynamically passed
-    # from the main flake's `self` reference.
   };
 
   outputs = evalArgs @ {
@@ -16,49 +15,35 @@
     nixpkgs,
     flake-parts,
     latex-utils,
+    system,
     ...
   }:
-  # `evalArgs` are the arguments passed from the test file (testHarnessOutputsArgs)
-  # - evalArgs.self is the definition of this test harness flake
-  # - evalArgs.nixpkgs is the actual nixpkgs flake
-  # - evalArgs.flake-parts is the actual flake-parts flake
-  # - evalArgs.latex-utils is the main latex-utils project flake
+  # evalArgs come from testHarnessOutputsArgs in each test file.
+  # - evalArgs.self     = this file (imported as a Nix expression)
+  # - evalArgs.nixpkgs  = the resolved nixpkgs flake
+  # - evalArgs.flake-parts = the resolved flake-parts flake
+  # - evalArgs.latex-utils = the latex-utils project flake
+  # - evalArgs.system   = current system (e.g., aarch64-darwin)
     flake-parts.lib.mkFlake {
-      inherit self; # Use `evalArgs.self` as the `self` for this mkFlake call
-      inputs = {
-        # Construct the `inputs` attrset that the imported module will see
-        inherit nixpkgs flake-parts latex-utils; # These come from evalArgs
+      # Override self so that self.inputs contains resolved flake objects.
+      # The raw `self` from `import ./flake.nix` has URL-string inputs,
+      # which crash when flake-parts computes `inputs'` (it iterates
+      # self.inputs and calls rootConfig.perInput on each entry).
+      self = self // {
+        inputs = {
+          inherit nixpkgs flake-parts latex-utils;
+        };
       };
     } {
-      systems = ["x86_64-linux"]; # Or could be parameterized from evalArgs if needed
+      systems = [system];
 
       imports = [
-        ../modules/latex-utils.nix # The module under test
+        ../modules/latex-utils.nix
       ];
 
-      # Configure the imported `latex-utils` module as needed for the tests
       latex-utils.documents = [];
       latex-utils.enableVSCode = true;
-      # Add any other minimal configuration required for the module to produce
-      # the outputs being tested.
 
-      perSystem = {
-        pkgs,
-        config,
-        lib,
-        system,
-        inputs',
-        ...
-      }: {
-        # This is the perSystem block for the test harness flake itself.
-        # `inputs'` here will correctly reference the flakes provided above:
-        # - inputs'.nixpkgs will be the actual nixpkgs flake.
-        # - inputs'.flake-parts will be the actual flake-parts flake.
-        # - inputs'.latex-utils will be the main project flake.
-        #
-        # The latex-utils module's outputs (e.g., config.latex-utils.vscodeShell)
-        # will be evaluated here and then mapped by flake-parts to the
-        # final outputs of this test harness flake (e.g., outputs.latex-utils.x86_64-linux.vscodeShell).
-      };
+      perSystem = {pkgs, ...}: {};
     };
 }

@@ -1,18 +1,17 @@
 {
   pkgs,
   lib,
-  system, # Now provided by nix-unit test runner (from perSystem args)
-  inputs, # Now provided by nix-unit test runner (from perSystem.nix-unit.inputs)
+  system,
+  inputs,
   ...
 }: let
   flake = import ./flake.nix;
-  # system = pkgs.stdenv.hostPlatform.system or "x86_64-linux"; # No longer needed, use arg
   testHarnessOutputsArgs = {
     self = flake;
-    nixpkgs = inputs.nixpkgs; # Sourced from nix-unit provided 'inputs'
-    flake-parts = inputs.flake-parts; # Sourced from nix-unit provided 'inputs'
-    latex-utils = inputs.latex-utils; # Sourced from nix-unit provided 'inputs' (aliased self)
-    inherit system; # Pass the system argument to the test harness
+    nixpkgs = inputs.nixpkgs;
+    flake-parts = inputs.flake-parts;
+    latex-utils = inputs.latex-utils;
+    inherit system;
   };
   outputs = import ./test-flake-helpers.nix {
     flakeDef = flake;
@@ -58,18 +57,32 @@
   hasTexlive = inputs:
     lib.any (input: lib.hasInfix "texlive" (builtins.toString input)) (map builtins.toString inputs);
 in {
-  test_unifiedTexShell_is_package = lib.isDerivation unifiedShell;
-  test_vscodeShell_is_package = lib.isDerivation vscodeShell;
+  test_unifiedTexShell_is_package = {
+    expr = lib.isDerivation unifiedShell;
+    expected = true;
+  };
+
+  test_vscodeShell_is_package = {
+    expr = lib.isDerivation vscodeShell;
+    expected = true;
+  };
 
   test_unifiedTexShell_has_texlive = let
     inputs = getBuildInputs unifiedShell;
-  in
-    lib.any (input: lib.hasInfix "texlive" (builtins.toString input)) (map builtins.toString inputs);
+  in {
+    expr = lib.any (input: lib.hasInfix "texlive" (builtins.toString input)) (map builtins.toString inputs);
+    expected = true;
+  };
 
   test_vscodeShell_shellHook_links_settings = let
     hook = getShellHook vscodeShell;
-  in
-    lib.hasInfix ".vscode/settings.json" (toString hook);
+  in {
+    expr = lib.hasInfix ".vscode/settings.json" (toString hook);
+    expected = true;
+  };
 
-  test_composedShell_is_package = lib.isDerivation composedShell;
+  test_composedShell_is_package = {
+    expr = lib.isDerivation composedShell;
+    expected = true;
+  };
 }

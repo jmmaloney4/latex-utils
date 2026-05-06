@@ -65,6 +65,38 @@
       }
     ];
   };
+  # Create an inline flake with a single document for build/default-package tests
+  docTestFlakeDef = {
+    inputs = {
+      nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+      flake-parts.url = "github:hercules-ci/flake-parts";
+    };
+    outputs = outputsArgs @ {flake-parts, nixpkgs, ...}:
+      flake-parts.lib.mkFlake {
+        self = outputsArgs.self // {
+          inputs = {inherit (outputsArgs) nixpkgs flake-parts;};
+        };
+        inputs = {inherit (outputsArgs) nixpkgs flake-parts;};
+      } {
+        systems = [system];
+        imports = [../modules/latex-utils.nix];
+        latex-utils.documents = [
+          {
+            name = "test.pdf";
+            src = minimalTexSrc;
+          }
+        ];
+      };
+  };
+  docTestOutputs = import ./test-flake-helpers.nix {
+    flakeDef = docTestFlakeDef;
+    outputsArgs = {
+      self = docTestFlakeDef;
+      nixpkgs = inputs.nixpkgs;
+      flake-parts = inputs.flake-parts;
+      inherit system;
+    };
+  };
 in {
   # Test: Basic README example configuration is valid
   testReadmeBasicConfigValid = {
@@ -97,18 +129,18 @@ in {
   # Test: Documents can be built (validates that the configuration works end-to-end)
   testDocumentBuildable = {
     expr =
-      outputs ? packages
-      && outputs.packages ? ${system}
-      && outputs.packages.${system} ? "test";
+      docTestOutputs ? packages
+      && docTestOutputs.packages ? ${system}
+      && docTestOutputs.packages.${system} ? "test";
     expected = true;
   };
 
   # Test: Default package is set correctly (first document in list)
   testDefaultPackageSet = {
     expr =
-      outputs ? packages
-      && outputs.packages ? ${system}
-      && outputs.packages.${system} ? "default";
+      docTestOutputs ? packages
+      && docTestOutputs.packages ? ${system}
+      && lib.isDerivation docTestOutputs.packages.${system}."test";
     expected = true;
   };
 

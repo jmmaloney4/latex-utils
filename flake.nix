@@ -43,7 +43,6 @@
         pkgs,
         lib,
         system,
-        inputs,
         inputs',
         self',
         ...
@@ -73,21 +72,41 @@
               documentLevelPackages = import ./tests/documentLevelPackages.nix {
                 inherit pkgs lib;
               };
-              devShellLatexUtils = import ./tests/devShellLatexUtils.nix;
+              devShellLatexUtils = import ./tests/devShellLatexUtils.nix {
+                inherit pkgs lib system;
+                inputs = flakeInputs;
+              };
               normalizeExtraTexPackages = import ./tests/normalizeExtraTexPackages.nix {
                 inherit pkgs lib;
               };
-              devShellFragments = import ./tests/devShellFragments.nix;
+              devShellFragments = import ./tests/devShellFragments.nix {
+                inherit pkgs lib system;
+                inputs = flakeInputs;
+              };
               documentsPackage = import ./tests/documentsPackage.nix {
-                inherit pkgs lib system inputs;
+                inherit pkgs lib system;
+                inputs = flakeInputs;
               };
               # Documentation validation tests
-              documentationValidation = import ./tests/documentationValidation.nix;
-              accessPathValidation = import ./tests/accessPathValidation.nix;
-              packageReferenceValidation = import ./tests/packageReferenceValidation.nix;
-              documentationIntegrationCheck = import ./tests/documentationIntegrationCheck.nix;
+              documentationValidation = import ./tests/documentationValidation.nix {
+                inherit pkgs lib system;
+                inputs = flakeInputs;
+              };
+              accessPathValidation = import ./tests/accessPathValidation.nix {
+                inherit pkgs lib system;
+                inputs = flakeInputs;
+              };
+              packageReferenceValidation = import ./tests/packageReferenceValidation.nix {
+                inherit pkgs lib system;
+                inputs = flakeInputs;
+              };
+              documentationIntegrationCheck = import ./tests/documentationIntegrationCheck.nix {
+                inherit pkgs lib system;
+                inputs = flakeInputs;
+              };
               latexmkEngineAndOutputs = import ./tests/latexmkEngineAndOutputs.nix {
-                inherit pkgs lib system inputs;
+                inherit pkgs lib system;
+                inputs = flakeInputs;
               };
             }
             // (import ./tests/testModuleLevel.nix {inherit pkgs lib;});
