@@ -1,3 +1,20 @@
+Timestamp: 2026-05-06T17:11:55Z
+Agent: Hermes (glm-5.1 via zai)
+
+**LAZY SOURCE SCANNING + SANDBOX-SAFE TEST REWRITE**
+
+Rationale: `mkLatexPdfDocument` performed source scanning (`findLatexFiles` + `findLatexPackages`) at Nix eval time, string-interpolating `src` and calling `builtins.readDir`/`builtins.readFile`. This forced derivation realization when `src` was a `writeTextDir` derivation, causing 16 test failures on Linux CI (strict sandbox). The scanning was redundant when `_preNormalizedExtraPackages` was provided (the module system already scans and merges).
+
+Changes:
+1. `lib/mkLatexPdfDocument.nix` -- Guarded source scanning behind `if args ? _preNormalizedExtraPackages then {} else ...`. When pre-normalized packages are provided, `discovered` is set to `{}` and `findLatexFiles`/`findLatexPackages` are not called, avoiding `src` realization. No behavior change for direct callers (see ADR 014 for proof).
+2. `tests/extraTexPackages.nix` -- Rewritten from 9 filesystem-dependent tests (using `writeTextDir`) to 11 pure-eval tests using `_preNormalizedExtraPackages` and `builtins.toFile`. Tests derivation construction, package wiring, and name handling.
+3. `tests/unifiedTexLive.nix` -- Rewritten from 11 filesystem-dependent tests (using `writeTextDir`, skipped on Darwin) to 16 pure-eval tests. Source scanning tested via `findLatexPackages` with string content; integration tests use `_preNormalizedExtraPackages`. Fixed stale `texlive-combined-2024` assertion to `2025`.
+4. `docs/internal/decisions/014-lazy-source-scanning-and-sandbox-tests.md` -- ADR documenting the guard, the proof that it doesn't break existing behavior, and the test rewrite strategy.
+
+Supersedes ADR 003 (skip readDir tests on Darwin) and ADR 006 (disable extraTexPackages test on aarch64-darwin).
+
+---
+
 Timestamp: 2026-05-06T14:44:36Z
 Agent: Hermes (glm-5.1 via zai)
 

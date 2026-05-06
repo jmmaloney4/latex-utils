@@ -91,16 +91,24 @@ with lib; let
   normalizeHelpers = import ../lib/normalizeExtraTexPackages.nix {inherit pkgs lib;};
 
   # scan sources for \usepackage{…}
-  searchPaths = findLatexFiles {basePath = "${src}/${workingDirectory}";};
+  # Skip scanning when pre-normalized packages are provided (e.g., by the module
+  # system via document-processing.nix). The caller has already scanned and merged
+  # discovered packages into _preNormalizedExtraPackages, so scanning here would be
+  # redundant and would force src realization, breaking Linux CI sandbox.
   discovered =
-    builtins.foldl' (a: b: a // b)
-    {}
-    (map (
-      p:
-        if (builtins.pathExists p)
-        then findLatexPackages {fileContents = builtins.readFile p;}
-        else {}
-    ) (pkgs.lib.lists.unique searchPaths));
+    if args ? _preNormalizedExtraPackages
+    then {}
+    else let
+      searchPaths = findLatexFiles {basePath = "${src}/${workingDirectory}";};
+    in
+      builtins.foldl' (a: b: a // b)
+      {}
+      (map (
+        p:
+          if (builtins.pathExists p)
+          then findLatexPackages {fileContents = builtins.readFile p;}
+          else {}
+      ) (pkgs.lib.lists.unique searchPaths));
 
   # Handle extraTexPackages - check for pre-normalized packages first
   extraTexPackagesAttrs =
