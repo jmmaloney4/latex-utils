@@ -1,5 +1,6 @@
 # ADR 002: Document-Level Package Collection Analysis and UX Improvements
-*Date:* 2025-06-03  
+
+*Date:* 2025-06-03\
 *Status:* accepted
 
 ## Context
@@ -7,6 +8,7 @@
 A user reported that document-level `extraTexPackages` are not included in the unified TeX environment (`texlive-unified`, `latexmk-unified`) used for IDE integration, causing "File 'packagename.sty' not found" errors in IDEs. This issue was reported as a high-priority bug affecting the core value proposition of latex-utils.
 
 After comprehensive analysis including:
+
 - Code review of the collection logic in `modules/latex-utils.nix`
 - Creating test cases in `tests/document-level-packages.nix`
 - Tracing the data flow from documents → processing → unified environment
@@ -17,10 +19,12 @@ After comprehensive analysis including:
 The collection logic is **working correctly**. Document-level `extraTexPackages` **are** properly included in the unified environment. The real issue is **user experience around invalid package names** and **error handling**.
 
 **Root cause identified:** Users specify invalid TeX Live package names (e.g., `algorithm` instead of `algorithms`), which causes either:
+
 1. Build failures with cryptic error messages, or
 2. Packages being silently excluded from the unified environment
 
 **Solution:** Maintain the current (correct) collection logic and improve user experience by:
+
 1. Adding package name validation with helpful suggestions
 2. Improving error messages for common mistakes
 3. Adding documentation about TeX Live vs LaTeX package names
@@ -35,13 +39,15 @@ The collection logic is **working correctly**. Document-level `extraTexPackages`
 
 ## Consequences
 
-- **Pros:**  
+- **Pros:**
+
   - Collection logic remains correct and well-tested
   - Users get better error messages for common mistakes
   - Documentation prevents future confusion
   - Maintains backward compatibility
 
-- **Cons:**  
+- **Cons:**
+
   - Requires additional validation logic
   - Need to maintain mapping of common LaTeX→TeX Live package names
 
@@ -60,6 +66,7 @@ The collection logic is **working correctly**. Document-level `extraTexPackages`
 ## Evidence
 
 Test results confirm document-level packages are correctly included:
+
 ```nix
 # Test shows all document-level packages are collected:
 unifiedPackagesList.expr = ["algorithms" "amsmath" "enumitem" "tikzposter"]
@@ -68,4 +75,4 @@ unifiedPackagesList.expr = ["algorithms" "amsmath" "enumitem" "tikzposter"]
 # - "algorithms", "enumitem", "tikzposter" = document-level packages
 ```
 
-The unified environment successfully builds and contains all expected packages from both module-level and document-level `extraTexPackages`. 
+The unified environment successfully builds and contains all expected packages from both module-level and document-level `extraTexPackages`.

@@ -114,18 +114,21 @@
 ## Key Improvements
 
 ### ✅ **Eliminated Manual Configuration**
+
 - ❌ No more manual `latexmkPath` and `ltexlsPath` configuration
 - ❌ No more custom VSCode settings generation
 - ❌ No more manual symlink setup in shellHook
 - ❌ No more separate TeX Live environment configuration
 
 ### ✅ **Automatic Benefits**
+
 - ✅ **Unified TeX Live**: Uses unified environment with all document packages
 - ✅ **VSCode Integration**: Pre-configured LaTeX Workshop settings
 - ✅ **LTeX-LS**: Automatic spell/grammar checking setup
 - ✅ **Package Management**: All required packages automatically included
 
 ### ✅ **Simplified Maintenance**
+
 - ✅ **Single Source of Truth**: All TeX packages defined in `latex-utils.documents`
 - ✅ **Automatic Updates**: VSCode settings automatically use correct paths
 - ✅ **Less Code**: Significantly reduced boilerplate
@@ -159,15 +162,17 @@ perSystem = { self', pkgs, ... }: {
 ## Migration Steps
 
 1. **Remove manual configuration**:
+
    - Delete custom `vscode-settings.nix` file
    - Remove manual path variables (`latexmkPath`, `ltexlsPath`)
    - Remove custom VSCode settings package
 
 2. **Update devShell**:
+
    - Add `self'.devShells.latex-utils` to `inputsFrom`
    - Remove manual TeX Live packages from `buildInputs`
    - Remove VSCode setup from `shellHook`
 
 3. **Enjoy the simplicity**! 🎉
 
-The unified TeX Live environment automatically includes all packages from all your documents, and VSCode is pre-configured to use it. 
+The unified TeX Live environment automatically includes all packages from all your documents, and VSCode is pre-configured to use it.

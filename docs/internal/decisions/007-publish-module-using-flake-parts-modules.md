@@ -1,4 +1,5 @@
 # Publish latex-utils module using flake-parts.modules
+
 *Status:* proposed
 
 ## Context
@@ -16,10 +17,10 @@ Migrating to this approach will make the module easier to consume, more robust, 
 
 The `flake-parts` framework organizes modules into "classes" to provide structure and discoverability. This is reflected in the conventional path for accessing published modules: `flake.modules.<class>.<name>`.
 
--   **`<class>`**: This segment categorizes the type of module. Well-known classes include:
-    -   `nixosModules`: For modules that configure NixOS system options (e.g., defining system services or packages), as seen in `flake-parts` documentation examples.
-    -   `homeModules`: For modules that configure user environments via home-manager.
--   **`<name>`**: This is the specific name of the module within its designated class.
+- **`<class>`**: This segment categorizes the type of module. Well-known classes include:
+  - `nixosModules`: For modules that configure NixOS system options (e.g., defining system services or packages), as seen in `flake-parts` documentation examples.
+  - `homeModules`: For modules that configure user environments via home-manager.
+- **`<name>`**: This is the specific name of the module within its designated class.
 
 For general-purpose modules that are designed to be used within a `flake-parts` flake but do not target NixOS or home-manager specifically (like `latex-utils`, which provides options for document building and development shells), the class `flake` is used. Thus, the canonical path `flake.modules.flake.latex-utils` correctly identifies `latex-utils` as a general `flake-parts` module. This convention enhances clarity and aligns with the structured approach of the `flake-parts` ecosystem.
 
@@ -36,11 +37,13 @@ We will migrate the latex-utils flake to publish its module using the idiomatic 
 - Documenting the migration, including the backward compatibility measure, in the agent changelog and notifying downstream users as needed.
 
 ## Alternatives Considered
+
 1. **Continue manual publishing (status quo)** – Rejected: Not idiomatic, more error-prone, lacks type safety and discoverability.
 2. **Adopt a custom module publishing convention** – Rejected: Reinvents the wheel, increases maintenance burden, and diverges from community standards.
 3. **Adopt flake-parts.modules (chosen)** – Provides a standard, type-safe, and discoverable publishing path, aligns with upstream documentation and best practices.
 
 ## Consequences
+
 - **Pros:**
   - Module is published in a standard, discoverable location for all flake-parts users.
   - Type safety: prevents accidental misuse of module classes.
@@ -53,4 +56,5 @@ We will migrate the latex-utils flake to publish its module using the idiomatic 
   - Minor migration effort for maintainers.
 
 ## Supersedes / Dependencies (optional)
-- depends on: [flake-parts.modules documentation](https://flake.parts/options/flake-parts-modules.html) 
+
+- depends on: [flake-parts.modules documentation](https://flake.parts/options/flake-parts-modules.html)

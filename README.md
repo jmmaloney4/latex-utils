@@ -2,9 +2,10 @@
 
 **latex-utils** builds LaTeX documents as Nix packages.
 
----
+______________________________________________________________________
 
 ## Table of Contents
+
 - [Features](#features)
 - [Quickstart](#quickstart)
 - [Composable Development Environments](#composable-development-environments)
@@ -17,9 +18,10 @@
 - [Full flake.nix Example](#example-full-flakenix)
 - [Documentation](#documentation)
 
----
+______________________________________________________________________
 
 ## Features
+
 - Build multiple LaTeX documents from one configuration.
 - Reproducible output across machines.
 - Scans `\usepackage{...}` commands and includes required TeX Live packages.
@@ -31,7 +33,7 @@
 - Shell fragments compose with other environments.
 - Configurable default latexmk engine shared by the dev shell wrapper and VS Code recipes.
 
----
+______________________________________________________________________
 
 ## Quickstart
 
@@ -91,7 +93,7 @@
 
    latex-utils scans your `.tex` files for packages and adds them automatically. The development shell includes LaTeX Workshop and LTeX-LS configuration.
 
----
+______________________________________________________________________
 
 ## Composable Development Environments
 
@@ -99,11 +101,11 @@ latex-utils supplies shell fragments to create custom development environments.
 
 ### Available Shell Components
 
-| Component               | Access Path                             | Description                                |
-|-------------------------|-----------------------------------------|--------------------------------------------|
-| Unified TeX Shell       | `config.latex-utils.unifiedTexShell`    | TeX Live with packages, latexmk, ltex-ls   |
-| VSCode Shell            | `config.latex-utils.vscodeShell`        | Unified TeX shell plus VSCode settings     |
-| Complete DevShell       | `config.devShells.latex-utils`          | Ready-to-use shell (uses VSCode shell)     |
+| Component         | Access Path                          | Description                              |
+| ----------------- | ------------------------------------ | ---------------------------------------- |
+| Unified TeX Shell | `config.latex-utils.unifiedTexShell` | TeX Live with packages, latexmk, ltex-ls |
+| VSCode Shell      | `config.latex-utils.vscodeShell`     | Unified TeX shell plus VSCode settings   |
+| Complete DevShell | `config.devShells.latex-utils`       | Ready-to-use shell (uses VSCode shell)   |
 
 ### Usage Patterns
 
@@ -161,12 +163,12 @@ Extend the VSCode shell:
 
 ### Configuration Options
 
-| Option                           | Type                | Default     | Description                                   |
-|----------------------------------|---------------------|-------------|-----------------------------------------------|
-| `latex-utils.enableVSCode`       | `bool`              | `true`      | Enable VSCode integration in dev shells       |
-| `latex-utils.documents`          | `list`              | `[]`        | Documents to build                            |
-| `latex-utils.extraTexPackages`   | `list` or function  | `[]`        | Additional packages for all documents         |
-| `latex-utils.latexmk.engine`     | `enum`              | `"lualatex"` | Default engine: `lualatex`/`xelatex`/`pdflatex` |
+| Option                         | Type               | Default      | Description                                     |
+| ------------------------------ | ------------------ | ------------ | ----------------------------------------------- |
+| `latex-utils.enableVSCode`     | `bool`             | `true`       | Enable VSCode integration in dev shells         |
+| `latex-utils.documents`        | `list`             | `[]`         | Documents to build                              |
+| `latex-utils.extraTexPackages` | `list` or function | `[]`         | Additional packages for all documents           |
+| `latex-utils.latexmk.engine`   | `enum`             | `"lualatex"` | Default engine: `lualatex`/`xelatex`/`pdflatex` |
 
 Shell fragments can be accessed from flake outputs:
 
@@ -175,7 +177,7 @@ nix develop github:jmmaloney4/latex-utils#latex-utils.x86_64-linux.unifiedTexShe
 nix develop github:jmmaloney4/latex-utils#latex-utils.x86_64-linux.vscodeShell
 ```
 
----
+______________________________________________________________________
 
 ## Avoiding TeX Live Environment Conflicts
 
@@ -212,11 +214,12 @@ Configure treefmt to use a latexindent wrapper that points to the unified enviro
 ```
 
 Key points
+
 - `self'.packages.texlive` contains all discovered packages.
 - `lib.getExe' self'.packages.texlive "latexindent"` extracts the binary path.
 - Use `config.devShells.latex-utils` or `config.latex-utils.vscodeShell` instead of composing both fragments.
 
----
+______________________________________________________________________
 
 ## Automatic Package Discovery
 
@@ -313,7 +316,7 @@ latex-utils.documents = [
 ];
 ```
 
----
+______________________________________________________________________
 
 ## Module-Level Extra Packages
 
@@ -363,6 +366,7 @@ Specify TeX Live packages once for all documents.
 ```
 
 Benefits
+
 1. Avoids repeating common packages.
 2. Keeps documents consistent.
 3. Documents can still specify their own packages.
@@ -371,10 +375,11 @@ Benefits
 Common use cases include group templates, course materials, and large projects.
 
 ### Precedence Rules
+
 - Document-level packages override module-level packages if necessary.
 - The unified environment includes all packages from all levels.
 
----
+______________________________________________________________________
 
 ## Usage Details
 
@@ -384,12 +389,12 @@ Common use cases include group templates, course materials, and large projects.
 
 ### Document Options
 
-| Option             | Type                | Default      | Description                                |
-|--------------------|---------------------|--------------|--------------------------------------------|
-| `name`             | `string`            | required     | PDF and package name                       |
-| `src`              | `path`              | required     | Source directory                           |
-| `inputFile`        | `string`            | `main.tex`   | Main `.tex` file                           |
-| `extraTexPackages` | `list` or function  | `[]`         | Additional packages                        |
+| Option             | Type               | Default    | Description          |
+| ------------------ | ------------------ | ---------- | -------------------- |
+| `name`             | `string`           | required   | PDF and package name |
+| `src`              | `path`             | required   | Source directory     |
+| `inputFile`        | `string`           | `main.tex` | Main `.tex` file     |
+| `extraTexPackages` | `list` or function | `[]`       | Additional packages  |
 
 ### Enhanced extraTexPackages Support
 
@@ -463,7 +468,7 @@ latex-utils.documents = [
 
 Functions receive discovered packages as derivations and return a list of strings or derivations. This allows conditional package inclusion.
 
----
+______________________________________________________________________
 
 ## Unified TeX Live Environment for IDE Integration
 
@@ -488,6 +493,7 @@ latex-utils.latexmk.engine = "xelatex"; # or "lualatex", "pdflatex"
 ```
 
 - Generated outputs:
+
   - `packages.latexmk` → wrapper script that injects shared defaults (engine, outDir, synctex, bibtex)
   - `packages.vscodeSettings` → VS Code settings JSON with LaTeX Workshop recipes/tools wired to the wrapper
 
@@ -512,13 +518,13 @@ devShells.myCustomShell = pkgs.mkShell {
 
 Use only `unifiedTexShell` for a TeX environment without VS Code.
 
----
+______________________________________________________________________
 
 ## Font Loading and Fontconfig Caching
 
 latex-utils prebuilds a fontconfig cache containing all fonts from your TeX environment. This cache is reused to avoid rebuilding it for each document. Updates to the font set trigger a cache rebuild.
 
----
+______________________________________________________________________
 
 ## Example: Full flake.nix
 
@@ -572,13 +578,13 @@ latex-utils prebuilds a fontconfig cache containing all fonts from your TeX envi
 }
 ```
 
----
+______________________________________________________________________
 
 ## Library Functions
 
 Utility functions are available under `lib/`.
 
----
+______________________________________________________________________
 
 ## Documentation
 
@@ -596,4 +602,4 @@ Live preview:
 nix run .#watch-documentation
 ```
 
----
+______________________________________________________________________

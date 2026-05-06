@@ -166,7 +166,10 @@
         then let
           json = builtins.toJSON val;
           preview = builtins.substring 0 100 json;
-          ellipsis = if builtins.stringLength json > 100 then "..." else "";
+          ellipsis =
+            if builtins.stringLength json > 100
+            then "..."
+            else "";
         in "attrset: ${preview}${ellipsis}"
         else if builtins.isList val
         then "list(${toString (builtins.length val)} items)"

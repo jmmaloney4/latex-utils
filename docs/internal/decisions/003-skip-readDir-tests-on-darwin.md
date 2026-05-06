@@ -1,5 +1,6 @@
 # ADR 003: Skip Nix tests using builtins.readDir on store paths on Darwin
-*Date:* 2025-06-03  
+
+*Date:* 2025-06-03\
 *Status:* accepted
 
 ## Context
@@ -15,13 +16,15 @@ This is a known limitation of Nix on Darwin and cannot be worked around at the N
 - On other platforms, the tests run as before.
 
 ## Alternatives Considered
+
 1. **Run tests as-is on Darwin** – Rejected: Causes test failures due to Nix platform limitations.
 2. **Rewrite tests to use real (non-store) paths** – Rejected: Not possible in pure Nix evaluation or the Nix build sandbox.
 3. **(Chosen) Skip tests on Darwin** – Simple, clear, and avoids spurious failures on unsupported platforms.
 
 ## Consequences
+
 - **Pros:**
   - Test suite passes on Darwin without spurious failures.
   - Clear documentation of platform limitations.
 - **Cons:**
-  - Reduced test coverage on Darwin for code paths involving `findLatexFiles` and recursive directory scanning. 
+  - Reduced test coverage on Darwin for code paths involving `findLatexFiles` and recursive directory scanning.

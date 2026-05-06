@@ -6,7 +6,7 @@ This document explains how `latex-utils` integrates with the TeX Live ecosystem 
 
 The `normalizeExtraTexPackages` function is a critical component that handles the complexity of specifying additional TeX packages in a unified way. It accepts multiple input formats and normalizes them into a consistent format that can be consumed by `texlive.combine`.
 
-**Important:** This implementation requires the **new TeX Live package structure** introduced in nixpkgs in spring 2024 (commit `9daed7b`). If you\'re using older nixpkgs versions (nixos-23.11, early nixos-24.05), please update to recent nixpkgs-unstable or nixos-24.11+.
+**Important:** This implementation requires the **new TeX Live package structure** introduced in nixpkgs in spring 2024 (commit `9daed7b`). If you're using older nixpkgs versions (nixos-23.11, early nixos-24.05), please update to recent nixpkgs-unstable or nixos-24.11+.
 
 ## TeX Live Package Structure in Nixpkgs: Two Eras
 
@@ -28,14 +28,16 @@ pkgs.texlive.amsfonts = {
 ```
 
 **Characteristics:**
+
 - Direct access to outputs as top-level attributes (`pkg.out`, `pkg.doc`)
 - `tlType` and `pname` on the wrapper itself
 - `lib.isDerivation wrapper: false`, but `lib.isDerivation wrapper.out: true`
 
 **Why the change happened:**
+
 - Generator maintenance pain (huge blob of hand-maintained metadata)
 - Store bloat (every wrapper created multiple derivations even for macro-only packages)
-- Better alignment with TeX Live\'s own package structure
+- Better alignment with TeX Live's own package structure
 
 ### Current Era (2024+) - SUPPORTED
 
@@ -55,7 +57,8 @@ pkgs.texlive.amsfonts = {
 ```
 
 **Characteristics:**
-- `lib.isDerivation: false` (it\'s just an attrset wrapper)
+
+- `lib.isDerivation: false` (it's just an attrset wrapper)
 - Contains actual derivations in the `pkgs` list
 - Each derivation has TeX Live metadata (`tlType`, `pname`, `outputs`, etc.)
 - This is what you get when you reference `pkgs.texlive.packagename`
@@ -72,6 +75,7 @@ pkgs.texlive.amsfonts = {
 ```
 
 **Characteristics:**
+
 - `lib.isDerivation: true`
 - Has TeX Live metadata (`tlType`, etc.)
 - These are the actual buildable units
@@ -89,6 +93,7 @@ texlive.combine { inherit (texlive) amsfonts xcolor; } = {
 ```
 
 **Characteristics:**
+
 - `lib.isDerivation: true`
 - Result of `buildEnv` combining multiple packages
 - Has a `texlivePackages` attribute listing the original packages
@@ -103,36 +108,44 @@ The function provides a unified interface for specifying additional TeX packages
 ### Accepted Input Types
 
 #### 1. List of Strings
+
 ```nix
 extraTexPackages = ["amsmath" "xcolor" "tikz"];
 ```
+
 - Strings are looked up in `pkgs.texlive.*`
 - Most common and straightforward approach
 - Good for well-known packages
 
 #### 2. List of Derivations
+
 ```nix
 extraTexPackages = [myCustomTexPackage anotherDerivation];
 ```
+
 - For custom packages or packages not in TeX Live
 - Must be actual derivations (`lib.isDerivation: true`)
 - Useful for mixing TeX Live with custom packages
 
 #### 3. List of TeX Live Package Objects
+
 ```nix
 extraTexPackages = [pkgs.texlive.amsfonts pkgs.texlive.xcolor];
 ```
+
 - Direct references to TeX Live package wrapper attrsets
 - Preserves all metadata and multiple outputs (run, doc, source)
 - Recommended for complex packages or when you need full control
 
 #### 4. Functions Returning Lists
+
 ```nix
 extraTexPackages = discovered: 
   if builtins.hasAttr "tikz" discovered
   then [pkgs.texlive.pgfplots pkgs.texlive.circuitikz]
   else [];
 ```
+
 - For dynamic package selection based on discovered packages
 - Function receives `discoveredPackages` attrset as input
 - Must return one of the list types above
@@ -143,6 +156,7 @@ extraTexPackages = discovered:
 **Important:** All items in a list must be of the same type. You cannot mix strings, derivations, and TeX Live package objects in a single list.
 
 **Valid:**
+
 ```nix
 extraTexPackages = ["amsmath" "xcolor"];                     # All strings
 extraTexPackages = [pkgs.texlive.amsfonts pkgs.texlive.tikz]; # All TeX Live packages
@@ -150,6 +164,7 @@ extraTexPackages = [myDerivation1 myDerivation2];            # All derivations
 ```
 
 **Invalid:**
+
 ```nix
 extraTexPackages = ["amsmath" pkgs.texlive.xcolor];          # Mixed types - ERROR!
 ```
@@ -157,11 +172,13 @@ extraTexPackages = ["amsmath" pkgs.texlive.xcolor];          # Mixed types - ERR
 ### Output Format
 
 The function always returns an attrset where:
+
 - **Keys:** Package names (extracted from `pname` or derived from the package)
 - **Values:** The original objects (derivations or TeX Live package wrappers)
 - **Format:** Compatible with `texlive.combine` and other TeX Live tools
 
 Example output:
+
 ```nix
 {
   amsmath = pkgs.texlive.amsmath;
@@ -177,6 +194,7 @@ Example output:
 The function uses a robust predicate to identify TeX Live package objects in the **modern (2024+) format**:
 
 #### TeX Live Package Detection
+
 ```nix
 isTexLivePackage = obj:
   (builtins.isAttrs obj)
@@ -205,9 +223,10 @@ This ensures robust naming even with unusual package structures.
 
 ## Migration from Legacy Era
 
-If you\'re updating from an older nixpkgs version and encounter errors, here\'s what changed:
+If you're updating from an older nixpkgs version and encounter errors, here's what changed:
 
 ### Before (Legacy Era)
+
 ```nix
 # This worked in old nixpkgs:
 let pkg = pkgs.texlive.amsfonts;
@@ -215,6 +234,7 @@ in pkg.out  # Direct access to output derivation
 ```
 
 ### After (Current Era)
+
 ```nix
 # This works in modern nixpkgs:
 let pkg = pkgs.texlive.amsfonts;
@@ -229,16 +249,19 @@ However, for `latex-utils` users, this migration is transparent - just use the s
 ### For Library Users
 
 1. **Use strings for simple cases:**
+
    ```nix
    extraTexPackages = ["amsmath" "xcolor"];
    ```
 
 2. **Use TeX Live package objects for complex packages:**
+
    ```nix
    extraTexPackages = [pkgs.texlive.tikz pkgs.texlive.beamer];
    ```
 
 3. **Use functions for conditional logic:**
+
    ```nix
    extraTexPackages = discovered:
      if builtins.hasAttr "tikz" discovered
@@ -250,7 +273,7 @@ However, for `latex-utils` users, this migration is transparent - just use the s
 
 1. **Always test with all input types** when modifying `normalizeExtraTexPackages`
 2. **Maintain homogeneous type checking** to provide clear error messages
-3. **Preserve original objects** - don\'t unwrap TeX Live packages unnecessarily
+3. **Preserve original objects** - don't unwrap TeX Live packages unnecessarily
 4. **Update tests** when modifying detection logic
 
 ## Integration with texlive.combine
@@ -276,19 +299,23 @@ in
 ### Common Errors
 
 #### "extraTexPackages list must be homogeneous"
+
 **Cause:** Mixing different types in a single list
 **Solution:** Ensure all items are the same type (all strings, all derivations, or all TeX Live packages)
 
 #### "not all items are derivations"
+
 **Cause:** Function returned invalid objects or detection logic failed
 **Solution:** Check that functions return proper derivations or TeX Live packages
 
 #### "attribute missing"
+
 **Cause:** Referenced a non-existent package name in string list
 **Solution:** Verify package names exist in `pkgs.texlive.*`
 
 #### Errors about missing tlType or out attributes
-**Cause:** You\'re likely using an older nixpkgs with legacy TeX Live structure
+
+**Cause:** You're likely using an older nixpkgs with legacy TeX Live structure
 **Solution:** Update to nixpkgs-unstable or nixos-24.11+ to get the modern TeX Live packages
 
 ### Debugging
@@ -319,5 +346,6 @@ nix eval --impure --expr 'with import <nixpkgs> {}; builtins.hasAttr "pkgs" texl
 This implementation **requires** the modern TeX Live package structure (2024+). It is tested against current nixpkgs and designed for forward compatibility as the TeX Live ecosystem continues to evolve.
 
 If you need support for legacy nixpkgs versions, please:
+
 1. Update to a recent nixpkgs version (recommended), or
-2. Use an older version of `latex-utils` that supports legacy structures 
+2. Use an older version of `latex-utils` that supports legacy structures

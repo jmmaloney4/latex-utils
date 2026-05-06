@@ -1,4 +1,5 @@
 # ADR 014: Lazy Source Scanning in mkLatexPdfDocument
+
 *Date:* 2026-05-06
 *Status:* proposed
 
@@ -50,12 +51,14 @@ When called directly without `_preNormalizedExtraPackages`, the guard is not tri
 ## Consequences
 
 - **Pros:**
+
   - All tests pass on both macOS and Linux CI
   - Tests validate scanning logic and package wiring independently
   - `mkLatexPdfDocument` is cheaper to evaluate when called through the module system (avoids redundant filesystem traversal)
   - Removes the `isAarch64Darwin`/`isDarwin` skip hacks from test files
 
 - **Cons:**
+
   - End-to-end path (scanning feeds into derivation construction) is no longer tested in a single test. This path is just `//` merging two attrsets, so the risk is low.
   - Tests that use `_preNormalizedExtraPackages` don't validate that scanning produces the same packages the test hardcodes. This is mitigated by having separate scanning tests that validate the same content.
 

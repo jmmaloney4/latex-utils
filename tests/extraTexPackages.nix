@@ -32,8 +32,9 @@
 
   # Helper: check derivation has texlive-combined in nativeBuildInputs
   hasTexLiveCombined = drv:
-    builtins.any (input:
-      lib.strings.hasPrefix "texlive-combined" (input.name or "")
+    builtins.any (
+      input:
+        lib.strings.hasPrefix "texlive-combined" (input.name or "")
     ) (drv.nativeBuildInputs or []);
 in {
   # --- Basic derivation construction ---
@@ -118,20 +119,22 @@ in {
   # --- Name handling ---
 
   testNameGetsPdfSuffix = {
-    expr = (mkDoc {
-      name = "test-suffix";
-      src = dummySrc;
-      _preNormalizedExtraPackages = {};
-    }).name;
+    expr =
+      (mkDoc {
+        name = "test-suffix";
+        src = dummySrc;
+        _preNormalizedExtraPackages = {};
+      }).name;
     expected = "test-suffix.pdf";
   };
 
   testNameKeepsExistingSuffix = {
-    expr = (mkDoc {
-      name = "test-suffix.pdf";
-      src = dummySrc;
-      _preNormalizedExtraPackages = {};
-    }).name;
+    expr =
+      (mkDoc {
+        name = "test-suffix.pdf";
+        src = dummySrc;
+        _preNormalizedExtraPackages = {};
+      }).name;
     expected = "test-suffix.pdf";
   };
 }

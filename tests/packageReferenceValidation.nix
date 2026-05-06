@@ -41,9 +41,11 @@
       ...
     }:
       flake-parts.lib.mkFlake {
-        self = outputsArgs.self // {
-          inputs = { inherit (outputsArgs) nixpkgs flake-parts; };
-        };
+        self =
+          outputsArgs.self
+          // {
+            inputs = {inherit (outputsArgs) nixpkgs flake-parts;};
+          };
         inputs = {
           inherit (outputsArgs) nixpkgs flake-parts;
         };
@@ -60,7 +62,12 @@
   };
   testFlakeWithDocs = import ./test-flake-helpers.nix {
     flakeDef = inlineFlakeDef;
-    outputsArgs = testHarnessOutputsArgs // { inherit system; self = inlineFlakeDef; };
+    outputsArgs =
+      testHarnessOutputsArgs
+      // {
+        inherit system;
+        self = inlineFlakeDef;
+      };
   };
 
   # Check if a package reference exists in the test flake outputs

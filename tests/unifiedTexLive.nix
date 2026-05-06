@@ -102,7 +102,8 @@ in {
   testMixedDiscoveredAndExtraNames = {
     expr = let
       combined = allDiscovered // extraPackagesAttrs;
-    in lib.lists.sort builtins.lessThan (builtins.attrNames combined);
+    in
+      lib.lists.sort builtins.lessThan (builtins.attrNames combined);
     expected = ["amsmath" "jknapltx" "pgf" "xcolor"];
   };
 
@@ -136,7 +137,8 @@ in {
       wrapper = pkgs.writeShellScriptBin "latexmk" ''
         exec ${lib.getExe' unifiedTexEnv "latexmk"} "$@"
       '';
-    in lib.isDerivation wrapper;
+    in
+      lib.isDerivation wrapper;
     expected = true;
   };
 
@@ -145,7 +147,8 @@ in {
       wrapper = pkgs.writeShellScriptBin "latexmk" ''
         exec ${lib.getExe' unifiedTexEnv "latexmk"} "$@"
       '';
-    in wrapper.name or "";
+    in
+      wrapper.name or "";
     expected = "latexmk";
   };
 
@@ -159,7 +162,8 @@ in {
         src = dummySrc;
         _preNormalizedExtraPackages = allDiscovered // extraPackagesAttrs;
       };
-    in lib.isDerivation drv;
+    in
+      lib.isDerivation drv;
     expected = true;
   };
 

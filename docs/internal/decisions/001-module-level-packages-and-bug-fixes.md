@@ -1,5 +1,6 @@
 # ADR 001: Module-Level extraTexPackages and Core Bug Fixes
-*Date:* 2025-06-03  
+
+*Date:* 2025-06-03\
 *Status:* accepted
 
 ## Context
@@ -35,6 +36,7 @@ The module-level `extraTexPackages` supports the same flexible input formats as 
 ## Consequences
 
 - **Pros:**
+
   - Eliminates package duplication across documents (DRY principle)
   - Provides fallback behavior for better user experience
   - Fixes all identified blocking bugs
@@ -45,6 +47,7 @@ The module-level `extraTexPackages` supports the same flexible input formats as 
   - Works even without documents configured
 
 - **Cons:**
+
   - Slightly more complex internal logic for package merging
   - Additional option increases API surface area
   - Module evaluation is now required even for simple use cases
@@ -52,6 +55,7 @@ The module-level `extraTexPackages` supports the same flexible input formats as 
 ## Implementation Details
 
 ### Package Merging Strategy
+
 ```nix
 # Module-level packages normalized once
 moduleExtraPackagesNormalized = normalizeHelpers.normalizeExtraTexPackages {
@@ -70,7 +74,9 @@ mergedExtraPackages = moduleExtraPackagesNormalized // docExtraPackagesNormalize
 ```
 
 ### Double-Normalization Fix
+
 Pass pre-normalized packages to avoid re-processing:
+
 ```nix
 mkLatexPdfDocument (doc // {
   _preNormalizedExtraPackages = extraPackagesForDoc;
@@ -79,7 +85,9 @@ mkLatexPdfDocument (doc // {
 ```
 
 ### Resilient devShells
+
 Always provide devShells with informative messages:
+
 ```nix
 devShells.latex-utils =
   if hasAnyConfig && vscodeIntegration ? vscode-devshell
@@ -88,5 +96,6 @@ devShells.latex-utils =
 ```
 
 ## Supersedes / Dependencies
+
 - supersedes: N/A (first major architectural change)
-- depends on: existing `normalizeExtraTexPackages` function 
+- depends on: existing `normalizeExtraTexPackages` function

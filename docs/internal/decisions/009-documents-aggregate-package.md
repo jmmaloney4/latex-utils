@@ -1,5 +1,6 @@
 # ADR 009: Documents Aggregate Package
-*Date:* 2025-06-04  
+
+*Date:* 2025-06-04\
 *Status:* proposed
 
 ## Context
@@ -7,6 +8,7 @@
 Currently, latex-utils exposes individual documents as separate packages (e.g., `packages.paper`, `packages.slides`), but users may want to build all documents at once for CI, deployment, or batch processing scenarios. While each document can be built individually, there's no convenient way to trigger a build of all documents with a single command.
 
 Use cases include:
+
 - CI pipelines that need to verify all documents build successfully
 - Publication workflows that generate all outputs for a project
 - Local development where users want to rebuild everything after dependency changes
@@ -31,15 +33,17 @@ Add a `documents` package to the standard flake outputs that builds all exposed 
 
 ## Consequences
 
-- **Pros:**  
-  - Single command builds all documents: `nix build .#documents`  
+- **Pros:**
+
+  - Single command builds all documents: `nix build .#documents`
   - Consistent with existing package naming conventions
   - Reusable output can be deployed or archived
   - Follows the same conditional exposure pattern as the `default` package
   - Leverages existing document building infrastructure
 
-- **Cons:**  
-  - Adds another package to the namespace (minor)  
+- **Cons:**
+
+  - Adds another package to the namespace (minor)
   - May increase build times when users only want specific documents (they can still build individual packages)
   - Could potentially use significant disk space for projects with many large documents
 
@@ -62,6 +66,7 @@ documents = lib.optionalAttrs (documents != []) (
 This follows the existing pattern where packages are only exposed when relevant (similar to the conditional `default` package).
 
 ## Dependencies
+
 - Depends on existing document processing infrastructure in `document-processing.nix`
 - Builds upon the `docPkgs` pattern established in `outputs.nix`
 
@@ -112,4 +117,4 @@ The testing approach for this feature demonstrates that some flake-parts integra
 
 ### Status: Resolved
 
-As of 2025-06-05, all tests pass successfully (65/65 test cases). The initial testing infrastructure challenges have been resolved by adopting a pragmatic testing approach that focuses on verification of core functionality rather than complex flake evaluation patterns. 
+As of 2025-06-05, all tests pass successfully (65/65 test cases). The initial testing infrastructure challenges have been resolved by adopting a pragmatic testing approach that focuses on verification of core functionality rather than complex flake evaluation patterns.
