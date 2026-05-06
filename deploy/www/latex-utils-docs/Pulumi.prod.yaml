@@ -1,0 +1,4 @@
+secretsprovider: gcpkms://projects/jmmaloney4-admin/locations/us-east5/keyRings/pulumi-secrets-ring/cryptoKeys/pulumi-secrets-key
+config:
+  latex-utils-docs:environment: prod
+  latex-utils-docs:domain: docs.latex-utils.jmmaloney4.xyz
