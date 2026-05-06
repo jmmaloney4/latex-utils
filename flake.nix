@@ -46,12 +46,13 @@
         pulumi = {
           enable = true;
           backendUrl = "gs://jmmaloney4-pulumi-state";
-          secretsProvider =
-            "gcpkms://projects/jmmaloney4-admin/locations/us-east5/keyRings/pulumi-secrets-ring/cryptoKeys/pulumi-secrets-key";
-          stacks = [{
-            path = "deploy/www/latex-utils-docs";
-            stacks = [ "dev" "prod" ];
-          }];
+          secretsProvider = "gcpkms://projects/jmmaloney4-admin/locations/us-east5/keyRings/pulumi-secrets-ring/cryptoKeys/pulumi-secrets-key";
+          stacks = [
+            {
+              path = "deploy/www/latex-utils-docs";
+              stacks = ["dev" "prod"];
+            }
+          ];
         };
       };
       perSystem = {
