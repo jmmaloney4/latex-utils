@@ -109,7 +109,10 @@
                 inputs = flakeInputs;
               };
             }
-            // (import ./tests/testModuleLevel.nix {inherit pkgs lib;});
+            // (import ./tests/testModuleLevel.nix {inherit pkgs lib;})
+            // (import ./tests/moduleOptions.nix {inherit pkgs lib;})
+            // (import ./tests/vscodeSettingsContent.nix {inherit pkgs lib;})
+            // (import ./tests/normalizeErrorPaths.nix {inherit pkgs lib;});
         };
         # treefmt config is managed by jackpkgs.fmt module
         # alejandra and latexindent are enabled by default
