@@ -14,4 +14,5 @@ latex-utils is a Nix flake that builds LaTeX documents in reproducible environme
 - [Comprehensive Example](user/comprehensive-example.nix)
 
 ## Helpful Blogs
+
 - [Curriculum-vitae style bibliography with multiple first authors and bolding your own name](https://www.hansenlab.org/cv_bibliography_tex)

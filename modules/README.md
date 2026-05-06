@@ -51,4 +51,4 @@ Each component can be tested independently, and the full integration is validate
 
 This modularization was implemented following [ADR-008: Modularize Large latex-utils.nix Module](../docs/internal/decisions/008-modularize-latex-utils-module.md).
 
-The refactoring maintains 100% backward compatibility - no user configuration changes are required. 
+The refactoring maintains 100% backward compatibility - no user configuration changes are required.

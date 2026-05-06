@@ -44,9 +44,11 @@
         # Override self.inputs to contain resolved flake objects.
         # The raw self has URL-string inputs which crash when flake-parts
         # computes inputs' (it iterates self.inputs expecting flake objects).
-        self = outputsArgs.self // {
-          inputs = { inherit (outputsArgs) nixpkgs flake-parts; };
-        };
+        self =
+          outputsArgs.self
+          // {
+            inputs = {inherit (outputsArgs) nixpkgs flake-parts;};
+          };
         inputs = {
           inherit (outputsArgs) nixpkgs flake-parts;
         };
@@ -66,7 +68,12 @@
   };
   testFlakeWithDocs = import ./test-flake-helpers.nix {
     flakeDef = inlineFlakeDef;
-    outputsArgs = testHarnessOutputsArgs // { inherit system; self = inlineFlakeDef; };
+    outputsArgs =
+      testHarnessOutputsArgs
+      // {
+        inherit system;
+        self = inlineFlakeDef;
+      };
   };
 in {
   # Test: config.latex-utils.unifiedTexShell exists (documented in README)

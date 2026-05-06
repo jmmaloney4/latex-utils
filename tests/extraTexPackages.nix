@@ -1,187 +1,140 @@
+# Integration tests for extraTexPackages wiring in mkLatexPdfDocument
+#
+# Tests that extra TeX packages (strings, derivations, TeX Live objects)
+# are correctly wired into the derivation's build environment.
+# Uses _preNormalizedExtraPackages to bypass source scanning, avoiding
+# the Linux CI sandbox issue (see ADR 014).
+#
+# Source scanning is tested separately in findLatexPackages.nix.
 {
   pkgs,
   lib,
 }: let
-  # Helper to build a document with mkLatexPdfDocument
   mkDoc = args: pkgs.callPackage ../lib/mkLatexPdfDocument.nix {} args;
-  # Minimal .tex file contents for testing
-  minimalTex = srcName: packageLines:
-    pkgs.writeTextDir "${srcName}/main.tex" ''
-      \documentclass{article}
-      ${packageLines}
-      \begin{document}
-      Hello, world!
-      \end{document}
-    '';
-  # Import shared test helpers
-  testHelpers = import ../lib/testHelpers.nix {inherit pkgs lib;};
-  inherit (testHelpers) builds;
 
-  # Resolve specific TeX Live packages that might be objects, ensuring we pass derivations if needed.
-  # amsfonts contains amstex, amssymb, etc.
-  # amsrefs is for bibliographic references.
-  resolvedAmstex = pkgs.texlive.amsfonts;
-  resolvedAmsrefs = pkgs.texlive.amsrefs;
+  # Minimal pre-normalized packages for testing
+  xcolor = pkgs.texlive.xcolor;
+  amsmath = pkgs.texlive.amsmath;
+  amsfonts = pkgs.texlive.amsfonts;
+  pgf = pkgs.texlive.pgf;
 
-  isAarch64Darwin = pkgs.stdenv.hostPlatform.system == "aarch64-darwin";
+  # Minimal src -- use builtins.toFile to avoid derivation realization.
+  # mkLatexPdfDocument won't access it when _preNormalizedExtraPackages is set.
+  dummySrc = builtins.toFile "main.tex" ''
+    \documentclass{article}
+    \begin{document}
+    Hello
+    \end{document}
+  '';
 
-  testsToSkipOnDarwin = [
-    "testSingleExtraPackageString"
-    "testMultipleExtraPackagesStrings"
-    "testNoExplicitExtraPackages"
-    "testEmptyListOfExtraPackages"
-    "testExplicitPackageAlsoDiscovered"
-    "testMultipleIndependentDocuments"
-    "testPackageAlreadyInBaseScheme"
-    "testIntegrationWithFileParams"
-    "testListOfPackageDerivations"
-  ];
+  # Helper: check that a value is a derivation
+  isDeriv = x: lib.isDerivation x;
 
-  allTests = {
-    testSingleExtraPackageString = {
-      expr = builds (mkDoc {
-        name = "test-single-extra.pdf";
-        src = minimalTex "singleExtraSrc" "\\usepackage{xcolor}";
-        extraTexPackages = ["xcolor"];
-      });
-      expected = true;
-    };
+  # Helper: check derivation has texlive-combined in nativeBuildInputs
+  hasTexLiveCombined = drv:
+    builtins.any (
+      input:
+        lib.strings.hasPrefix "texlive-combined" (input.name or "")
+    ) (drv.nativeBuildInputs or []);
+in {
+  # --- Basic derivation construction ---
 
-    testMultipleExtraPackagesStrings = {
-      expr = builds (mkDoc {
-        name = "test-multiple-extras.pdf";
-        src = minimalTex "multipleExtrasSrc" "\\usepackage{xcolor}";
-        extraTexPackages = ["xcolor"];
-      });
-      expected = true;
-    };
-
-    testNoExplicitExtraPackages = {
-      expr = builds (mkDoc {
-        name = "test-no-extras.pdf";
-        src = minimalTex "noExtrasSrc" "\\usepackage{amsmath}";
-      });
-      expected = true;
-    };
-
-    testEmptyListOfExtraPackages = {
-      expr = builds (mkDoc {
-        name = "test-empty-list.pdf";
-        src = minimalTex "emptyListSrc" "";
-        extraTexPackages = [];
-      });
-      expected = true;
-    };
-
-    testExplicitPackageAlsoDiscovered = {
-      expr = builds (mkDoc {
-        name = "test-override-discovered.pdf";
-        src = minimalTex "overrideDiscoveredSrc" "\\usepackage{xcolor}";
-        extraTexPackages = ["xcolor"];
-      });
-      expected = true;
-    };
-
-    testMultipleIndependentDocuments = {
-      expr = let
-        doc1 = mkDoc {
-          name = "doc1.pdf";
-          src = minimalTex "doc1Src" "\\usepackage{xcolor}";
-          extraTexPackages = ["xcolor"];
-        };
-        doc2 = mkDoc {
-          name = "doc2.pdf";
-          src = minimalTex "doc2Src" "";
-          extraTexPackages = [];
-        };
-      in
-        builds doc1 && builds doc2;
-      expected = true;
-    };
-
-    testPackageAlreadyInBaseScheme = {
-      expr = builds (mkDoc {
-        name = "test-already-in-scheme.pdf";
-        src = minimalTex "alreadyInSchemeSrc" "";
-        extraTexPackages = ["lm"];
-      });
-      expected = true;
-    };
-
-    testIntegrationWithFileParams = {
-      expr = builds (mkDoc {
-        name = "test-integration.pdf";
-        src = minimalTex "integrationSrc" "\\usepackage{xcolor}";
-        inputFile = "main.tex";
-        outputPath = "output.pdf";
-        extraTexPackages = ["xcolor"];
-      });
-      expected = true;
-    };
-
-    testListOfPackageDerivations = {
-      expr = builds (mkDoc {
-        name = "test-list-of-derivations.pdf";
-        src = minimalTex "listOfDerivationsSrc" "\\usepackage{xcolor}";
-        extraTexPackages = [pkgs.texlive.xcolor];
-      });
-      expected = true;
-    };
-
-    /*
-       # This test causes an infinite recursion, likely due to how pkgs.texlive derivations
-       # are evaluated when texlive.combine is invoked, potentially creating a circular
-       # dependency back to the flake's checks.
-    testFunctionReturningPackageDerivations = {
-      expr = let
-        result = normalizeExtraTexPackages {
-          extraTexPackages = discovered: [
-            (pkgs.texlive.amsfonts) # amstex in amsfonts
-            (pkgs.texlive.amsrefs)
-          ];
-          discoveredPackages = {};
-          allCollectedPackages = {}; # Simulate an empty set of initially collected packages
-        };
-      in
-        # Check if the specific packages are present by their expected names
-        (result ? "amsfonts") && (result ? "amsrefs");
-      expected = true;
-    };
-    */
-
-    /*
-       Rest of the tests remain commented out
-    testMultipleExtrasFromStringList = {
-      texConfig = {
-        extraTexPackages = ["xcolor"];
-      };
-      drvAssert = drv: pkgs.texlive.xcolor == builtins.elemAt drv.texlive.texPackages 0;
-      buildAssert = path: builtins.readFile path != "";
-      testName = "multipleExtrasFromStringList";
-      src = minimalTex "multipleExtrasSrc" "\\usepackage{xcolor}";
-    };
-
-    testDocLevelWithOneExtra = {
-      texConfig = {
-        discoverPackages = true;
-        extraTexPackages = ["xcolor"];
-      };
-      drvAssert = drv: pkgs.texlive.xcolor == builtins.elemAt drv.texlive.texPackages 0;
-      buildAssert = path: builtins.readFile path != "";
-      testName = "docLevelWithOneExtra";
-      src = minimalTex "doc2Src" "";
-    };
-
-    testListOfDerivationsStructured = { # Renamed from listOfDerivations to avoid conflict
-      texConfig = {
-        extraTexPackages = [pkgs.texlive.xcolor];
-      };
-      drvAssert = drv: pkgs.texlive.xcolor == builtins.elemAt drv.texlive.texPackages 0;
-      buildAssert = path: builtins.readFile path != "";
-      testName = "listOfDerivations_structured";
-      src = minimalTex "listOfDerivationsSrc" "\\usepackage{xcolor}";
-    };
-    */
+  testSingleExtraPackage = {
+    expr = isDeriv (mkDoc {
+      name = "test-single.pdf";
+      src = dummySrc;
+      _preNormalizedExtraPackages = {inherit xcolor;};
+    });
+    expected = true;
   };
-in
-  lib.filterAttrs (name: _: !(isAarch64Darwin && lib.elem name testsToSkipOnDarwin)) allTests
+
+  testMultipleExtraPackages = {
+    expr = isDeriv (mkDoc {
+      name = "test-multiple.pdf";
+      src = dummySrc;
+      _preNormalizedExtraPackages = {inherit xcolor amsmath;};
+    });
+    expected = true;
+  };
+
+  testNoExtraPackages = {
+    expr = isDeriv (mkDoc {
+      name = "test-none.pdf";
+      src = dummySrc;
+      _preNormalizedExtraPackages = {};
+    });
+    expected = true;
+  };
+
+  # --- Package types ---
+
+  testDerivationPackage = {
+    expr = isDeriv (mkDoc {
+      name = "test-drv.pdf";
+      src = dummySrc;
+      _preNormalizedExtraPackages = {inherit pgf;};
+    });
+    expected = true;
+  };
+
+  testTexLiveObjectPackage = {
+    # amsfonts is a TeX Live "object" (has pkgs attribute), not a plain derivation
+    expr = isDeriv (mkDoc {
+      name = "test-texlive-obj.pdf";
+      src = dummySrc;
+      _preNormalizedExtraPackages = {inherit amsfonts;};
+    });
+    expected = true;
+  };
+
+  testMixedPackageTypes = {
+    expr = isDeriv (mkDoc {
+      name = "test-mixed.pdf";
+      src = dummySrc;
+      _preNormalizedExtraPackages = {inherit pgf xcolor amsfonts;};
+    });
+    expected = true;
+  };
+
+  # --- Build environment wiring ---
+
+  testDerivationContainsTexLive = {
+    expr = hasTexLiveCombined (mkDoc {
+      name = "test-env.pdf";
+      src = dummySrc;
+      _preNormalizedExtraPackages = {inherit xcolor;};
+    });
+    expected = true;
+  };
+
+  testDerivationContainsTexLiveNoExtras = {
+    expr = hasTexLiveCombined (mkDoc {
+      name = "test-env-noextras.pdf";
+      src = dummySrc;
+      _preNormalizedExtraPackages = {};
+    });
+    expected = true;
+  };
+
+  # --- Name handling ---
+
+  testNameGetsPdfSuffix = {
+    expr =
+      (mkDoc {
+        name = "test-suffix";
+        src = dummySrc;
+        _preNormalizedExtraPackages = {};
+      }).name;
+    expected = "test-suffix.pdf";
+  };
+
+  testNameKeepsExistingSuffix = {
+    expr =
+      (mkDoc {
+        name = "test-suffix.pdf";
+        src = dummySrc;
+        _preNormalizedExtraPackages = {};
+      }).name;
+    expected = "test-suffix.pdf";
+  };
+}

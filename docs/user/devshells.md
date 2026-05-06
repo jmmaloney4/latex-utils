@@ -55,11 +55,11 @@ When disabled, `config.devShells.latex-utils` will not include VS Code settings 
 
 ## Summary Table
 
-| Output                        | Description                                 |
-|-------------------------------|---------------------------------------------|
-| `config.latex-utils.unifiedTexShell` | Unified TeX environment (composable fragment) |
+| Output                               | Description                                                 |
+| ------------------------------------ | ----------------------------------------------------------- |
+| `config.latex-utils.unifiedTexShell` | Unified TeX environment (composable fragment)               |
 | `config.latex-utils.vscodeShell`     | TeX environment + VS Code integration (composable fragment) |
-| `config.devShells.latex-utils`       | Complete dev shell with VS Code integration |
-| `enableVSCode`                | Boolean flag to enable/disable integration  |
+| `config.devShells.latex-utils`       | Complete dev shell with VS Code integration                 |
+| `enableVSCode`                       | Boolean flag to enable/disable integration                  |
 
-See the main README and IDE integration guide for more details. 
+See the main README and IDE integration guide for more details.

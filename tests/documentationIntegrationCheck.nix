@@ -16,39 +16,40 @@
     '';
 
   # Helper to build a test flake with the correct system and self
-  mkTestExample = flakeModuleConfig:
-    let
-      flakeDef = {
-        inputs = {
-          nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-          flake-parts.url = "github:hercules-ci/flake-parts";
-        };
-        outputs = outputsArgs @ {
-          flake-parts,
-          nixpkgs,
-          ...
-        }:
-          flake-parts.lib.mkFlake {
-            # Override self.inputs to contain resolved flake objects.
-            # The raw self has URL-string inputs which crash when flake-parts
-            # computes inputs' (it iterates self.inputs expecting flake objects).
-            self = outputsArgs.self // {
-              inputs = { inherit (outputsArgs) nixpkgs flake-parts; };
-            };
-            inputs = {
-              inherit (outputsArgs) nixpkgs flake-parts;
-            };
-          } (flakeModuleConfig outputsArgs);
+  mkTestExample = flakeModuleConfig: let
+    flakeDef = {
+      inputs = {
+        nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+        flake-parts.url = "github:hercules-ci/flake-parts";
       };
-    in {
-      inherit flakeDef;
-      outputsArgs = {
-        self = flakeDef;
-        nixpkgs = inputs.nixpkgs;
-        flake-parts = inputs.flake-parts;
-        inherit system;
-      };
+      outputs = outputsArgs @ {
+        flake-parts,
+        nixpkgs,
+        ...
+      }:
+        flake-parts.lib.mkFlake {
+          # Override self.inputs to contain resolved flake objects.
+          # The raw self has URL-string inputs which crash when flake-parts
+          # computes inputs' (it iterates self.inputs expecting flake objects).
+          self =
+            outputsArgs.self
+            // {
+              inputs = {inherit (outputsArgs) nixpkgs flake-parts;};
+            };
+          inputs = {
+            inherit (outputsArgs) nixpkgs flake-parts;
+          };
+        } (flakeModuleConfig outputsArgs);
     };
+  in {
+    inherit flakeDef;
+    outputsArgs = {
+      self = flakeDef;
+      nixpkgs = inputs.nixpkgs;
+      flake-parts = inputs.flake-parts;
+      inherit system;
+    };
+  };
 
   # Test the quickstart example from README
   quickstartExample = mkTestExample (outputsArgs: {
@@ -173,9 +174,11 @@
       ...
     }:
       flake-parts.lib.mkFlake {
-        self = outputsArgs.self // {
-          inputs = { inherit (outputsArgs) nixpkgs flake-parts; };
-        };
+        self =
+          outputsArgs.self
+          // {
+            inputs = {inherit (outputsArgs) nixpkgs flake-parts;};
+          };
         inputs = {
           inherit (outputsArgs) nixpkgs flake-parts;
         };
@@ -187,7 +190,7 @@
   };
   testFlakeWithDocs = import ./test-flake-helpers.nix {
     flakeDef = inlineFlakeDef;
-    outputsArgs = testHarnessOutputsArgs // { self = inlineFlakeDef; };
+    outputsArgs = testHarnessOutputsArgs // {self = inlineFlakeDef;};
   };
 in {
   # Test: Quickstart example produces expected outputs

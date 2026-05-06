@@ -29,11 +29,13 @@
       # The raw `self` from `import ./flake.nix` has URL-string inputs,
       # which crash when flake-parts computes `inputs'` (it iterates
       # self.inputs and calls rootConfig.perInput on each entry).
-      self = self // {
-        inputs = {
-          inherit nixpkgs flake-parts latex-utils;
+      self =
+        self
+        // {
+          inputs = {
+            inherit nixpkgs flake-parts latex-utils;
+          };
         };
-      };
     } {
       systems = [system];
 

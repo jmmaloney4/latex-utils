@@ -17,6 +17,7 @@ For **Visual Studio Code** users, latex-utils automatically provides pre-configu
 ### Quick VSCode Setup
 
 **Option 1: Use the complete VS Code shell (Recommended)**
+
 ```nix
 perSystem = { config, ... }: {
   devShells.default = config.devShells.latex-utils;
@@ -24,6 +25,7 @@ perSystem = { config, ... }: {
 ```
 
 **Option 2: Compose your own shell with the fragments**
+
 ```nix
 perSystem = { config, pkgs, ... }: {
   devShells.default = pkgs.mkShell {
@@ -35,12 +37,14 @@ perSystem = { config, pkgs, ... }: {
   };
 };
 ```
+
 - Use only `unifiedTexShell` for a pure TeX environment (no VS Code integration).
 - Add `vscodeShell` to also get VS Code integration in your custom shell.
 
 ### Enabling/Disabling VS Code Integration
 
 By default, VS Code integration is enabled. To disable it (e.g., for CI):
+
 ```nix
 latex-utils.enableVSCode = false;
 ```
@@ -48,6 +52,7 @@ latex-utils.enableVSCode = false;
 When disabled, `config.devShells.latex-utils` will not include VS Code settings or shell hooks.
 
 ### Summary
+
 - Use `config.devShells.latex-utils` for out-of-the-box VS Code integration.
 - Use `config.latex-utils.unifiedTexShell` and `config.latex-utils.vscodeShell` for composable, editor-agnostic shells.
 - Control VS Code integration with `enableVSCode`.
@@ -141,6 +146,7 @@ The module creates a single TeX Live environment containing all packages from al
 ## IDE Configuration
 
 After entering the dev shell (`nix develop`), your IDE will have access to:
+
 - `latexmk` with all required packages
 - `lualatex`, `pdflatex`, `xelatex` with all fonts and packages
 - All TeX Live binaries and utilities
@@ -168,9 +174,9 @@ The system automatically discovers packages from:
 
 Some LaTeX packages require specific nixpkgs package names:
 
-| LaTeX Package | nixpkgs Package | Notes |
-|---------------|-----------------|-------|
+| LaTeX Package           | nixpkgs Package     | Notes                        |
+| ----------------------- | ------------------- | ---------------------------- |
 | `\usepackage{mathrsfs}` | `rsfs` + `jknapltx` | Need both font and interface |
-| `\usepackage{tikz}` | `pgf` | TikZ is part of PGF package |
+| `\usepackage{tikz}`     | `pgf`               | TikZ is part of PGF package  |
 
-The unified environment handles these mappings automatically when specified in `extraTexPackages`. 
+The unified environment handles these mappings automatically when specified in `extraTexPackages`.

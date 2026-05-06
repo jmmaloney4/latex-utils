@@ -1,4 +1,5 @@
 # ADR 013: Adopt Shared Nix/GitHub Actions Infrastructure Stack
+
 *Date:* 2026-04-15
 *Status:* proposed
 
@@ -112,13 +113,13 @@ Added:
 
 ### Reference repos
 
-| Repo | jackpkgs modules used | toolbox workflows used |
-|------|----------------------|----------------------|
-| garden | fmt, checks, python, nodejs, pulumi, quarto, just | nix, pulumi, claude, claude-review, adr-management |
-| jackpkgs | fmt, checks, just, pre-commit, shell, pulumi, quarto, python, nodejs | nix, claude, claude-review, adr-management |
-| toolbox | fmt, checks, nodejs | nix (dogfood), pnpm (dogfood), claude, claude-review, adr-management |
-| zeus | fmt, checks, python, nodejs, pulumi, quarto, just | nix, pulumi, rust, claude, claude-review, adr-management |
-| yard | fmt, checks, python, nodejs, pulumi, just | nix, pulumi, claude, claude-review, adr-management |
+| Repo     | jackpkgs modules used                                                | toolbox workflows used                                               |
+| -------- | -------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| garden   | fmt, checks, python, nodejs, pulumi, quarto, just                    | nix, pulumi, claude, claude-review, adr-management                   |
+| jackpkgs | fmt, checks, just, pre-commit, shell, pulumi, quarto, python, nodejs | nix, claude, claude-review, adr-management                           |
+| toolbox  | fmt, checks, nodejs                                                  | nix (dogfood), pnpm (dogfood), claude, claude-review, adr-management |
+| zeus     | fmt, checks, python, nodejs, pulumi, quarto, just                    | nix, pulumi, rust, claude, claude-review, adr-management             |
+| yard     | fmt, checks, python, nodejs, pulumi, just                            | nix, pulumi, claude, claude-review, adr-management                   |
 
 ## Supersedes / Dependencies
 
@@ -129,13 +130,13 @@ Added:
 
 ### Appendix A: Cross-repo Infrastructure Comparison
 
-| Dimension | garden | jackpkgs | toolbox | zeus | yard | latex-utils (current) |
-|-----------|--------|----------|---------|------|------|----------------------|
-| CI provider | GitHub Actions + toolbox | GitHub Actions + toolbox | GitHub Actions (dogfood) | GitHub Actions + toolbox | GitHub Actions + toolbox | garnix.io |
-| nixpkgs source | follows jackpkgs | pinned (nixpkgs#483584) | follows jackpkgs | follows jackpkgs | follows jackpkgs | nixos-unstable (independent) |
-| Formatter module | jackpkgs.fmt | jackpkgs.fmt | jackpkgs.fmt | jackpkgs.fmt | jackpkgs.fmt | inline treefmt-nix |
-| Pre-commit module | jackpkgs.pre-commit | jackpkgs.pre-commit | jackpkgs.pre-commit | jackpkgs.pre-commit | jackpkgs.pre-commit | inline git-hooks-nix |
-| nix-unit | no | yes (30+ tests) | no | no | no | yes (14 tests) |
-| Runner | self-hosted | self-hosted | self-hosted | runs-on SaaS | runs-on SaaS | garnix hosted |
-| Renovate | no | yes | yes (presets) | no | yes (toolbox presets) | no |
-| Flake update bot | yes (weekly) | no | no | no | no | no |
+| Dimension         | garden                   | jackpkgs                 | toolbox                  | zeus                     | yard                     | latex-utils (current)        |
+| ----------------- | ------------------------ | ------------------------ | ------------------------ | ------------------------ | ------------------------ | ---------------------------- |
+| CI provider       | GitHub Actions + toolbox | GitHub Actions + toolbox | GitHub Actions (dogfood) | GitHub Actions + toolbox | GitHub Actions + toolbox | garnix.io                    |
+| nixpkgs source    | follows jackpkgs         | pinned (nixpkgs#483584)  | follows jackpkgs         | follows jackpkgs         | follows jackpkgs         | nixos-unstable (independent) |
+| Formatter module  | jackpkgs.fmt             | jackpkgs.fmt             | jackpkgs.fmt             | jackpkgs.fmt             | jackpkgs.fmt             | inline treefmt-nix           |
+| Pre-commit module | jackpkgs.pre-commit      | jackpkgs.pre-commit      | jackpkgs.pre-commit      | jackpkgs.pre-commit      | jackpkgs.pre-commit      | inline git-hooks-nix         |
+| nix-unit          | no                       | yes (30+ tests)          | no                       | no                       | no                       | yes (14 tests)               |
+| Runner            | self-hosted              | self-hosted              | self-hosted              | runs-on SaaS             | runs-on SaaS             | garnix hosted                |
+| Renovate          | no                       | yes                      | yes (presets)            | no                       | yes (toolbox presets)    | no                           |
+| Flake update bot  | yes (weekly)             | no                       | no                       | no                       | no                       | no                           |

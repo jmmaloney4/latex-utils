@@ -71,14 +71,25 @@
 
   # Outputs with one document
   oneDocOut = mkOutputs {
-    documents = [{name = "thesis.pdf"; src = ./..;}];
+    documents = [
+      {
+        name = "thesis.pdf";
+        src = ./..;
+      }
+    ];
   };
 
   # Outputs with two documents
   twoDocOut = mkOutputs {
     documents = [
-      {name = "first.pdf"; src = ./..;}
-      {name = "second.pdf"; src = ./..;}
+      {
+        name = "first.pdf";
+        src = ./..;
+      }
+      {
+        name = "second.pdf";
+        src = ./..;
+      }
     ];
   };
 in {

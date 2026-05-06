@@ -1,11 +1,14 @@
 # ADR 012: Emoji Support via LuaLaTeX
+
 *Date:* 2026-01-08
 *Status:* proposed
 
 ## Context
+
 Users want emoji support in documents built with latex-utils. Current builds are
 Nix-sandboxed and rely on a prebuilt fontconfig cache derived from the TeX
 environment. This has a few constraints:
+
 - pdfLaTeX does not support Unicode emoji or color emoji fonts.
 - XeLaTeX can render some monochrome emoji but does not reliably handle modern
   color emoji fonts.
@@ -15,8 +18,10 @@ environment. This has a few constraints:
   explicitly to the fontconfig cache for reproducible output.
 
 ## Decision
+
 Adopt a LuaLaTeX-first solution that integrates the `emoji` package and makes
 emoji fonts available through a configurable font list:
+
 - Keep `lualatex` as the recommended engine for emoji rendering.
 - Document usage of the `emoji` package (and `\setemojifont{...}`) for authors.
 - Add a new option to supply external font derivations (e.g., `noto-fonts-emoji`)
@@ -25,6 +30,7 @@ emoji fonts available through a configurable font list:
   `extraTexPackages` behavior for consistency.
 
 ## Alternatives Considered
+
 1. **XeLaTeX only** - supports limited monochrome emoji; unreliable for color
    emoji fonts in TeX Live.
 2. **pdfLaTeX with image substitution** - works but requires manual image
@@ -33,6 +39,7 @@ emoji fonts available through a configurable font list:
    engine and provides the best color emoji support in TeX Live.
 
 ## Consequences
+
 - **Pros:**
   - Reproducible emoji rendering in Nix builds.
   - Matches the project default engine and avoids per-doc engine switches.
@@ -42,6 +49,7 @@ emoji fonts available through a configurable font list:
   - Adds additional build inputs (font packages) and cache cost.
 
 ## Technical Details
+
 - New options (names TBD):
   - `latex-utils.extraFonts` (module-level list of font derivations)
   - `latex-utils.documents[].extraFonts` (optional per-document list)
@@ -56,6 +64,7 @@ emoji fonts available through a configurable font list:
 ## Appendices
 
 ### Appendix A: Example LaTeX usage
+
 ```tex
 \usepackage{emoji}
 \setemojifont{Noto Color Emoji}
@@ -63,6 +72,7 @@ Hello \emoji{rocket} \emoji{sparkles}
 ```
 
 ### Appendix B: Example Nix configuration
+
 ```nix
 latex-utils.extraTexPackages = [ "emoji" ];
 latex-utils.extraFonts = [ pkgs.noto-fonts-emoji ];

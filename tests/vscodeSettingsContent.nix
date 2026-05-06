@@ -30,7 +30,8 @@
       inherit (texEnvironment) unifiedTexEnv ltexLsWrapped unifiedTexShell latexmkWrapper;
       inherit engine;
     };
-  in vscodeIntegration;
+  in
+    vscodeIntegration;
 
   vscodeDefault = mkVSCodeModules "lualatex";
   vscodeXelatex = mkVSCodeModules "xelatex";
@@ -179,7 +180,8 @@ in {
       overrideSettings = parseSettings (vscodeDefault.mkVSCodeSettings {
         "latex-workshop.latex.autoBuild.run" = "onFileChange";
       });
-    in overrideSettings."latex-workshop.latex.autoBuild.run";
+    in
+      overrideSettings."latex-workshop.latex.autoBuild.run";
     expected = "onFileChange";
   };
 
@@ -188,7 +190,8 @@ in {
       overrideSettings = parseSettings (vscodeDefault.mkVSCodeSettings {
         "custom-key" = "custom-value";
       });
-    in overrideSettings."custom-key" or null;
+    in
+      overrideSettings."custom-key" or null;
     expected = "custom-value";
   };
 
@@ -201,6 +204,9 @@ in {
       hasLtex = overrideSettings."ltex.language" or null == "en-US";
       hasCustom = overrideSettings."custom-key" or null == "custom-value";
     };
-    expected = {hasLtex = true; hasCustom = true;};
+    expected = {
+      hasLtex = true;
+      hasCustom = true;
+    };
   };
 }
