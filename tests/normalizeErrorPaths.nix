@@ -9,12 +9,19 @@
 }: let
   normalizeHelpers = import ../lib/normalizeExtraTexPackages.nix {inherit pkgs lib;};
 in {
-  # NOTE: This test is removed because normalizeExtraTexPackages has a bug:
-  # its error message uses `toString items` which fails with "cannot coerce
-  # a set to a string" before the throw, and this error is not catchable by
-  # builtins.tryEval. See line 207 of normalizeExtraTexPackages.nix.
-  #
-  # testNonPackageAttrsetInListThrows = ...
+  # Test: A list starting with a plain attrset (not a derivation, not TeX Live)
+  # should throw a catchable error. Previously this crashed uncatchably because
+  # the error message used toString on the list, which fails on attrsets.
+  testNonPackageAttrsetInListThrows = {
+    expr = let
+      result = builtins.tryEval (normalizeHelpers.normalizeExtraTexPackages {
+        extraTexPackages = [{someKey = "someValue";}];
+        discoveredPackages = {};
+      });
+    in
+      result.success;
+    expected = false;
+  };
 
   # Test: A list starting with an integer should throw
   testIntegerInListThrows = {
@@ -68,4 +75,29 @@ in {
   # does not validate that string package names exist in pkgs.texlive. Missing
   # names produce null values silently via pkgs.texlive.${name}. A future
   # improvement could add validation.
+
+  # Test: A plain attrset (not a list or function) should throw catchably.
+  # Previously crashed uncatchably due to toString on the attrset.
+  testAttrsetExtraTexPackagesThrows = {
+    expr = let
+      result = builtins.tryEval (normalizeHelpers.normalizeExtraTexPackages {
+        extraTexPackages = {amsmath = pkgs.texlive.amsmath;};
+        discoveredPackages = {};
+      });
+    in
+      result.success;
+    expected = false;
+  };
+
+  # Test: A function returning a non-list (attrset) should throw catchably.
+  testFunctionReturningAttrsetThrows = {
+    expr = let
+      result = builtins.tryEval (normalizeHelpers.normalizeExtraTexPackages {
+        extraTexPackages = _: {amsmath = pkgs.texlive.amsmath;};
+        discoveredPackages = {};
+      });
+    in
+      result.success;
+    expected = false;
+  };
 }
