@@ -158,6 +158,22 @@
           packages
         );
 
+      # Safe string representation for error messages.
+      # toString crashes on attrsets ("cannot coerce a set to a string") with
+      # an uncatchable type error, so we use typeOf + truncated JSON instead.
+      safeDescribe = val:
+        if builtins.isAttrs val
+        then let
+          json = builtins.toJSON val;
+          preview = builtins.substring 0 100 json;
+          ellipsis = if builtins.stringLength json > 100 then "..." else "";
+        in "attrset: ${preview}${ellipsis}"
+        else if builtins.isList val
+        then "list(${toString (builtins.length val)} items)"
+        else if builtins.isFunction val
+        then "function"
+        else toString val;
+
       # Helper to determine what type of list we have and convert appropriately
       # This implements the homogeneous type checking mentioned in the analysis
       convertList = items:
@@ -204,7 +220,7 @@
                 nix eval --impure --expr 'with import <nixpkgs> {}; builtins.hasAttr "pkgs" texlive.amsfonts'
                 Should return: true (modern) or false (legacy)
               ''
-            else throw "extraTexPackages list items must be strings, derivations, or TeX Live package objects, got: ${builtins.typeOf firstItem} for the first item. Full list: ${toString items}";
+            else throw "extraTexPackages list items must be strings, derivations, or TeX Live package objects, got: ${builtins.typeOf firstItem} for the first item (${safeDescribe firstItem})";
     in
       if lib.isList extraTexPackages
       then convertList extraTexPackages
@@ -217,6 +233,6 @@
         in
           if lib.isList result
           then convertList result
-          else throw "extraTexPackages was a function, but it did not return a list. Instead, it returned a ${builtins.typeOf result}. Value: ${toString result}"
-      else throw "extraTexPackages must be a list or function, but it is a ${builtins.typeOf extraTexPackages}. Value: ${toString extraTexPackages}";
+          else throw "extraTexPackages was a function, but it did not return a list. Instead, it returned a ${builtins.typeOf result} (${safeDescribe result})"
+      else throw "extraTexPackages must be a list or function, but it is a ${builtins.typeOf extraTexPackages} (${safeDescribe extraTexPackages})";
 }

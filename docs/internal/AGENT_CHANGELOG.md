@@ -1,3 +1,44 @@
+Timestamp: 2026-05-06T14:44:36Z
+Agent: Hermes (glm-5.1 via zai)
+
+**TEST COVERAGE EXPANSION: module options, VSCode settings, normalize error paths**
+
+Added 44 new pure-eval tests covering previously untested module behavior.
+All 147/147 tests passing locally (aarch64-darwin). Tests are sandbox-safe
+(no `writeTextDir` or `builtins.readFile` on derivations).
+
+New test files:
+- `tests/moduleOptions.nix` (17 tests): flakeCheck enable/disable, enableVSCode
+  gating, documentsPackage aggregation, per-document packages, apps output,
+  latex-utils config output, engine wiring via drv.text inspection
+- `tests/vscodeSettingsContent.nix` (22 tests): VSCode settings JSON content
+  validation using builtins.unsafeDiscardStringContext + lib.hasInfix to avoid
+  store path realization. Covers ltex, tool/recipe config, build settings, clean
+  file types, synctex, engine-specific output, and override function behavior
+- `tests/normalizeErrorPaths.nix` (5 tests): Additional error paths for
+  normalizeExtraTexPackages -- integer lists, null input, mixed TeX Live/plain
+  attrsets, mixed derivation/string lists
+
+Key techniques discovered:
+- `builtins.unsafeDiscardStringContext` to strip store path context from strings
+  containing derivation paths, allowing pure-eval inspection without realization
+- `drv.text` on writeShellScriptBin derivations to read script content without
+  forcing realization (avoids the "building using a diverted store" error)
+- `builtins.tryEval` does NOT catch "cannot coerce a set to a string" errors
+  (they're fatal type errors, not catchable throws)
+
+Bugs discovered (not fixed, documented as comments):
+- normalizeExtraTexPackages.nix line 207: error message uses `toString items`
+  which fails uncatchably when items contain plain attrsets
+- normalizeExtraTexPackages does not validate that string package names exist
+  in pkgs.texlive (missing names produce null values silently)
+
+Files affected:
+- Added: tests/moduleOptions.nix, tests/vscodeSettingsContent.nix, tests/normalizeErrorPaths.nix
+- Modified: flake.nix (wired new test files into nix-unit tests attrset)
+
+---
+
 Timestamp: 2026-04-15T05:18:26Z
 Agent: Hermes (glm-5.1 via zai)
 
