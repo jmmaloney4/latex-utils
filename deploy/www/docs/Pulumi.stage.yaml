@@ -1,0 +1,2 @@
+secretsprovider: gcpkms://projects/jmmaloney4-admin/locations/us-east5/keyRings/pulumi-secrets-ring/cryptoKeys/pulumi-secrets-key
+encryptedkey: CiQAoFemkSJ4aMEBNBbxuegThtXGIV83oxIcOGu2GhGFg9jE9zESSQBOrJCQ1ZRVjc3PX9W8gGj+VF9ogipysGbgB2+2KO7uQktJr7mGHpQhjnaggYaVbdzV2SEk1qUUBmyEOKEgG6TP9YcqgeuE3V0=

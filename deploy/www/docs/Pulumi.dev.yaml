@@ -2,3 +2,4 @@ secretsprovider: gcpkms://projects/jmmaloney4-admin/locations/us-east5/keyRings/
 config:
   latex-utils-docs:environment: dev
   latex-utils-docs:domain: docs-dev.latex-utils.jmmaloney4.xyz
+encryptedkey: CiQAoFemkXayzC9KnrxxJxXBp0205mQGf02PrIWesLKTCRDIDwwSSQBOrJCQd1DDxGCkCtwOu0FXbae1+wU6Xp+uwRlAqqvTg/hLRDGZybOa9OM99nvuQKBnkuB+ZqckeLe1dqSFcWxHEV4Pl1octVg=
