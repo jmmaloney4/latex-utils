@@ -39,7 +39,7 @@
       ];
       jackpkgs = {
         # Node.js module requires pnpm-lock.yaml + pnpmDepsHash.
-        # Enable after running `pnpm install` in deploy/www/latex-utils-docs/
+        # Enable after running `pnpm install` at repo root
         # and setting the hash from the nix build error message.
         nodejs.enable = false;
 
@@ -49,7 +49,7 @@
           secretsProvider = "gcpkms://projects/jmmaloney4-admin/locations/us-east5/keyRings/pulumi-secrets-ring/cryptoKeys/pulumi-secrets-key";
           stacks = [
             {
-              path = "deploy/www/latex-utils-docs";
+              path = "deploy/www/docs";
               stacks = ["dev" "prod"];
             }
           ];
