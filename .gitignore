@@ -3,3 +3,5 @@ result
 .pre-commit-config.yaml
 node_modules/
 package-lock.json
+just-flake.just
+.worktrees/

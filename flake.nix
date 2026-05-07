@@ -38,10 +38,10 @@
         # and published as outputs.modules.flake.latex-utils
       ];
       jackpkgs = {
-        # Node.js module requires pnpm-lock.yaml + pnpmDepsHash.
-        # Enable after running `pnpm install` at repo root
-        # and setting the hash from the nix build error message.
-        nodejs.enable = false;
+        nodejs = {
+          enable = true;
+          pnpmDepsHash = "sha256-683UtcJPkqZgaLgRgQUcjsK2YaelsAXy1MPbdaQQakk=";
+        };
 
         pulumi = {
           enable = true;
