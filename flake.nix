@@ -39,9 +39,7 @@
       ];
       jackpkgs = {
         checks = {
-          # No root-level TypeScript or test suite — the only TS is in
-          # deploy/www/docs/ (Pulumi deploy, type-checked in its CI devshell).
-          typescript.tsc.enable = false;
+          # No JS/TS test suite in this project — only a Pulumi deploy script.
           vitest.enable = false;
         };
         nodejs = {

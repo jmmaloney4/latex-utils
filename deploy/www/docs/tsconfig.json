@@ -1,14 +1,14 @@
 {
-	"compilerOptions": {
-		"target": "esnext",
-		"module": "NodeNext",
-		"moduleResolution": "NodeNext",
-		"strict": true,
-		"verbatimModuleSyntax": true,
-		"erasableSyntaxOnly": true,
-		"noEmit": true,
-		"allowImportingTsExtensions": true,
-		"skipLibCheck": true
-	},
-	"files": ["index.ts"]
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true
+  },
+  "files": ["index.ts"]
 }
