@@ -38,6 +38,12 @@
         # and published as outputs.modules.flake.latex-utils
       ];
       jackpkgs = {
+        checks = {
+          # No root-level TypeScript or test suite — the only TS is in
+          # deploy/www/docs/ (Pulumi deploy, type-checked in its CI devshell).
+          typescript.tsc.enable = false;
+          vitest.enable = false;
+        };
         nodejs = {
           enable = true;
           pnpmDepsHash = "sha256-LBi1+JnE44oTqXkNyNOE3+VI1j0AoRbI3HiNvTPcGVI=";
