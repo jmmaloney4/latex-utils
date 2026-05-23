@@ -70,22 +70,19 @@
   unifiedAdditionalPackages =
     moduleExtraPackagesNormalized // allDiscoveredPackages // allExtraPackagesAttrs;
 
-  # Create unified TeX Live environment like the module does
+  # Minimal base set for testing aggregation and combine logic.
+  # Heavy packages (biblatex, biber, luaotfload, fontspec, lm, cm, ec,
+  # tex-gyre) are intentionally omitted — they bloat the transitive closure
+  # and can OOM the eval process in CI runners with limited memory.
+  # The tests here validate set operations and combine-derivation structure,
+  # not TeX functionality, so light packages suffice.
   unifiedTexPackages =
     {
       inherit
         (pkgs.texlive)
         latex-bin
         latexmk
-        biblatex
-        biber
-        csquotes
-        luaotfload
-        fontspec
-        lm
-        cm
-        ec
-        tex-gyre
+        xcolor
         ;
       scheme = pkgs.texlive.scheme-basic;
     }
