@@ -38,9 +38,13 @@
         # and published as outputs.modules.flake.latex-utils
       ];
       jackpkgs = {
+        checks = {
+          # No JS/TS test suite in this project — only a Pulumi deploy script.
+          vitest.enable = false;
+        };
         nodejs = {
           enable = true;
-          pnpmDepsHash = "sha256-683UtcJPkqZgaLgRgQUcjsK2YaelsAXy1MPbdaQQakk=";
+          pnpmDepsHash = "sha256-LBi1+JnE44oTqXkNyNOE3+VI1j0AoRbI3HiNvTPcGVI=";
         };
 
         pulumi = {
