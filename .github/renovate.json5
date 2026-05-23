@@ -1,5 +1,6 @@
 {
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   extends: [
-    "github>jmmaloney4/sector7//renovate/all.json"
-  ]
+    'github>jmmaloney4/sector7//renovate/all.json',
+  ],
 }
