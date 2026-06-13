@@ -16,3 +16,9 @@ jobs:
       runs-on: self-hosted
       repository: ${{ github.repository }}
       ref: ${{ github.ref }}
+      binary-cache-url: ${{ vars.ATTIC_CACHE_URL }}
+      binary-cache-public-key: ${{ vars.ATTIC_CACHE_PUBLIC_KEY }}
+      binary-cache-endpoint: ${{ vars.ATTIC_SERVER_URL }}
+      binary-cache-name: ${{ vars.ATTIC_CACHE_NAME }}
+    secrets:
+      BINARY_CACHE_TOKEN: ${{ secrets.ATTIC_CACHE_TOKEN }}
