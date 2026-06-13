@@ -11,8 +11,17 @@ permissions:
   packages: write
 jobs:
   nix:
-    uses: jmmaloney4/sector7/.github/workflows/nix.yml@main
+    uses: jmmaloney4/sector7/.github/workflows/nix.yml@f3b121ecadfc01ec2c49907322dc2b4c24e80a8e # main
     with:
       runs-on: self-hosted
       repository: ${{ github.repository }}
       ref: ${{ github.ref }}
+      binary-cache-url: ${{ vars.ATTIC_CACHE_URL }}
+      binary-cache-public-key: ${{ vars.ATTIC_CACHE_PUBLIC_KEY }}
+      binary-cache-endpoint: ${{ vars.ATTIC_SERVER_URL }}
+      binary-cache-name: ${{ vars.ATTIC_CACHE_NAME }}
+    secrets:
+      # Forward the push-capable cache token only on trusted events (push,
+      # workflow_dispatch). PR runs read from the cache via the substituter
+      # but cannot push.
+      BINARY_CACHE_TOKEN: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && secrets.ATTIC_CACHE_TOKEN || '' }}
