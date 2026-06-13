@@ -11,7 +11,7 @@ permissions:
   packages: write
 jobs:
   nix:
-    uses: jmmaloney4/sector7/.github/workflows/nix.yml@main
+    uses: jmmaloney4/sector7/.github/workflows/nix.yml@f3b121ecadfc01ec2c49907322dc2b4c24e80a8e # main
     with:
       runs-on: self-hosted
       repository: ${{ github.repository }}
@@ -21,4 +21,6 @@ jobs:
       binary-cache-endpoint: ${{ vars.ATTIC_SERVER_URL }}
       binary-cache-name: ${{ vars.ATTIC_CACHE_NAME }}
     secrets:
-      BINARY_CACHE_TOKEN: ${{ secrets.ATTIC_CACHE_TOKEN }}
+      # Only forward the push-capable cache token on trusted events so PR runs
+      # can read from the cache but not push to it.
+      BINARY_CACHE_TOKEN: ${{ github.event_name == 'push' && secrets.ATTIC_CACHE_TOKEN || '' }}
