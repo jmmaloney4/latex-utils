@@ -44,7 +44,7 @@
         };
         nodejs = {
           enable = true;
-          pnpmDepsHash = "sha256-LBi1+JnE44oTqXkNyNOE3+VI1j0AoRbI3HiNvTPcGVI=";
+          pnpmDepsHash = "sha256-OWd3e4BBWJBCmZBNz1MWxcpl6GDFElZKAWUsp+eg1rA=";
         };
 
         pulumi = {
