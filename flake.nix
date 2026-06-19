@@ -42,6 +42,14 @@
           # No JS/TS test suite in this project — only a Pulumi deploy script.
           vitest.enable = false;
         };
+
+        # Per-project gcloud profile isolation (ADR 027). This repo deploys to
+        # GCP via Pulumi (GCS state + KMS under jmmaloney4-admin), so pin its
+        # gcloud state to ~/.config/gcloud-profiles/jmmaloney4 via CLOUDSDK_CONFIG
+        # to prevent ADC/account cross-talk when switching between repos. No
+        # iamOrg is set here, so the profile must be specified explicitly.
+        gcp.profile = "jmmaloney4";
+
         nodejs = {
           enable = true;
           pnpmDepsHash = "sha256-OWd3e4BBWJBCmZBNz1MWxcpl6GDFElZKAWUsp+eg1rA=";
