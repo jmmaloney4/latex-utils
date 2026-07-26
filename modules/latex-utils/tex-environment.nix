@@ -4,29 +4,34 @@
   unifiedAdditionalPackages,
   engine ? "lualatex",
 }: let
-  # Create unified TeX Live environment with all packages (including base packages)
-  unifiedTexPackages =
-    {
-      inherit
-        (pkgs.texlive)
-        latex-bin
-        latexmk
-        latexindent
-        biblatex
-        biber
-        csquotes
-        luaotfload
-        fontspec
-        lm
-        cm
-        ec
-        tex-gyre
-        ;
-      scheme = pkgs.texlive.scheme-basic;
-    }
-    // unifiedAdditionalPackages;
+  # Build the unified TeX Live environment using the withPackages API.
+  # texlive.combine is deprecated and will be removed in Nixpkgs 27.05
+  # (see https://nixos.org/manual/nixpkgs/stable/#sec-language-texlive-user-guide).
+  # We keep scheme-basic as the base scheme and add the base toolchain packages
+  # plus any module/discovered packages.
+  texlivePackagesList = let
+    # Base scheme + minimal toolchain for LaTeX document building
+    basePackages = [
+      pkgs.texlive.scheme-basic
+      pkgs.texlive.latex-bin
+      pkgs.texlive.latexmk
+      pkgs.texlive.latexindent
+      pkgs.texlive.biblatex
+      pkgs.texlive.biber
+      pkgs.texlive.csquotes
+      pkgs.texlive.luaotfload
+      pkgs.texlive.fontspec
+      pkgs.texlive.lm
+      pkgs.texlive.cm
+      pkgs.texlive.ec
+      pkgs.texlive.tex-gyre
+    ];
+    # Additional packages from module/discovered (as a list)
+    additionalPackages = builtins.attrValues unifiedAdditionalPackages;
+  in
+    basePackages ++ additionalPackages;
 
-  unifiedTexEnv = pkgs.texlive.combine unifiedTexPackages;
+  unifiedTexEnv = pkgs.texlive.withPackages (_: texlivePackagesList);
 
   # Wrap ltex-ls to only see the unified TeX Live binaries
   ltexLsWrapped = pkgs.writeShellScriptBin "ltex-ls" ''

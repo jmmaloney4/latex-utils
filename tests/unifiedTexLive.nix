@@ -1,7 +1,7 @@
 # Tests for unified TeX Live environment construction
 #
 # Validates that discovered and explicit packages are correctly aggregated
-# and that the unified TeX Live environment (texlive.combine) is properly
+# and that the unified TeX Live environment (texlive.withPackages) is properly
 # constructed. Pure eval -- no filesystem access.
 #
 # Source scanning uses findLatexPackages directly with string content.
@@ -46,11 +46,11 @@
   # Explicit extra packages
   extraPackagesAttrs = {inherit jknapltx xcolor;};
 
-  # Minimal base set for testing aggregation and combine logic.
+  # Minimal base set for testing aggregation and withPackages logic.
   # Heavy packages (biblatex, biber, luaotfload, fontspec, lm, cm, ec,
   # tex-gyre) are intentionally omitted — they bloat the transitive closure
   # and can OOM the eval process in CI runners with limited memory.
-  # The tests here validate set operations and combine-derivation structure,
+  # The tests here validate set operations and withPackages-derivation structure,
   # not TeX functionality, so light packages suffice.
   allPackages =
     {
@@ -65,7 +65,18 @@
     // allDiscovered
     // extraPackagesAttrs;
 
-  unifiedTexEnv = pkgs.texlive.combine allPackages;
+  texlivePackagesList = let
+    basePackages = [
+      pkgs.texlive.scheme-basic
+      pkgs.texlive.latex-bin
+      pkgs.texlive.latexmk
+    ];
+    # Additional packages from discovered and explicit (as a list)
+    additionalPackages = builtins.attrValues (allDiscovered // extraPackagesAttrs);
+  in
+    basePackages ++ additionalPackages;
+
+  unifiedTexEnv = pkgs.texlive.withPackages (_: texlivePackagesList);
 
   # Helpers
   hasPackage = name: builtins.hasAttr name allPackages;
@@ -122,8 +133,9 @@ in {
   };
 
   testUnifiedEnvironmentName = {
-    expr = unifiedTexEnv.name or "";
-    expected = "texlive-combined-2025";
+    # withPackages produces a name like "texlive-2025-r<N>-final-env"
+    expr = lib.strings.hasPrefix "texlive-" (unifiedTexEnv.name or "") && lib.strings.hasSuffix "-env" (unifiedTexEnv.name or "");
+    expected = true;
   };
 
   # --- Latexmk wrapper ---
@@ -148,7 +160,7 @@ in {
     expected = "latexmk";
   };
 
-  # NOTE: We do NOT test mkDoc with a full texlive.combine here because the
+  # NOTE: We do NOT test mkDoc with a full texlive.withPackages here because the
   # library function's default base set (biblatex, biber, luaotfload, fontspec,
   # lm, cm, ec, tex-gyre) creates a massive transitive closure that OOMs CI
   # runners with limited memory. The mkDoc integration is validated by the

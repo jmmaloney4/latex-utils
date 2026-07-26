@@ -70,11 +70,11 @@
   unifiedAdditionalPackages =
     moduleExtraPackagesNormalized // allDiscoveredPackages // allExtraPackagesAttrs;
 
-  # Minimal base set for testing aggregation and combine logic.
+  # Minimal base set for testing aggregation and withPackages logic.
   # Heavy packages (biblatex, biber, luaotfload, fontspec, lm, cm, ec,
   # tex-gyre) are intentionally omitted — they bloat the transitive closure
   # and can OOM the eval process in CI runners with limited memory.
-  # The tests here validate set operations and combine-derivation structure,
+  # The tests here validate set operations and withPackages-derivation structure,
   # not TeX functionality, so light packages suffice.
   unifiedTexPackages =
     {
@@ -88,7 +88,17 @@
     }
     // unifiedAdditionalPackages;
 
-  unifiedTexEnv = pkgs.texlive.combine unifiedTexPackages;
+  texlivePackagesList = let
+    basePackages = [
+      pkgs.texlive.scheme-basic
+      pkgs.texlive.latex-bin
+      pkgs.texlive.latexmk
+    ];
+    additionalPackages = builtins.attrValues unifiedAdditionalPackages;
+  in
+    basePackages ++ additionalPackages;
+
+  unifiedTexEnv = pkgs.texlive.withPackages (_: texlivePackagesList);
 
   # Expected packages that should be in the unified environment
   expectedDocumentPackages = ["enumitem" "algorithms" "tikzposter"];
@@ -115,15 +125,15 @@ in {
     expected = ["algorithms" "amsmath" "enumitem"];
   };
 
-  # Test: Check if the final unified TeX Live environment (pkgs.texlive.combine result) is a buildable derivation.
+  # Test: Check if the final unified TeX Live environment (pkgs.texlive.withPackages result) is a buildable derivation.
   # Purpose: Ensures that the assembled TeX Live environment with all packages is valid and can be built.
   testUnifiedTexEnvBuilds = {
     expr = builds unifiedTexEnv;
     expected = true;
   };
 
-  # Test: Check if all expected document-level packages are present in the final 'unifiedTexPackages' attrset used for pkgs.texlive.combine.
-  # Purpose: Verifies that document-specific packages are correctly included in the inputs to the final TeX environment combination.
+  # Test: Check if all expected document-level packages are present in the final 'unifiedTexPackages' attrset used for the TeX environment.
+  # Purpose: Verifies that document-specific packages are correctly included in the inputs to the final TeX environment.
   testUnifiedTexEnvContainsDocumentPackages = {
     expr = let
       hasPackage = pkg: builtins.hasAttr pkg unifiedTexPackages;
