@@ -132,27 +132,33 @@ with lib; let
       });
 
   allPackages =
-    [
-      scheme
-      pkgs.texlive.latex-bin
-      pkgs.texlive.latexmk
-      pkgs.texlive.biblatex
-      pkgs.texlive.biber
-      pkgs.texlive.csquotes
-      pkgs.texlive.luaotfload
-      pkgs.texlive.fontspec
-      pkgs.texlive.lm
-      pkgs.texlive.cm
-      pkgs.texlive.ec
-      pkgs.texlive.tex-gyre
-    ]
-    ++ (builtins.attrValues discovered)
-    ++ (builtins.attrValues texPackages)
-    ++ (builtins.attrValues extraTexPackagesAttrs);
+    {
+      inherit scheme;
+      inherit
+        (pkgs.texlive)
+        latex-bin
+        latexmk
+        biblatex
+        biber
+        csquotes
+        luaotfload
+        fontspec
+        lm
+        cm
+        ec
+        tex-gyre
+        ;
+    }
+    // discovered
+    // texPackages
+    // extraTexPackagesAttrs;
 
   # texlive.combine is deprecated and will be removed in Nixpkgs 27.05
   # (see https://nixos.org/manual/nixpkgs/stable/#sec-language-texlive-user-guide).
-  texEnv = pkgs.texlive.withPackages (_: allPackages);
+  # Merge the package attrsets with // before flattening to a list so that the
+  # rightmost source wins for overlapping keys (matching the pre-migration
+  # combine semantics), instead of including both and producing conflicts.
+  texEnv = pkgs.texlive.withPackages (_: builtins.attrValues allPackages);
 
   getExe = pkgs.lib.getExe;
   getExe' = pkgs.lib.getExe';

@@ -88,15 +88,11 @@
     }
     // unifiedAdditionalPackages;
 
-  texlivePackagesList = let
-    basePackages = [
-      pkgs.texlive.scheme-basic
-      pkgs.texlive.latex-bin
-      pkgs.texlive.latexmk
-    ];
-    additionalPackages = builtins.attrValues unifiedAdditionalPackages;
-  in
-    basePackages ++ additionalPackages;
+  # Convert the merged attrset to a list for withPackages.
+  # The // merge above ensures unifiedAdditionalPackages wins for overlapping
+  # keys, matching the pre-migration combine semantics, instead of including
+  # both and producing conflicting derivations.
+  texlivePackagesList = builtins.attrValues unifiedTexPackages;
 
   unifiedTexEnv = pkgs.texlive.withPackages (_: texlivePackagesList);
 
@@ -132,11 +128,23 @@ in {
     expected = true;
   };
 
-  # Test: Check if all expected document-level packages are present in the final 'unifiedTexPackages' attrset used for the TeX environment.
-  # Purpose: Verifies that document-specific packages are correctly included in the inputs to the final TeX environment.
+  # Test: Check if all expected document-level packages are present in the actual
+  # list passed to pkgs.texlive.withPackages.
+  # Purpose: Verifies that document-specific packages are correctly included in
+  # the inputs to the final TeX environment. Tests texlivePackagesList (the real
+  # withPackages input) rather than the intermediate unifiedTexPackages attrset,
+  # so the test stays coupled to the migrated behavior.
   testUnifiedTexEnvContainsDocumentPackages = {
     expr = let
-      hasPackage = pkg: builtins.hasAttr pkg unifiedTexPackages;
+      # Extract a comparable name from each package entry.
+      # TeX Live package objects have a `pkgs` list (use head's pname).
+      # Plain derivations have `pname` directly.
+      packageName = pkg:
+        if builtins.hasAttr "pkgs" pkg
+        then (builtins.head pkg.pkgs).pname
+        else pkg.pname or (pkg.name or "");
+      packageNames = map packageName texlivePackagesList;
+      hasPackage = pkg: builtins.elem pkg packageNames;
     in
       lib.all hasPackage expectedDocumentPackages;
     expected = true;

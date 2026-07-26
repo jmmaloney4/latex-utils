@@ -9,27 +9,36 @@
   # (see https://nixos.org/manual/nixpkgs/stable/#sec-language-texlive-user-guide).
   # We keep scheme-basic as the base scheme and add the base toolchain packages
   # plus any module/discovered packages.
+  #
+  # Packages are merged as an attrset first (//) and only converted to a list
+  # at the end. This preserves the pre-migration override precedence: if
+  # unifiedAdditionalPackages contains a package that also appears in the base
+  # set, the additional one wins instead of both being included (which would
+  # produce conflicting derivations in withPackages).
   texlivePackagesList = let
     # Base scheme + minimal toolchain for LaTeX document building
-    basePackages = [
-      pkgs.texlive.scheme-basic
-      pkgs.texlive.latex-bin
-      pkgs.texlive.latexmk
-      pkgs.texlive.latexindent
-      pkgs.texlive.biblatex
-      pkgs.texlive.biber
-      pkgs.texlive.csquotes
-      pkgs.texlive.luaotfload
-      pkgs.texlive.fontspec
-      pkgs.texlive.lm
-      pkgs.texlive.cm
-      pkgs.texlive.ec
-      pkgs.texlive.tex-gyre
-    ];
-    # Additional packages from module/discovered (as a list)
-    additionalPackages = builtins.attrValues unifiedAdditionalPackages;
+    basePackages = {
+      inherit
+        (pkgs.texlive)
+        latex-bin
+        latexmk
+        latexindent
+        biblatex
+        biber
+        csquotes
+        luaotfload
+        fontspec
+        lm
+        cm
+        ec
+        tex-gyre
+        ;
+      scheme = pkgs.texlive.scheme-basic;
+    };
+    # unifiedAdditionalPackages overrides base packages for overlapping keys
+    allPackages = basePackages // unifiedAdditionalPackages;
   in
-    basePackages ++ additionalPackages;
+    builtins.attrValues allPackages;
 
   unifiedTexEnv = pkgs.texlive.withPackages (_: texlivePackagesList);
 

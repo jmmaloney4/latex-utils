@@ -65,16 +65,10 @@
     // allDiscovered
     // extraPackagesAttrs;
 
-  texlivePackagesList = let
-    basePackages = [
-      pkgs.texlive.scheme-basic
-      pkgs.texlive.latex-bin
-      pkgs.texlive.latexmk
-    ];
-    # Additional packages from discovered and explicit (as a list)
-    additionalPackages = builtins.attrValues (allDiscovered // extraPackagesAttrs);
-  in
-    basePackages ++ additionalPackages;
+  # Convert the merged attrset to a list for withPackages.
+  # The // merge above ensures that extraPackagesAttrs wins for overlapping keys
+  # (e.g., xcolor), matching the pre-migration combine semantics.
+  texlivePackagesList = builtins.attrValues allPackages;
 
   unifiedTexEnv = pkgs.texlive.withPackages (_: texlivePackagesList);
 
