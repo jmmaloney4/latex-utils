@@ -153,7 +153,12 @@ with lib; let
     // texPackages
     // extraTexPackagesAttrs;
 
-  texEnv = pkgs.texlive.combine allPackages;
+  # texlive.combine is deprecated and will be removed in Nixpkgs 27.05
+  # (see https://nixos.org/manual/nixpkgs/stable/#sec-language-texlive-user-guide).
+  # Merge the package attrsets with // before flattening to a list so that the
+  # rightmost source wins for overlapping keys (matching the pre-migration
+  # combine semantics), instead of including both and producing conflicts.
+  texEnv = pkgs.texlive.withPackages (_: builtins.attrValues allPackages);
 
   getExe = pkgs.lib.getExe;
   getExe' = pkgs.lib.getExe';

@@ -30,11 +30,13 @@
   # Helper: check that a value is a derivation
   isDeriv = x: lib.isDerivation x;
 
-  # Helper: check derivation has texlive-combined in nativeBuildInputs
+  # Helper: check derivation has the texlive environment in nativeBuildInputs.
+  # withPackages produces a name like "texlive-2025-r<N>-final-env" (previously
+  # "texlive-combined-2025" under the deprecated texlive.combine API).
   hasTexLiveCombined = drv:
     builtins.any (
       input:
-        lib.strings.hasPrefix "texlive-combined" (input.name or "")
+        lib.strings.hasPrefix "texlive-" (input.name or "") && lib.strings.hasSuffix "-env" (input.name or "")
     ) (drv.nativeBuildInputs or []);
 in {
   # --- Basic derivation construction ---

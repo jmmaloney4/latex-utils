@@ -4,9 +4,20 @@
   unifiedAdditionalPackages,
   engine ? "lualatex",
 }: let
-  # Create unified TeX Live environment with all packages (including base packages)
-  unifiedTexPackages =
-    {
+  # Build the unified TeX Live environment using the withPackages API.
+  # texlive.combine is deprecated and will be removed in Nixpkgs 27.05
+  # (see https://nixos.org/manual/nixpkgs/stable/#sec-language-texlive-user-guide).
+  # We keep scheme-basic as the base scheme and add the base toolchain packages
+  # plus any module/discovered packages.
+  #
+  # Packages are merged as an attrset first (//) and only converted to a list
+  # at the end. This preserves the pre-migration override precedence: if
+  # unifiedAdditionalPackages contains a package that also appears in the base
+  # set, the additional one wins instead of both being included (which would
+  # produce conflicting derivations in withPackages).
+  texlivePackagesList = let
+    # Base scheme + minimal toolchain for LaTeX document building
+    basePackages = {
       inherit
         (pkgs.texlive)
         latex-bin
@@ -23,10 +34,13 @@
         tex-gyre
         ;
       scheme = pkgs.texlive.scheme-basic;
-    }
-    // unifiedAdditionalPackages;
+    };
+    # unifiedAdditionalPackages overrides base packages for overlapping keys
+    allPackages = basePackages // unifiedAdditionalPackages;
+  in
+    builtins.attrValues allPackages;
 
-  unifiedTexEnv = pkgs.texlive.combine unifiedTexPackages;
+  unifiedTexEnv = pkgs.texlive.withPackages (_: texlivePackagesList);
 
   # Wrap ltex-ls to only see the unified TeX Live binaries
   ltexLsWrapped = pkgs.writeShellScriptBin "ltex-ls" ''
