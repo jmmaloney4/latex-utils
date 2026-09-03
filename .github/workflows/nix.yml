@@ -11,7 +11,7 @@ permissions:
   packages: write
 jobs:
   nix:
-    uses: jmmaloney4/sector7/.github/workflows/nix.yml@eb04d160064951f36d4857e4052cce94ff30dda2 # main
+    uses: jmmaloney4/sector7/.github/workflows/nix.yml@3d058f15ddf8dd3e09afda39f3270f76d15bd170 # main
     with:
       runs-on: self-hosted
       repository: ${{ github.repository }}
