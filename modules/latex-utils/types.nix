@@ -7,6 +7,8 @@
       (lib.types.listOf lib.types.package))
     (lib.types.functionTo (lib.types.listOf lib.types.package));
 
+  additionalSourcesType = lib.types.listOf lib.types.path;
+
   # Document type definition
   docType = lib.types.submodule {
     options = {
@@ -34,6 +36,25 @@
         default = ".";
         description = "Working directory within src for the LaTeX document";
         example = ".";
+      };
+
+      additionalSources = lib.mkOption {
+        type = lib.types.listOf lib.types.path;
+        default = [];
+        description = ''
+          Additional source directories to merge into this document's source tree
+          during per-system document processing.
+
+          Useful for shared templates, document classes, bibliographies, and
+          other common LaTeX assets that should be available at the document root
+          without duplicating them into each document source directory.
+        '';
+        example = lib.literalExpression ''
+          [
+            ./templates
+            ./shared-bibliography
+          ]
+        '';
       };
 
       extraTexPackages = lib.mkOption {

@@ -3,6 +3,7 @@
   lib,
   documents,
   moduleExtraTexPackages,
+  moduleCommonAdditionalSources ? [],
   engine ? "lualatex",
 }: let
   # Import helpers
@@ -22,10 +23,20 @@
   # Process each document to get its discovered and extra packages
   processedDocuments =
     map (doc: let
+      allAdditionalSources = moduleCommonAdditionalSources ++ (doc.additionalSources or []);
+      workingDirectory = doc.workingDirectory or ".";
+
       # Get all LaTeX files for this document
-      searchPaths = findLatexFiles {
-        basePath = "${doc.src}/${doc.workingDirectory}";
-      };
+      searchPaths = lib.lists.unique (
+        builtins.concatLists (
+          map
+          (basePath:
+            findLatexFiles {
+              inherit basePath;
+            })
+          (["${doc.src}/${workingDirectory}"] ++ map toString allAdditionalSources)
+        )
+      );
 
       # Extract packages from each file with better error handling
       discovered =
@@ -49,7 +60,7 @@
       # Pass discovered packages for function-type extraTexPackages
       docExtraPackagesNormalized = lib.addErrorContext "while normalizing extraTexPackages for document ${doc.name}" (
         normalizeHelpers.normalizeExtraTexPackages {
-          extraTexPackages = doc.extraTexPackages;
+          extraTexPackages = doc.extraTexPackages or [];
           discoveredPackages = discovered;
         }
       );
@@ -101,9 +112,19 @@ in {
       if processedDoc != null
       then processedDoc.extraNormalized
       else {};
+    allAdditionalSources = moduleCommonAdditionalSources ++ (doc.additionalSources or []);
+    srcForBuild =
+      if allAdditionalSources == []
+      then doc.src
+      else
+        pkgs.symlinkJoin {
+          name = "${lib.strings.sanitizeDerivationName doc.name}-latex-sources";
+          paths = [doc.src] ++ allAdditionalSources;
+        };
   in
     (pkgs.callPackage ../../lib/mkLatexPdfDocument.nix {}) (doc
       // {
+        src = srcForBuild;
         # Pass pre-normalized packages under a different parameter name
         # to avoid double-normalization
         _preNormalizedExtraPackages = extraPackagesForDoc;

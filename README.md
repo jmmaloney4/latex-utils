@@ -163,12 +163,13 @@ Extend the VSCode shell:
 
 ### Configuration Options
 
-| Option                         | Type               | Default      | Description                                     |
-| ------------------------------ | ------------------ | ------------ | ----------------------------------------------- |
-| `latex-utils.enableVSCode`     | `bool`             | `true`       | Enable VSCode integration in dev shells         |
-| `latex-utils.documents`        | `list`             | `[]`         | Documents to build                              |
-| `latex-utils.extraTexPackages` | `list` or function | `[]`         | Additional packages for all documents           |
-| `latex-utils.latexmk.engine`   | `enum`             | `"lualatex"` | Default engine: `lualatex`/`xelatex`/`pdflatex` |
+| Option                            | Type               | Default      | Description                                     |
+| --------------------------------- | ------------------ | ------------ | ----------------------------------------------- |
+| `latex-utils.enableVSCode`        | `bool`             | `true`       | Enable VSCode integration in dev shells         |
+| `latex-utils.documents`           | `list`             | `[]`         | Documents to build                              |
+| `latex-utils.extraTexPackages`    | `list` or function | `[]`         | Additional packages for all documents           |
+| `latex-utils.commonAdditionalSources` | `list of paths`   | `[]`         | Shared source roots merged into all documents   |
+| `latex-utils.latexmk.engine`      | `enum`             | `"lualatex"` | Default engine: `lualatex`/`xelatex`/`pdflatex` |
 
 Shell fragments can be accessed from flake outputs:
 
@@ -389,12 +390,45 @@ ______________________________________________________________________
 
 ### Document Options
 
-| Option             | Type               | Default    | Description          |
-| ------------------ | ------------------ | ---------- | -------------------- |
-| `name`             | `string`           | required   | PDF and package name |
-| `src`              | `path`             | required   | Source directory     |
-| `inputFile`        | `string`           | `main.tex` | Main `.tex` file     |
-| `extraTexPackages` | `list` or function | `[]`       | Additional packages  |
+| Option              | Type               | Default    | Description                                |
+| ------------------- | ------------------ | ---------- | ------------------------------------------ |
+| `name`              | `string`           | required   | PDF and package name                       |
+| `src`               | `path`             | required   | Source directory                           |
+| `workingDirectory`  | `string`           | `.`        | Build directory within `src`               |
+| `inputFile`         | `string`           | `main.tex` | Main `.tex` file                           |
+| `additionalSources` | `list of paths`    | `[]`       | Extra source roots merged into this document |
+| `extraTexPackages`  | `list` or function | `[]`       | Additional packages                        |
+
+### Shared templates and composable source paths
+
+Use `latex-utils.commonAdditionalSources` to make repository-wide LaTeX assets
+available to every document, or `additionalSources` for per-document shared
+inputs.
+
+```nix
+latex-utils.commonAdditionalSources = [ ./templates ];
+
+latex-utils.documents = [
+  {
+    name = "2026-02-01_agreement-a-jack-maloney.pdf";
+    src = ./executed/2026-02-01_agreement-a/latex;
+    workingDirectory = "generated/jack-maloney";
+    inputFile = "main.tex";
+  }
+  {
+    name = "2026-01-15_agreement-b-john-smith.pdf";
+    src = ./executed/2026-01-15_agreement-b/latex;
+    workingDirectory = "generated/john-smith";
+    inputFile = "main.tex";
+    additionalSources = [ ./agreement-b-assets ];
+  }
+];
+```
+
+These additional sources are merged into the document source tree during
+per-system processing, so shared files like `templates/cavinslegal.cls` can be
+resolved with `\documentclass{cavinslegal}` without copying them into each
+document directory.
 
 ### Enhanced extraTexPackages Support
 

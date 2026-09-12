@@ -137,6 +137,9 @@
                 inherit pkgs lib system;
                 inputs = flakeInputs;
               };
+              composableSources = import ./tests/composableSources.nix {
+                inherit pkgs lib;
+              };
             }
             // (import ./tests/testModuleLevel.nix {inherit pkgs lib;})
             // (import ./tests/moduleOptions.nix {inherit pkgs lib;})

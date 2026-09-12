@@ -11,10 +11,11 @@
   mkModuleOutputs = {
     documents ? [],
     moduleExtraTexPackages ? [],
+    moduleCommonAdditionalSources ? [],
     engine ? "lualatex",
   }: let
     documentProcessing = import ../modules/latex-utils/document-processing.nix {
-      inherit pkgs lib documents moduleExtraTexPackages engine;
+      inherit pkgs lib documents moduleExtraTexPackages moduleCommonAdditionalSources engine;
     };
 
     texEnvironment = import ../modules/latex-utils/tex-environment.nix {
@@ -204,6 +205,39 @@ in {
     wrapper = pdflatexOutputs.texEnvironment.latexmkWrapper;
   in {
     expr = lib.hasInfix "pdflatex" wrapper.text;
+    expected = true;
+  };
+
+  testDocumentAdditionalSourcesStructure = {
+    expr = let
+      docConfig = {
+        name = "mydoc.pdf";
+        src = ./..;
+        additionalSources = [
+          ./..
+        ];
+      };
+    in
+      docConfig ? additionalSources
+      && builtins.isList docConfig.additionalSources
+      && builtins.length docConfig.additionalSources == 1;
+    expected = true;
+  };
+
+  testModuleCommonAdditionalSourcesStructure = {
+    expr = let
+      config = {
+        latex-utils = {
+          commonAdditionalSources = [
+            ./..
+          ];
+          documents = [];
+        };
+      };
+    in
+      config.latex-utils ? commonAdditionalSources
+      && builtins.isList config.latex-utils.commonAdditionalSources
+      && builtins.length config.latex-utils.commonAdditionalSources == 1;
     expected = true;
   };
 }
