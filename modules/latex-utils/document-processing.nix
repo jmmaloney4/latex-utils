@@ -36,20 +36,29 @@
   # Process each document to get its discovered and extra packages
   processedDocuments =
     map (doc: let
-      allAdditionalSources = (doc.additionalSources or []) ++ moduleCommonAdditionalSources;
+      documentAdditionalSources = doc.additionalSources or [];
+      commonAdditionalSources = moduleCommonAdditionalSources;
       workingDirectory = doc.workingDirectory or ".";
       documentSearchPaths = findLatexFiles {
         basePath = "${doc.src}/${workingDirectory}";
       };
       additionalSourceFilesByRoot =
-        map
-        (rootPath: {
-          inherit rootPath;
-          files = findLatexFiles {
-            basePath = rootPath;
-          };
-        })
-        (map toString allAdditionalSources);
+        (map
+          (rootPath: {
+            inherit rootPath;
+            files = findLatexFiles {
+              basePath = rootPath;
+            };
+          })
+          (map toString documentAdditionalSources))
+        ++ (map
+          (rootPath: {
+            inherit rootPath;
+            files = findLatexFiles {
+              basePath = rootPath;
+            };
+          })
+          (map toString commonAdditionalSources));
       additionalSourceSearchPaths = lib.lists.unique (
         builtins.concatLists (map (entry: entry.files) additionalSourceFilesByRoot)
       );

@@ -289,9 +289,13 @@ in {
   };
 
   testCommonAndDocumentAdditionalSourcesPropagateToBuild = {
-    expr =
+    expr = let
+      buildPhaseParts = lib.splitString "${documentSharedSource}" composedSourceDrv.buildPhase;
+    in
       lib.hasInfix "${moduleSharedSource}" composedSourceDrv.buildPhase
-      && lib.hasInfix "${documentSharedSource}" composedSourceDrv.buildPhase;
+      && lib.hasInfix "${documentSharedSource}" composedSourceDrv.buildPhase
+      && builtins.length buildPhaseParts > 1
+      && lib.hasInfix "${moduleSharedSource}" (builtins.elemAt buildPhaseParts 1);
     expected = true;
   };
 }
