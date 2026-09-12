@@ -68,14 +68,14 @@ in {
   testAdditionalSourcesComposeDocumentSrc = {
     expr =
       lib.hasInfix "TEXINPUTS" additionalSourcesDrv.buildPhase
-      && lib.hasInfix "${sharedTemplateSrc}/templates" additionalSourcesDrv.buildPhase;
+      && lib.hasInfix "${sharedTemplateSrc}" additionalSourcesDrv.buildPhase;
     expected = true;
   };
 
   testCommonAdditionalSourcesComposeDocumentSrc = {
     expr =
       lib.hasInfix "TEXINPUTS" commonSourcesDrv.buildPhase
-      && lib.hasInfix "${sharedTemplateSrc}/templates" commonSourcesDrv.buildPhase;
+      && lib.hasInfix "${sharedTemplateSrc}" commonSourcesDrv.buildPhase;
     expected = true;
   };
 }

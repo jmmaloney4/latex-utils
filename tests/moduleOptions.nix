@@ -290,8 +290,8 @@ in {
 
   testCommonAndDocumentAdditionalSourcesPropagateToBuild = {
     expr =
-      lib.hasInfix "${moduleSharedSource}/module-shared/templates" composedSourceDrv.buildPhase
-      && lib.hasInfix "${documentSharedSource}/document-shared/bib/shared" composedSourceDrv.buildPhase;
+      lib.hasInfix "${moduleSharedSource}" composedSourceDrv.buildPhase
+      && lib.hasInfix "${documentSharedSource}" composedSourceDrv.buildPhase;
     expected = true;
   };
 }

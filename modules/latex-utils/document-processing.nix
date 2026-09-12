@@ -11,6 +11,16 @@
   findLatexPackages = import ../../lib/findLatexPackages.nix {inherit pkgs lib;};
   normalizeHelpers = import ../../lib/normalizeExtraTexPackages.nix {inherit pkgs lib;};
 
+  collectSearchDirectories = rootPath: let
+    readDir = builtins.tryEval (builtins.readDir rootPath);
+    childDirectories =
+      if readDir.success
+      then builtins.attrNames (lib.filterAttrs (_: type: type == "directory") readDir.value)
+      else [];
+  in
+    [rootPath]
+    ++ builtins.concatLists (map (name: collectSearchDirectories "${rootPath}/${name}") childDirectories);
+
   # First, normalize module-level extraTexPackages (once)
   # For module-level, we don't have discovered packages yet, so pass empty attrset
   moduleExtraPackagesNormalized = lib.addErrorContext "while normalizing module-level extraTexPackages" (
@@ -41,7 +51,9 @@
 
       # Get all LaTeX files for this document
       searchPaths = lib.lists.unique (documentSearchPaths ++ additionalSourceSearchPaths);
-      additionalTexInputDirectories = lib.lists.unique (map builtins.dirOf additionalSourceSearchPaths);
+      additionalTexInputDirectories = lib.lists.unique (
+        builtins.concatLists (map collectSearchDirectories (map toString allAdditionalSources))
+      );
 
       # Extract packages from each file with better error handling
       discovered =
