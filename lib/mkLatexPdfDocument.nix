@@ -135,10 +135,7 @@ with lib; let
       });
 
   additionalTexInputs = args._additionalTexInputs or [];
-  texInputsPrefix =
-    if additionalTexInputs == []
-    then ".:"
-    else ".:${lib.concatStringsSep ":" (map toString additionalTexInputs)}:";
+  texInputsValue = lib.concatStringsSep ":" (["."] ++ map toString additionalTexInputs);
 
   allPackages =
     {
@@ -205,7 +202,11 @@ in
         export TEXMFCACHE="$XDG_CACHE_HOME/texmf-var"
         export TEXMFCONFIG="$XDG_CACHE_HOME/texmf-config"
         export TEXMFHOME="$XDG_CACHE_HOME/texmf-home"
-        export TEXINPUTS="${texInputsPrefix}$TEXINPUTS"
+        if [ -n "''${TEXINPUTS:-}" ]; then
+          export TEXINPUTS="${texInputsValue}:$TEXINPUTS"
+        else
+          export TEXINPUTS="${texInputsValue}:"
+        fi
         export FONTCONFIG_CACHE_DIR="${fontconfigCache}/fontconfig"
         export FONTCONFIG_FILE="${pkgs.fontconfig.out}/etc/fonts/fonts.conf"
 
