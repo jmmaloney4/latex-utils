@@ -62,9 +62,6 @@
       additionalSourceSearchPaths = lib.lists.unique (
         builtins.concatLists (map (entry: entry.files) additionalSourceFilesByRoot)
       );
-
-      # Get all LaTeX files for this document
-      searchPaths = lib.lists.unique (documentSearchPaths ++ additionalSourceSearchPaths);
       additionalTexInputDirectories = lib.lists.unique (
         builtins.concatLists (
           map
@@ -76,6 +73,17 @@
           additionalSourceFilesByRoot
         )
       );
+      orderedAdditionalSearchPaths =
+        builtins.concatLists (
+          map
+          (searchDirectory:
+            builtins.filter (filePath: builtins.dirOf filePath == searchDirectory) additionalSourceSearchPaths)
+          additionalTexInputDirectories
+        );
+
+      # Get all LaTeX files for this document in the same effective precedence
+      # order as the build: workingDirectory first, then TEXINPUTS directories.
+      searchPaths = lib.lists.unique (documentSearchPaths ++ orderedAdditionalSearchPaths);
 
       # Extract packages from each file with better error handling
       discovered =
