@@ -426,10 +426,10 @@ latex-utils.documents = [
 ```
 
 During per-system document processing these paths are scanned for package
-discovery, and at build time they are added to `TEXINPUTS`, so shared files
-like `templates/cavinslegal.cls` can be resolved with
-`\documentclass{cavinslegal}` without copying them into each document
-directory.
+discovery, and at build time the declared roots plus nested directories that
+contain discovered TeX inputs are added to `TEXINPUTS`, so shared files like
+`templates/cavinslegal.cls` can be resolved with `\documentclass{cavinslegal}`
+without copying them into each document directory.
 
 ### Enhanced extraTexPackages Support
 
