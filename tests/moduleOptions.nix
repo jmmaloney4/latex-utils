@@ -7,14 +7,31 @@
   lib,
   ...
 }: let
+  types = import ../modules/latex-utils/types.nix {inherit lib;};
+  optionsModule = import ../modules/latex-utils/options.nix {
+    inherit lib types;
+    flake-parts-lib = {
+      mkPerSystemOption = x: x;
+    };
+  };
+
+  evalLatexUtils = module:
+    lib.evalModules {
+      modules = [
+        optionsModule
+        module
+      ];
+    };
+
   # Import the three submodules with the given configuration
   mkModuleOutputs = {
     documents ? [],
     moduleExtraTexPackages ? [],
+    moduleCommonAdditionalSources ? [],
     engine ? "lualatex",
   }: let
     documentProcessing = import ../modules/latex-utils/document-processing.nix {
-      inherit pkgs lib documents moduleExtraTexPackages engine;
+      inherit pkgs lib documents moduleExtraTexPackages moduleCommonAdditionalSources engine;
     };
 
     texEnvironment = import ../modules/latex-utils/tex-environment.nix {
@@ -92,6 +109,27 @@
       }
     ];
   };
+
+  moduleSharedSource = pkgs.writeTextDir "module-shared/templates/cavinslegal.cls" ''
+    \NeedsTeXFormat{LaTeX2e}
+  '';
+
+  documentSharedSource = pkgs.writeTextDir "document-shared/bib/shared/shared.bib" ''
+    @book{shared, title = {Shared Source}}
+  '';
+
+  docWithComposedSources = {
+    name = "shared.pdf";
+    src = ./..;
+    additionalSources = [documentSharedSource];
+  };
+
+  composedSourceOutputs = mkModuleOutputs {
+    documents = [docWithComposedSources];
+    moduleCommonAdditionalSources = [moduleSharedSource];
+  };
+
+  composedSourceDrv = composedSourceOutputs.documentProcessing.mkDoc docWithComposedSources;
 in {
   # --- flakeCheck option ---
 
@@ -204,6 +242,60 @@ in {
     wrapper = pdflatexOutputs.texEnvironment.latexmkWrapper;
   in {
     expr = lib.hasInfix "pdflatex" wrapper.text;
+    expected = true;
+  };
+
+  testDocumentAdditionalSourcesStructure = {
+    expr = let
+      evaluated = evalLatexUtils {
+        latex-utils.documents = [
+          {
+            name = "mydoc.pdf";
+            src = ./..;
+            additionalSources = [./tests];
+          }
+        ];
+      };
+    in
+      (builtins.head evaluated.config.latex-utils.documents).additionalSources == [./tests];
+    expected = true;
+  };
+
+  testModuleCommonAdditionalSourcesStructure = {
+    expr =
+      (evalLatexUtils {
+        latex-utils = {
+          commonAdditionalSources = [./..];
+          documents = [];
+        };
+      }).config.latex-utils.commonAdditionalSources
+      == [./..];
+    expected = true;
+  };
+
+  testDocumentAdditionalSourcesDefaultFromModule = {
+    expr = let
+      evaluated = evalLatexUtils {
+        latex-utils.documents = [
+          {
+            name = "mydoc.pdf";
+            src = ./..;
+          }
+        ];
+      };
+    in
+      (builtins.head evaluated.config.latex-utils.documents).additionalSources == [];
+    expected = true;
+  };
+
+  testCommonAndDocumentAdditionalSourcesPropagateToBuild = {
+    expr = let
+      buildPhaseParts = lib.splitString "${documentSharedSource}" composedSourceDrv.buildPhase;
+    in
+      lib.hasInfix "${moduleSharedSource}" composedSourceDrv.buildPhase
+      && lib.hasInfix "${documentSharedSource}" composedSourceDrv.buildPhase
+      && builtins.length buildPhaseParts > 1
+      && lib.hasInfix "${moduleSharedSource}" (builtins.elemAt buildPhaseParts 1);
     expected = true;
   };
 }
