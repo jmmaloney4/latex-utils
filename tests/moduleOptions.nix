@@ -7,6 +7,22 @@
   lib,
   ...
 }: let
+  types = import ../modules/latex-utils/types.nix {inherit lib;};
+  optionsModule = import ../modules/latex-utils/options.nix {
+    inherit lib types;
+    flake-parts-lib = {
+      mkPerSystemOption = x: x;
+    };
+  };
+
+  evalLatexUtils = module:
+    lib.evalModules {
+      modules = [
+        optionsModule
+        module
+      ];
+    };
+
   # Import the three submodules with the given configuration
   mkModuleOutputs = {
     documents ? [],
@@ -210,34 +226,44 @@ in {
 
   testDocumentAdditionalSourcesStructure = {
     expr = let
-      docConfig = {
-        name = "mydoc.pdf";
-        src = ./..;
-        additionalSources = [
-          ./..
+      evaluated = evalLatexUtils {
+        latex-utils.documents = [
+          {
+            name = "mydoc.pdf";
+            src = ./..;
+            additionalSources = [./tests];
+          }
         ];
       };
     in
-      docConfig ? additionalSources
-      && builtins.isList docConfig.additionalSources
-      && builtins.length docConfig.additionalSources == 1;
+      (builtins.head evaluated.config.latex-utils.documents).additionalSources == [./tests];
     expected = true;
   };
 
   testModuleCommonAdditionalSourcesStructure = {
-    expr = let
-      config = {
+    expr =
+      (evalLatexUtils {
         latex-utils = {
-          commonAdditionalSources = [
-            ./..
-          ];
+          commonAdditionalSources = [./..];
           documents = [];
         };
+      }).config.latex-utils.commonAdditionalSources
+      == [./..];
+    expected = true;
+  };
+
+  testDocumentAdditionalSourcesDefaultFromModule = {
+    expr = let
+      evaluated = evalLatexUtils {
+        latex-utils.documents = [
+          {
+            name = "mydoc.pdf";
+            src = ./..;
+          }
+        ];
       };
     in
-      config.latex-utils ? commonAdditionalSources
-      && builtins.isList config.latex-utils.commonAdditionalSources
-      && builtins.length config.latex-utils.commonAdditionalSources == 1;
+      (builtins.head evaluated.config.latex-utils.documents).additionalSources == [];
     expected = true;
   };
 }

@@ -31,6 +31,9 @@ Parameters (passed as an attribute set):
     - A function that takes discovered packages (attrset) and returns one of the above lists.
     - An attrset of already normalized packages (internal use).
     See `normalizeExtraTexPackages.nix` for full details on supported formats.
+  _additionalTexInputs (list of paths, optional):
+    Internally used by the module to add shared source directories to TEXINPUTS
+    without requiring a custom buildPhase override.
   _preNormalizedExtraPackages (attrset, optional):
     Internally used by the main module to pass already normalized `extraTexPackages`.
     If provided, `extraTexPackages` is ignored for normalization.
@@ -131,6 +134,12 @@ with lib; let
         discoveredPackages = discovered;
       });
 
+  additionalTexInputs = args._additionalTexInputs or [];
+  texInputsPrefix =
+    if additionalTexInputs == []
+    then ".:"
+    else ".:${lib.concatStringsSep ":" (map toString additionalTexInputs)}:";
+
   allPackages =
     {
       inherit scheme;
@@ -196,6 +205,7 @@ in
         export TEXMFCACHE="$XDG_CACHE_HOME/texmf-var"
         export TEXMFCONFIG="$XDG_CACHE_HOME/texmf-config"
         export TEXMFHOME="$XDG_CACHE_HOME/texmf-home"
+        export TEXINPUTS="${texInputsPrefix}$TEXINPUTS"
         export FONTCONFIG_CACHE_DIR="${fontconfigCache}/fontconfig"
         export FONTCONFIG_FILE="${pkgs.fontconfig.out}/etc/fonts/fonts.conf"
 

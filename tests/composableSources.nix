@@ -67,19 +67,15 @@ in {
 
   testAdditionalSourcesComposeDocumentSrc = {
     expr =
-      lib.isDerivation additionalSourcesDrv.src
-      && lib.hasInfix "agreement.pdf-latex-sources" additionalSourcesDrv.src.name
-      && lib.hasInfix "$out/generated/jack-maloney/" additionalSourcesDrv.src.buildCommand
-      && lib.hasInfix "${sharedTemplateSrc}/." additionalSourcesDrv.src.buildCommand;
+      lib.hasInfix "TEXINPUTS" additionalSourcesDrv.buildPhase
+      && lib.hasInfix "${sharedTemplateSrc}" additionalSourcesDrv.buildPhase;
     expected = true;
   };
 
   testCommonAdditionalSourcesComposeDocumentSrc = {
     expr =
-      lib.isDerivation commonSourcesDrv.src
-      && lib.hasInfix "common-agreement.pdf-latex-sources" commonSourcesDrv.src.name
-      && lib.hasInfix "$out/generated/jack-maloney/" commonSourcesDrv.src.buildCommand
-      && lib.hasInfix "${sharedTemplateSrc}/." commonSourcesDrv.src.buildCommand;
+      lib.hasInfix "TEXINPUTS" commonSourcesDrv.buildPhase
+      && lib.hasInfix "${sharedTemplateSrc}" commonSourcesDrv.buildPhase;
     expected = true;
   };
 }

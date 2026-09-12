@@ -113,28 +113,13 @@ in {
       then processedDoc.extraNormalized
       else {};
     allAdditionalSources = moduleCommonAdditionalSources ++ (doc.additionalSources or []);
-    workingDirectory = doc.workingDirectory or ".";
-    srcForBuild =
-      if allAdditionalSources == []
-      then doc.src
-      else
-        pkgs.runCommand "${lib.strings.sanitizeDerivationName doc.name}-latex-sources" {} ''
-          mkdir -p "$out"
-          mkdir -p "$out/${workingDirectory}"
-
-          cp -rsf --no-preserve=mode ${lib.escapeShellArg "${toString doc.src}/."} "$out/"
-
-          ${lib.concatMapStringsSep "\n" (source: ''
-            cp -rsf --no-preserve=mode ${lib.escapeShellArg "${toString source}/."} "$out/${workingDirectory}/"
-          '') allAdditionalSources}
-        '';
   in
     (pkgs.callPackage ../../lib/mkLatexPdfDocument.nix {}) (doc
       // {
-        src = srcForBuild;
         # Pass pre-normalized packages under a different parameter name
         # to avoid double-normalization
         _preNormalizedExtraPackages = extraPackagesForDoc;
+        _additionalTexInputs = allAdditionalSources;
         engine = engine;
         # Don't pass extraTexPackages - let mkLatexPdfDocument use the raw one if needed
       });
