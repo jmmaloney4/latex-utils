@@ -68,6 +68,13 @@
     }
   );
 
+  documentedSingleDocumentOutputs = evalTestFlake singleDocumentFlake {
+    self = singleDocumentFlake;
+    nixpkgs = inputs.nixpkgs;
+    flake-parts = inputs.flake-parts;
+    inherit system;
+  };
+
   emptyDocumentsFlake = {
     inputs = {
       nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -99,5 +106,10 @@
     }
   );
 in {
-  inherit evalTestFlake harnessOutputs singleDocumentOutputs emptyDocumentsOutputs;
+  inherit
+    evalTestFlake
+    harnessOutputs
+    singleDocumentOutputs
+    documentedSingleDocumentOutputs
+    emptyDocumentsOutputs;
 }

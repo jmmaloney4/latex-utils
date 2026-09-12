@@ -50,7 +50,7 @@
       }
     ];
   };
-  docTestOutputs = fixtures.singleDocumentOutputs;
+  docTestOutputs = fixtures.documentedSingleDocumentOutputs;
 in {
   # Test: Basic README example configuration is valid
   testReadmeBasicConfigValid = {
