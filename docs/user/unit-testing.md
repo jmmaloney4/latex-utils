@@ -69,13 +69,14 @@ If your tests aren't running, check that all test attribute names start with "te
   in {
     nix-unit.tests.myIntegrationTest = import ./tests/myIntegrationTest.nix {
       inherit pkgs lib system;
+      inputs = flakeInputs;
       fixtures = integrationTestFixtures;
     };
   }
   ```
 
   ```nix
-  { lib, system, fixtures, ... }:
+  { lib, system, inputs, fixtures, ... }:
   let
     outputs = fixtures.harnessOutputs;
     fullShell = outputs.latex-utils.${system}.unifiedTexShell;
