@@ -109,6 +109,27 @@
       }
     ];
   };
+
+  moduleSharedSource = pkgs.writeTextDir "module-shared/cavinslegal.cls" ''
+    \NeedsTeXFormat{LaTeX2e}
+  '';
+
+  documentSharedSource = pkgs.writeTextDir "document-shared/shared.bib" ''
+    @book{shared, title = {Shared Source}}
+  '';
+
+  docWithComposedSources = {
+    name = "shared.pdf";
+    src = ./..;
+    additionalSources = [documentSharedSource];
+  };
+
+  composedSourceOutputs = mkModuleOutputs {
+    documents = [docWithComposedSources];
+    moduleCommonAdditionalSources = [moduleSharedSource];
+  };
+
+  composedSourceDrv = composedSourceOutputs.documentProcessing.mkDoc docWithComposedSources;
 in {
   # --- flakeCheck option ---
 
@@ -264,6 +285,13 @@ in {
       };
     in
       (builtins.head evaluated.config.latex-utils.documents).additionalSources == [];
+    expected = true;
+  };
+
+  testCommonAndDocumentAdditionalSourcesPropagateToBuild = {
+    expr =
+      lib.hasInfix "${moduleSharedSource}" composedSourceDrv.buildPhase
+      && lib.hasInfix "${documentSharedSource}" composedSourceDrv.buildPhase;
     expected = true;
   };
 }
