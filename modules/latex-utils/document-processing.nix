@@ -61,9 +61,6 @@
             };
           })
           (map toString commonAdditionalSources));
-      additionalSourceSearchPaths = lib.lists.unique (
-        builtins.concatLists (map (entry: entry.files) additionalSourceFilesByRoot)
-      );
       additionalTexInputDirectories = lib.lists.unique (
         builtins.concatLists (
           map
@@ -78,9 +75,24 @@
       orderedAdditionalSearchPaths =
         builtins.concatLists (
           map
-          (searchDirectory:
-            builtins.filter (filePath: builtins.dirOf filePath == searchDirectory) additionalSourceSearchPaths)
-          additionalTexInputDirectories
+          (entry: let
+            searchDirectoriesForEntry = lib.lists.unique (
+              [entry.rootPath]
+              ++ builtins.concatLists (
+                map (filePath: collectAncestorDirectories entry.rootPath (builtins.dirOf filePath)) entry.files
+              )
+            );
+          in
+            builtins.concatLists (
+              map
+              (searchDirectory:
+                builtins.filter (
+                  filePath:
+                    filePath == searchDirectory || builtins.dirOf filePath == searchDirectory
+                ) entry.files)
+              searchDirectoriesForEntry
+            ))
+          additionalSourceFilesByRoot
         );
 
       # Get all LaTeX files for this document in the same effective precedence
