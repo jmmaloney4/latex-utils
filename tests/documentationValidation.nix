@@ -2,24 +2,9 @@
   pkgs,
   lib,
   system,
-  inputs,
+  fixtures,
   ...
 }: let
-  # Import test harness helpers
-  flake = import ./flake.nix;
-  testHarnessOutputsArgs = {
-    self = flake;
-    nixpkgs = inputs.nixpkgs;
-    flake-parts = inputs.flake-parts;
-    latex-utils = inputs.latex-utils;
-    inherit system;
-  };
-  outputs = import ./test-flake-helpers.nix {
-    flakeDef = flake;
-    outputsArgs = testHarnessOutputsArgs;
-  };
-
-  # Helper to create a minimal TeX source for testing
   minimalTexSrc = pkgs.writeTextDir "main.tex" ''
     \documentclass{article}
     \usepackage{amsmath}
@@ -65,44 +50,7 @@
       }
     ];
   };
-  # Create an inline flake with a single document for build/default-package tests
-  docTestFlakeDef = {
-    inputs = {
-      nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-      flake-parts.url = "github:hercules-ci/flake-parts";
-    };
-    outputs = outputsArgs @ {
-      flake-parts,
-      nixpkgs,
-      ...
-    }:
-      flake-parts.lib.mkFlake {
-        self =
-          outputsArgs.self
-          // {
-            inputs = {inherit (outputsArgs) nixpkgs flake-parts;};
-          };
-        inputs = {inherit (outputsArgs) nixpkgs flake-parts;};
-      } {
-        systems = [system];
-        imports = [../modules/latex-utils.nix];
-        latex-utils.documents = [
-          {
-            name = "test.pdf";
-            src = minimalTexSrc;
-          }
-        ];
-      };
-  };
-  docTestOutputs = import ./test-flake-helpers.nix {
-    flakeDef = docTestFlakeDef;
-    outputsArgs = {
-      self = docTestFlakeDef;
-      nixpkgs = inputs.nixpkgs;
-      flake-parts = inputs.flake-parts;
-      inherit system;
-    };
-  };
+  docTestOutputs = fixtures.singleDocumentOutputs;
 in {
   # Test: Basic README example configuration is valid
   testReadmeBasicConfigValid = {

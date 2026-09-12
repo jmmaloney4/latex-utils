@@ -75,7 +75,12 @@
         inputs',
         self',
         ...
-      }: {
+      }: let
+        integrationTestFixtures = import ./tests/fixtures.nix {
+          inherit pkgs system;
+          inputs = flakeInputs;
+        };
+      in {
         flake-root = {
           projectRootFile = "flake.nix";
         };
@@ -104,6 +109,7 @@
               devShellLatexUtils = import ./tests/devShellLatexUtils.nix {
                 inherit pkgs lib system;
                 inputs = flakeInputs;
+                fixtures = integrationTestFixtures;
               };
               normalizeExtraTexPackages = import ./tests/normalizeExtraTexPackages.nix {
                 inherit pkgs lib;
@@ -111,6 +117,7 @@
               devShellFragments = import ./tests/devShellFragments.nix {
                 inherit pkgs lib system;
                 inputs = flakeInputs;
+                fixtures = integrationTestFixtures;
               };
               documentsPackage = import ./tests/documentsPackage.nix {
                 inherit pkgs lib system;
@@ -120,18 +127,22 @@
               documentationValidation = import ./tests/documentationValidation.nix {
                 inherit pkgs lib system;
                 inputs = flakeInputs;
+                fixtures = integrationTestFixtures;
               };
               accessPathValidation = import ./tests/accessPathValidation.nix {
                 inherit pkgs lib system;
                 inputs = flakeInputs;
+                fixtures = integrationTestFixtures;
               };
               packageReferenceValidation = import ./tests/packageReferenceValidation.nix {
                 inherit pkgs lib system;
                 inputs = flakeInputs;
+                fixtures = integrationTestFixtures;
               };
               documentationIntegrationCheck = import ./tests/documentationIntegrationCheck.nix {
                 inherit pkgs lib system;
                 inputs = flakeInputs;
+                fixtures = integrationTestFixtures;
               };
               latexmkEngineAndOutputs = import ./tests/latexmkEngineAndOutputs.nix {
                 inherit pkgs lib system;

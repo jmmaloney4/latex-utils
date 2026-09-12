@@ -2,73 +2,10 @@
   pkgs,
   lib,
   system,
-  inputs,
+  fixtures,
   ...
 }: let
-  # Import test harness helpers
-  flake = import ./flake.nix;
-  testHarnessOutputsArgs = {
-    self = flake;
-    nixpkgs = inputs.nixpkgs;
-    flake-parts = inputs.flake-parts;
-    latex-utils = inputs.latex-utils;
-    inherit system;
-  };
-  outputs = import ./test-flake-helpers.nix {
-    flakeDef = flake;
-    outputsArgs = testHarnessOutputsArgs;
-  };
-
-  # Helper to create a minimal TeX source for testing
-  minimalTexSrc = pkgs.writeTextDir "main.tex" ''
-    \documentclass{article}
-    \usepackage{amsmath}
-    \begin{document}
-    Hello, world!
-    \end{document}
-  '';
-
-  # Create a test flake with documents to generate packages
-  inlineFlakeDef = {
-    inputs = {
-      nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-      flake-parts.url = "github:hercules-ci/flake-parts";
-    };
-    outputs = outputsArgs @ {
-      flake-parts,
-      nixpkgs,
-      system ? builtins.currentSystem or "x86_64-linux",
-      ...
-    }:
-      flake-parts.lib.mkFlake {
-        self =
-          outputsArgs.self
-          // {
-            inputs = {inherit (outputsArgs) nixpkgs flake-parts;};
-          };
-        inputs = {
-          inherit (outputsArgs) nixpkgs flake-parts;
-        };
-      } {
-        systems = [system];
-        imports = [../modules/latex-utils.nix];
-        latex-utils.documents = [
-          {
-            name = "test.pdf";
-            src = minimalTexSrc;
-          }
-        ];
-      };
-  };
-  testFlakeWithDocs = import ./test-flake-helpers.nix {
-    flakeDef = inlineFlakeDef;
-    outputsArgs =
-      testHarnessOutputsArgs
-      // {
-        inherit system;
-        self = inlineFlakeDef;
-      };
-  };
+  testFlakeWithDocs = fixtures.singleDocumentOutputs;
 
   # Check if a package reference exists in the test flake outputs
   packageExists = pkgName:
