@@ -7,7 +7,8 @@
       (lib.types.listOf lib.types.package))
     (lib.types.functionTo (lib.types.listOf lib.types.package));
 
-  additionalSourcesType = lib.types.listOf lib.types.path;
+  additionalSourcePathType = lib.types.addCheck lib.types.path (path: !(lib.hasInfix ":" (toString path)));
+  additionalSourcesType = lib.types.listOf additionalSourcePathType;
 
   # Document type definition
   docType = lib.types.submodule {
