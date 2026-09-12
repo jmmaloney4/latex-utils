@@ -14,6 +14,8 @@
   collectAncestorDirectories = rootPath: currentPath:
     if currentPath == rootPath
     then [rootPath]
+    else if !(lib.hasPrefix "${rootPath}/" currentPath)
+    then [rootPath]
     else let
       parentPath = builtins.dirOf currentPath;
     in
