@@ -118,6 +118,20 @@ in {
     expected = true;
   };
 
+  testInstallPhaseNormalizesPdfIdsDeterministically = {
+    expr = let
+      installPhase =
+        (mkDoc {
+          name = "test-deterministic-id.pdf";
+          src = dummySrc;
+          _preNormalizedExtraPackages = {};
+        }).installPhase;
+    in
+      lib.strings.hasInfix "--deterministic-id output.pdf fixed-output.pdf" installPhase
+      && lib.strings.hasInfix "mv fixed-output.pdf $out" installPhase;
+    expected = true;
+  };
+
   # --- Name handling ---
 
   testNameGetsPdfSuffix = {

@@ -226,6 +226,7 @@ in
     installPhase =
       args.installPhase
       or ''
-        mv output.pdf $out
+        ${getExe pkgs.qpdf} --deterministic-id output.pdf fixed-output.pdf
+        mv fixed-output.pdf $out
       '';
   }
