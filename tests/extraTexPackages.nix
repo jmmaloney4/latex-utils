@@ -38,6 +38,9 @@
       input:
         lib.strings.hasPrefix "texlive-" (input.name or "") && lib.strings.hasSuffix "-env" (input.name or "")
     ) (drv.nativeBuildInputs or []);
+
+  hasQpdf = drv:
+    builtins.any (input: (input.name or "") == pkgs.qpdf.name) (drv.nativeBuildInputs or []);
 in {
   # --- Basic derivation construction ---
 
@@ -120,15 +123,15 @@ in {
 
   testInstallPhaseNormalizesPdfIdsDeterministically = {
     expr = let
-      installPhase =
-        (mkDoc {
-          name = "test-deterministic-id.pdf";
-          src = dummySrc;
-          _preNormalizedExtraPackages = {};
-        }).installPhase;
+      drv = mkDoc {
+        name = "test-deterministic-id.pdf";
+        src = dummySrc;
+        _preNormalizedExtraPackages = {};
+      };
     in
-      lib.strings.hasInfix "--deterministic-id output.pdf fixed-output.pdf" installPhase
-      && lib.strings.hasInfix "mv fixed-output.pdf $out" installPhase;
+      hasQpdf drv
+      && lib.strings.hasInfix "--deterministic-id output.pdf fixed-output.pdf" drv.installPhase
+      && lib.strings.hasInfix "mv fixed-output.pdf $out" drv.installPhase;
     expected = true;
   };
 

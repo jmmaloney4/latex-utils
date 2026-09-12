@@ -180,6 +180,7 @@ in
         texEnv
         pkgs.fontconfig
         fontconfigCache
+        pkgs.qpdf
       ];
 
     phases = args.phases or ["unpackPhase" "buildPhase" "installPhase"];
