@@ -127,7 +127,6 @@
               documentationValidation = import ./tests/documentationValidation.nix {
                 inherit pkgs lib system;
                 inputs = flakeInputs;
-                fixtures = integrationTestFixtures;
               };
               accessPathValidation = import ./tests/accessPathValidation.nix {
                 inherit pkgs lib system;

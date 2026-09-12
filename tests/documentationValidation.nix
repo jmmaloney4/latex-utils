@@ -3,7 +3,6 @@
   lib,
   system,
   inputs,
-  fixtures,
   ...
 }: let
   minimalTexSrc = pkgs.writeTextDir "main.tex" ''
