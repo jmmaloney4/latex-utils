@@ -2,6 +2,7 @@
   pkgs,
   lib,
   system,
+  inputs,
   fixtures,
   ...
 }: let
@@ -50,7 +51,45 @@
       }
     ];
   };
-  docTestOutputs = fixtures.documentedSingleDocumentOutputs;
+  # Keep this fixture local because these tests validate the documented
+  # minimal-input pattern rather than the shared integration fixture shape.
+  docTestFlakeDef = {
+    inputs = {
+      nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+      flake-parts.url = "github:hercules-ci/flake-parts";
+    };
+    outputs = outputsArgs @ {
+      flake-parts,
+      nixpkgs,
+      ...
+    }:
+      flake-parts.lib.mkFlake {
+        self =
+          outputsArgs.self
+          // {
+            inputs = {inherit (outputsArgs) nixpkgs flake-parts;};
+          };
+        inputs = {inherit (outputsArgs) nixpkgs flake-parts;};
+      } {
+        systems = [system];
+        imports = [../modules/latex-utils.nix];
+        latex-utils.documents = [
+          {
+            name = "test.pdf";
+            src = minimalTexSrc;
+          }
+        ];
+      };
+  };
+  docTestOutputs = import ./test-flake-helpers.nix {
+    flakeDef = docTestFlakeDef;
+    outputsArgs = {
+      self = docTestFlakeDef;
+      nixpkgs = inputs.nixpkgs;
+      flake-parts = inputs.flake-parts;
+      inherit system;
+    };
+  };
 in {
   # Test: Basic README example configuration is valid
   testReadmeBasicConfigValid = {
