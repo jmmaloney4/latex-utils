@@ -81,9 +81,19 @@
         };
         documentation.mkdocs-root = ./.;
         nix-unit = {
-          allowNetwork = true;
           inputs = {
-            inherit (flakeInputs) nixpkgs flake-parts;
+            # Pass every resolved flake input used to evaluate this flake so the
+            # nix-unit check can run from the sandbox without fetching them.
+            inherit (flakeInputs)
+              nixpkgs
+              flake-parts
+              systems
+              nix-unit
+              jackpkgs
+              flake-root
+              mission-control
+              mkdocs-flake
+              ;
             latex-utils = flakeInputs.self;
           };
           tests =
