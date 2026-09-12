@@ -138,13 +138,12 @@
   });
 
   # Helper to test that a flake example works
-  testExample = name: example:
-    fixtures.evalTestFlake example.flakeDef example.outputsArgs;
+  testExample = example: fixtures.evalTestFlake example.flakeDef example.outputsArgs;
 
   # Test all examples
-  quickstartOutput = testExample "quickstart" quickstartExample;
-  comprehensiveOutput = testExample "comprehensive" comprehensiveExample;
-  templateOutput = testExample "template" templateExample;
+  quickstartOutput = testExample quickstartExample;
+  comprehensiveOutput = testExample comprehensiveExample;
+  templateOutput = testExample templateExample;
 
   outputs = fixtures.harnessOutputs;
   testFlakeWithDocs = fixtures.emptyDocumentsOutputs;
