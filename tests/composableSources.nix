@@ -10,7 +10,7 @@
     \end{document}
   '';
 
-  sharedTemplateSrc = pkgs.writeTextDir "cavinslegal.cls" ''
+  sharedTemplateSrc = pkgs.writeTextDir "templates/cavinslegal.cls" ''
     \NeedsTeXFormat{LaTeX2e}
     \ProvidesClass{cavinslegal}[2026/09/12 Shared legal class]
     \LoadClass{article}
@@ -68,14 +68,14 @@ in {
   testAdditionalSourcesComposeDocumentSrc = {
     expr =
       lib.hasInfix "TEXINPUTS" additionalSourcesDrv.buildPhase
-      && lib.hasInfix "${sharedTemplateSrc}" additionalSourcesDrv.buildPhase;
+      && lib.hasInfix "${sharedTemplateSrc}/templates" additionalSourcesDrv.buildPhase;
     expected = true;
   };
 
   testCommonAdditionalSourcesComposeDocumentSrc = {
     expr =
       lib.hasInfix "TEXINPUTS" commonSourcesDrv.buildPhase
-      && lib.hasInfix "${sharedTemplateSrc}" commonSourcesDrv.buildPhase;
+      && lib.hasInfix "${sharedTemplateSrc}/templates" commonSourcesDrv.buildPhase;
     expected = true;
   };
 }

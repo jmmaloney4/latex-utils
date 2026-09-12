@@ -25,18 +25,23 @@
     map (doc: let
       allAdditionalSources = moduleCommonAdditionalSources ++ (doc.additionalSources or []);
       workingDirectory = doc.workingDirectory or ".";
-
-      # Get all LaTeX files for this document
-      searchPaths = lib.lists.unique (
+      documentSearchPaths = findLatexFiles {
+        basePath = "${doc.src}/${workingDirectory}";
+      };
+      additionalSourceSearchPaths = lib.lists.unique (
         builtins.concatLists (
           map
           (basePath:
             findLatexFiles {
               inherit basePath;
             })
-          (["${doc.src}/${workingDirectory}"] ++ map toString allAdditionalSources)
+          (map toString allAdditionalSources)
         )
       );
+
+      # Get all LaTeX files for this document
+      searchPaths = lib.lists.unique (documentSearchPaths ++ additionalSourceSearchPaths);
+      additionalTexInputDirectories = lib.lists.unique (map builtins.dirOf additionalSourceSearchPaths);
 
       # Extract packages from each file with better error handling
       discovered =
@@ -72,6 +77,7 @@
       inherit doc;
       discovered = discovered;
       extraNormalized = mergedExtraPackages;
+      additionalTexInputDirectories = additionalTexInputDirectories;
     })
     documents;
 
@@ -112,14 +118,17 @@ in {
       if processedDoc != null
       then processedDoc.extraNormalized
       else {};
-    allAdditionalSources = moduleCommonAdditionalSources ++ (doc.additionalSources or []);
+    additionalTexInputDirectories =
+      if processedDoc != null
+      then processedDoc.additionalTexInputDirectories
+      else [];
   in
     (pkgs.callPackage ../../lib/mkLatexPdfDocument.nix {}) (doc
       // {
         # Pass pre-normalized packages under a different parameter name
         # to avoid double-normalization
         _preNormalizedExtraPackages = extraPackagesForDoc;
-        _additionalTexInputs = allAdditionalSources;
+        _additionalTexInputs = additionalTexInputDirectories;
         engine = engine;
         # Don't pass extraTexPackages - let mkLatexPdfDocument use the raw one if needed
       });

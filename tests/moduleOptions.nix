@@ -110,11 +110,11 @@
     ];
   };
 
-  moduleSharedSource = pkgs.writeTextDir "module-shared/cavinslegal.cls" ''
+  moduleSharedSource = pkgs.writeTextDir "module-shared/templates/cavinslegal.cls" ''
     \NeedsTeXFormat{LaTeX2e}
   '';
 
-  documentSharedSource = pkgs.writeTextDir "document-shared/shared.bib" ''
+  documentSharedSource = pkgs.writeTextDir "document-shared/bib/shared/shared.bib" ''
     @book{shared, title = {Shared Source}}
   '';
 
@@ -290,8 +290,8 @@ in {
 
   testCommonAndDocumentAdditionalSourcesPropagateToBuild = {
     expr =
-      lib.hasInfix "${moduleSharedSource}" composedSourceDrv.buildPhase
-      && lib.hasInfix "${documentSharedSource}" composedSourceDrv.buildPhase;
+      lib.hasInfix "${moduleSharedSource}/module-shared/templates" composedSourceDrv.buildPhase
+      && lib.hasInfix "${documentSharedSource}/document-shared/bib/shared" composedSourceDrv.buildPhase;
     expected = true;
   };
 }
