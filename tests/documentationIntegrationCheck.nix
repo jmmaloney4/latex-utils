@@ -147,6 +147,7 @@
   templateOutput = testExample "template" templateExample;
 
   outputs = fixtures.harnessOutputs;
+  testFlakeWithDocs = fixtures.emptyDocumentsOutputs;
 in {
   # Test: Quickstart example produces expected outputs
   testQuickstartExampleWorks = {
@@ -258,9 +259,9 @@ in {
 
   testVscodeSettingsOutputPresent = {
     expr =
-      outputs ? packages
-      && outputs.packages ? ${system}
-      && outputs.packages.${system} ? "vscodeSettings";
+      testFlakeWithDocs ? packages
+      && testFlakeWithDocs.packages ? ${system}
+      && testFlakeWithDocs.packages.${system} ? "vscodeSettings";
     expected = true;
   };
 }

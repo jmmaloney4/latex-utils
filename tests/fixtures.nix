@@ -67,6 +67,37 @@
       self = singleDocumentFlake;
     }
   );
+
+  emptyDocumentsFlake = {
+    inputs = {
+      nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+      flake-parts.url = "github:hercules-ci/flake-parts";
+    };
+    outputs = outputsArgs @ {
+      flake-parts,
+      nixpkgs,
+      ...
+    }:
+      flake-parts.lib.mkFlake {
+        self =
+          outputsArgs.self
+          // {
+            inputs = {inherit (outputsArgs) nixpkgs flake-parts;};
+          };
+        inputs = {inherit (outputsArgs) nixpkgs flake-parts;};
+      } {
+        systems = [system];
+        imports = [../modules/latex-utils.nix];
+        latex-utils.documents = [];
+      };
+  };
+
+  emptyDocumentsOutputs = evalTestFlake emptyDocumentsFlake (
+    testHarnessOutputsArgs
+    // {
+      self = emptyDocumentsFlake;
+    }
+  );
 in {
-  inherit evalTestFlake harnessOutputs singleDocumentOutputs;
+  inherit evalTestFlake harnessOutputs singleDocumentOutputs emptyDocumentsOutputs;
 }
