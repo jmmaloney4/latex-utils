@@ -39,15 +39,15 @@
       };
 
       additionalSources = lib.mkOption {
-        type = lib.types.listOf lib.types.path;
+        type = additionalSourcesType;
         default = [];
         description = ''
-          Additional source directories to merge into this document's source tree
-          during per-system document processing.
+          Additional source directories to make available from this document's
+          working directory during per-system document processing.
 
           Useful for shared templates, document classes, bibliographies, and
-          other common LaTeX assets that should be available at the document root
-          without duplicating them into each document source directory.
+          other common LaTeX assets without duplicating them into each document
+          source directory.
         '';
         example = lib.literalExpression ''
           [

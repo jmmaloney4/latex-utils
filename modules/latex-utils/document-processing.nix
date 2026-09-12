@@ -113,14 +113,21 @@ in {
       then processedDoc.extraNormalized
       else {};
     allAdditionalSources = moduleCommonAdditionalSources ++ (doc.additionalSources or []);
+    workingDirectory = doc.workingDirectory or ".";
     srcForBuild =
       if allAdditionalSources == []
       then doc.src
       else
-        pkgs.symlinkJoin {
-          name = "${lib.strings.sanitizeDerivationName doc.name}-latex-sources";
-          paths = [doc.src] ++ allAdditionalSources;
-        };
+        pkgs.runCommand "${lib.strings.sanitizeDerivationName doc.name}-latex-sources" {} ''
+          mkdir -p "$out"
+          mkdir -p "$out/${workingDirectory}"
+
+          cp -rsf --no-preserve=mode ${lib.escapeShellArg "${toString doc.src}/."} "$out/"
+
+          ${lib.concatMapStringsSep "\n" (source: ''
+            cp -rsf --no-preserve=mode ${lib.escapeShellArg "${toString source}/."} "$out/${workingDirectory}/"
+          '') allAdditionalSources}
+        '';
   in
     (pkgs.callPackage ../../lib/mkLatexPdfDocument.nix {}) (doc
       // {

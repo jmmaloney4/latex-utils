@@ -168,7 +168,7 @@ Extend the VSCode shell:
 | `latex-utils.enableVSCode`        | `bool`             | `true`       | Enable VSCode integration in dev shells         |
 | `latex-utils.documents`           | `list`             | `[]`         | Documents to build                              |
 | `latex-utils.extraTexPackages`    | `list` or function | `[]`         | Additional packages for all documents           |
-| `latex-utils.commonAdditionalSources` | `list of paths`   | `[]`         | Shared source roots merged into all documents   |
+| `latex-utils.commonAdditionalSources` | `list of paths`   | `[]`         | Shared source roots made available to all documents |
 | `latex-utils.latexmk.engine`      | `enum`             | `"lualatex"` | Default engine: `lualatex`/`xelatex`/`pdflatex` |
 
 Shell fragments can be accessed from flake outputs:
@@ -396,7 +396,7 @@ ______________________________________________________________________
 | `src`               | `path`             | required   | Source directory                           |
 | `workingDirectory`  | `string`           | `.`        | Build directory within `src`               |
 | `inputFile`         | `string`           | `main.tex` | Main `.tex` file                           |
-| `additionalSources` | `list of paths`    | `[]`       | Extra source roots merged into this document |
+| `additionalSources` | `list of paths`    | `[]`       | Extra source roots made available to this document |
 | `extraTexPackages`  | `list` or function | `[]`       | Additional packages                        |
 
 ### Shared templates and composable source paths
@@ -425,10 +425,10 @@ latex-utils.documents = [
 ];
 ```
 
-These additional sources are merged into the document source tree during
-per-system processing, so shared files like `templates/cavinslegal.cls` can be
-resolved with `\documentclass{cavinslegal}` without copying them into each
-document directory.
+These additional sources are staged into each document's working directory
+during per-system processing, so shared files like `templates/cavinslegal.cls`
+can be resolved with `\documentclass{cavinslegal}` without copying them into
+each document directory.
 
 ### Enhanced extraTexPackages Support
 

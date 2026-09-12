@@ -39,7 +39,8 @@
         type = types.additionalSourcesType;
         default = [];
         description = ''
-          Additional source directories to merge into ALL document source trees.
+          Additional source directories to make available from every document's
+          working directory.
 
           Useful for repository-wide shared LaTeX resources such as document
           classes, style files, bibliographies, and assets that should be
