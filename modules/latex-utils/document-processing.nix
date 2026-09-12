@@ -41,15 +41,17 @@
       documentSearchPaths = findLatexFiles {
         basePath = "${doc.src}/${workingDirectory}";
       };
+      additionalSourceFilesByRoot =
+        map
+        (rootPath: {
+          inherit rootPath;
+          files = findLatexFiles {
+            basePath = rootPath;
+          };
+        })
+        (map toString allAdditionalSources);
       additionalSourceSearchPaths = lib.lists.unique (
-        builtins.concatLists (
-          map
-          (basePath:
-            findLatexFiles {
-              inherit basePath;
-            })
-          (map toString allAdditionalSources)
-        )
+        builtins.concatLists (map (entry: entry.files) additionalSourceFilesByRoot)
       );
 
       # Get all LaTeX files for this document
@@ -57,16 +59,12 @@
       additionalTexInputDirectories = lib.lists.unique (
         builtins.concatLists (
           map
-          (rootPath:
-            [rootPath]
+          (entry:
+            [entry.rootPath]
             ++ builtins.concatLists (
-              map (filePath: collectAncestorDirectories rootPath (builtins.dirOf filePath)) (
-                findLatexFiles {
-                  basePath = rootPath;
-                }
-              )
+              map (filePath: collectAncestorDirectories entry.rootPath (builtins.dirOf filePath)) entry.files
             ))
-          (map toString allAdditionalSources)
+          additionalSourceFilesByRoot
         )
       );
 
