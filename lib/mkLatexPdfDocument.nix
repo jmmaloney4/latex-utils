@@ -135,7 +135,14 @@ with lib; let
       });
 
   additionalTexInputs = args._additionalTexInputs or [];
-  texInputsValue = lib.concatStringsSep ":" (["."] ++ map toString additionalTexInputs);
+  validatedAdditionalTexInputs =
+    let
+      renderedPaths = map toString additionalTexInputs;
+      hasTexinputsSeparators = path: lib.hasInfix ":" path || lib.hasInfix ";" path;
+    in
+      assert builtins.all (path: !hasTexinputsSeparators path) renderedPaths;
+        renderedPaths;
+  texInputsValue = lib.concatStringsSep ":" (["."] ++ validatedAdditionalTexInputs);
 
   allPackages =
     {
