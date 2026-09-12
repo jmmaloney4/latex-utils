@@ -5,21 +5,6 @@
   inputs,
   ...
 }: let
-  # Import test harness helpers
-  flake = import ./flake.nix;
-  testHarnessOutputsArgs = {
-    self = flake;
-    nixpkgs = inputs.nixpkgs;
-    flake-parts = inputs.flake-parts;
-    latex-utils = inputs.latex-utils;
-    inherit system;
-  };
-  outputs = import ./test-flake-helpers.nix {
-    flakeDef = flake;
-    outputsArgs = testHarnessOutputsArgs;
-  };
-
-  # Helper to create a minimal TeX source for testing
   minimalTexSrc = pkgs.writeTextDir "main.tex" ''
     \documentclass{article}
     \usepackage{amsmath}
@@ -65,7 +50,8 @@
       }
     ];
   };
-  # Create an inline flake with a single document for build/default-package tests
+  # Keep this fixture local because these tests validate the documented
+  # minimal-input pattern rather than the shared integration fixture shape.
   docTestFlakeDef = {
     inputs = {
       nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";

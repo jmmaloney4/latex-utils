@@ -51,31 +51,45 @@ If your tests aren't running, check that all test attribute names start with "te
   }
   ```
 
-### 2. **Flake-parts Output Tests (with Test Harness Flake and Helper)**
+### 2. **Flake-parts Output Tests (with Shared Test Fixtures)**
 
 - **Do NOT** use `lib.evalModules` on flake-parts modules.
 
 - **Do NOT** import the module file directly for output tests.
 
-- Instead, use the dedicated test harness flake at `tests/flake.nix` **and** the helper at `tests/test-flake-helpers.nix` to realize the outputs for a system:
+- Instead, evaluate the dedicated test harness flake at `tests/flake.nix` once in `flake.nix` via `tests/fixtures.nix`, then pass the shared fixture into the integration test files:
 
   ```nix
-  { pkgs, lib, ... }:
+  # flake.nix
   let
-    flake = import ./flake.nix;
-    system = pkgs.stdenv.hostPlatform.system or "x86_64-linux";
-    outputs = import ./test-flake-helpers.nix { inherit flake system; };
-    fullShell = outputs.devShells.full;
+    integrationTestFixtures = import ./tests/fixtures.nix {
+      inherit pkgs system;
+      inputs = flakeInputs;
+    };
+  in {
+    nix-unit.tests.myIntegrationTest = import ./tests/myIntegrationTest.nix {
+      inherit pkgs lib system;
+      inputs = flakeInputs;
+      fixtures = integrationTestFixtures;
+    };
+  }
+  ```
+
+  ```nix
+  { lib, system, inputs, fixtures, ... }:
+  let
+    outputs = fixtures.harnessOutputs;
+    fullShell = outputs.latex-utils.${system}.unifiedTexShell;
   in {
     testFullShellIsPackage = lib.isDerivation fullShell;
   }
   ```
 
-- The helper is necessary because the flake-parts outputs function expects more than just `system` (it also needs `self`, `nixpkgs`, `pkgs`, etc.). The helper ensures all required arguments are passed.
+- `tests/test-flake-helpers.nix` remains the low-level helper for realizing bespoke inline test flakes, but shared integration fixtures should live in `tests/fixtures.nix` so the expensive harness evaluation is reused instead of re-run in each test file.
 
 - For composable shell fragments, you can compose them in the test and assert on the result.
 
-- The test harness flake provides a minimal, stable context for evaluating module outputs, ensuring tests are robust and isolated from changes in the main project flake.
+- The shared fixture module keeps the test harness flake minimal while avoiding repeated `mkFlake` evaluation across integration test files.
 
 ### 3. **Understanding flake-parts, `perSystem`, and Test Harness Patterns**
 
