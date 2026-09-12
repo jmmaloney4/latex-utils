@@ -431,6 +431,10 @@ contain discovered TeX inputs are added to `TEXINPUTS`, so shared files like
 `templates/cavinslegal.cls` can be resolved with `\documentclass{cavinslegal}`
 without copying them into each document directory.
 
+Document-specific `additionalSources` are searched before
+`commonAdditionalSources`, so a document can override a shared class, style, or
+bibliography when needed.
+
 ### Enhanced extraTexPackages Support
 
 ```nix

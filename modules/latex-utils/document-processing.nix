@@ -36,7 +36,7 @@
   # Process each document to get its discovered and extra packages
   processedDocuments =
     map (doc: let
-      allAdditionalSources = moduleCommonAdditionalSources ++ (doc.additionalSources or []);
+      allAdditionalSources = (doc.additionalSources or []) ++ moduleCommonAdditionalSources;
       workingDirectory = doc.workingDirectory or ".";
       documentSearchPaths = findLatexFiles {
         basePath = "${doc.src}/${workingDirectory}";
