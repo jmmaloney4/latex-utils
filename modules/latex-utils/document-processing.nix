@@ -3,12 +3,28 @@
   lib,
   documents,
   moduleExtraTexPackages,
+  moduleCommonAdditionalSources ? [],
   engine ? "lualatex",
 }: let
   # Import helpers
   findLatexFiles = import ../../lib/findLatexFiles.nix {inherit pkgs lib;};
   findLatexPackages = import ../../lib/findLatexPackages.nix {inherit pkgs lib;};
   normalizeHelpers = import ../../lib/normalizeExtraTexPackages.nix {inherit pkgs lib;};
+
+  collectAncestorDirectories = rootPath: currentPath:
+    if currentPath == rootPath
+    then [rootPath]
+    else if !(lib.hasPrefix "${rootPath}/" currentPath)
+    then [rootPath]
+    else let
+      parentPath = builtins.dirOf currentPath;
+    in
+      [currentPath]
+      ++ (
+        if parentPath == currentPath
+        then []
+        else collectAncestorDirectories rootPath parentPath
+      );
 
   # First, normalize module-level extraTexPackages (once)
   # For module-level, we don't have discovered packages yet, so pass empty attrset
@@ -22,10 +38,66 @@
   # Process each document to get its discovered and extra packages
   processedDocuments =
     map (doc: let
-      # Get all LaTeX files for this document
-      searchPaths = findLatexFiles {
-        basePath = "${doc.src}/${doc.workingDirectory}";
+      documentAdditionalSources = doc.additionalSources or [];
+      commonAdditionalSources = moduleCommonAdditionalSources;
+      workingDirectory = doc.workingDirectory or ".";
+      documentSearchPaths = findLatexFiles {
+        basePath = "${doc.src}/${workingDirectory}";
       };
+      additionalSourceFilesByRoot =
+        (map
+          (rootPath: {
+            inherit rootPath;
+            files = findLatexFiles {
+              basePath = rootPath;
+            };
+          })
+          (map toString documentAdditionalSources))
+        ++ (map
+          (rootPath: {
+            inherit rootPath;
+            files = findLatexFiles {
+              basePath = rootPath;
+            };
+          })
+          (map toString commonAdditionalSources));
+      additionalTexInputDirectories = lib.lists.unique (
+        builtins.concatLists (
+          map
+          (entry:
+            [entry.rootPath]
+            ++ builtins.concatLists (
+              map (filePath: collectAncestorDirectories entry.rootPath (builtins.dirOf filePath)) entry.files
+            ))
+          additionalSourceFilesByRoot
+        )
+      );
+      orderedAdditionalSearchPaths =
+        builtins.concatLists (
+          map
+          (entry: let
+            searchDirectoriesForEntry = lib.lists.unique (
+              [entry.rootPath]
+              ++ builtins.concatLists (
+                map (filePath: collectAncestorDirectories entry.rootPath (builtins.dirOf filePath)) entry.files
+              )
+            );
+          in
+            builtins.concatLists (
+              map
+              (searchDirectory:
+                builtins.filter (
+                  filePath:
+                    filePath == searchDirectory || builtins.dirOf filePath == searchDirectory
+                ) entry.files)
+              searchDirectoriesForEntry
+            ))
+          additionalSourceFilesByRoot
+        );
+
+      # Get all LaTeX files for this document in the same effective precedence
+      # order as the build: workingDirectory first, then TEXINPUTS directories.
+      searchPaths = lib.lists.unique (documentSearchPaths ++ orderedAdditionalSearchPaths);
 
       # Extract packages from each file with better error handling
       discovered =
@@ -49,7 +121,7 @@
       # Pass discovered packages for function-type extraTexPackages
       docExtraPackagesNormalized = lib.addErrorContext "while normalizing extraTexPackages for document ${doc.name}" (
         normalizeHelpers.normalizeExtraTexPackages {
-          extraTexPackages = doc.extraTexPackages;
+          extraTexPackages = doc.extraTexPackages or [];
           discoveredPackages = discovered;
         }
       );
@@ -61,6 +133,7 @@
       inherit doc;
       discovered = discovered;
       extraNormalized = mergedExtraPackages;
+      additionalTexInputDirectories = additionalTexInputDirectories;
     })
     documents;
 
@@ -101,12 +174,17 @@ in {
       if processedDoc != null
       then processedDoc.extraNormalized
       else {};
+    additionalTexInputDirectories =
+      if processedDoc != null
+      then processedDoc.additionalTexInputDirectories
+      else [];
   in
     (pkgs.callPackage ../../lib/mkLatexPdfDocument.nix {}) (doc
       // {
         # Pass pre-normalized packages under a different parameter name
         # to avoid double-normalization
         _preNormalizedExtraPackages = extraPackagesForDoc;
+        _additionalTexInputs = additionalTexInputDirectories;
         engine = engine;
         # Don't pass extraTexPackages - let mkLatexPdfDocument use the raw one if needed
       });
