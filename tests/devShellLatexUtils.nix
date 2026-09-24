@@ -2,26 +2,10 @@
   pkgs,
   lib,
   system,
-  inputs,
+  fixtures,
   ...
 }: let
-  # Use the test harness flake defined in tests/flake.nix
-  flake = import ./flake.nix;
-
-  # These are the arguments that the test harness flake's `outputs` function expects
-  testHarnessOutputsArgs = {
-    self = flake;
-    nixpkgs = inputs.nixpkgs;
-    flake-parts = inputs.flake-parts;
-    latex-utils = inputs.latex-utils;
-    inherit system;
-  };
-
-  # Evaluate the test harness flake to get its outputs
-  outputs = import ./test-flake-helpers.nix {
-    flakeDef = flake;
-    outputsArgs = testHarnessOutputsArgs;
-  };
+  outputs = fixtures.harnessOutputs;
 
   # Test the vscodeShell fragment instead of the conditional devShells.latex-utils
   # This should be available regardless of enableVSCode setting

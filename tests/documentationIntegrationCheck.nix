@@ -3,6 +3,7 @@
   lib,
   system,
   inputs,
+  fixtures,
   ...
 }: let
   # Helper to create minimal TeX source with different packages
@@ -137,61 +138,15 @@
   });
 
   # Helper to test that a flake example works
-  testExample = name: example:
-    import ./test-flake-helpers.nix {
-      flakeDef = example.flakeDef;
-      outputsArgs = example.outputsArgs;
-    };
+  testExample = example: fixtures.evalTestFlake example.flakeDef example.outputsArgs;
 
   # Test all examples
-  quickstartOutput = testExample "quickstart" quickstartExample;
-  comprehensiveOutput = testExample "comprehensive" comprehensiveExample;
-  templateOutput = testExample "template" templateExample;
+  quickstartOutput = testExample quickstartExample;
+  comprehensiveOutput = testExample comprehensiveExample;
+  templateOutput = testExample templateExample;
 
-  # Import test harness helpers
-  flake = import ./flake.nix;
-  testHarnessOutputsArgs = {
-    self = flake;
-    nixpkgs = inputs.nixpkgs;
-    flake-parts = inputs.flake-parts;
-    latex-utils = inputs.latex-utils;
-    inherit system;
-  };
-  outputs = import ./test-flake-helpers.nix {
-    flakeDef = flake;
-    outputsArgs = testHarnessOutputsArgs;
-  };
-
-  # Create a test flake with documents to check integration
-  inlineFlakeDef = {
-    inputs = {
-      nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-      flake-parts.url = "github:hercules-ci/flake-parts";
-    };
-    outputs = outputsArgs @ {
-      flake-parts,
-      nixpkgs,
-      ...
-    }:
-      flake-parts.lib.mkFlake {
-        self =
-          outputsArgs.self
-          // {
-            inputs = {inherit (outputsArgs) nixpkgs flake-parts;};
-          };
-        inputs = {
-          inherit (outputsArgs) nixpkgs flake-parts;
-        };
-      } {
-        systems = [system];
-        imports = [../modules/latex-utils.nix];
-        latex-utils.documents = [];
-      };
-  };
-  testFlakeWithDocs = import ./test-flake-helpers.nix {
-    flakeDef = inlineFlakeDef;
-    outputsArgs = testHarnessOutputsArgs // {self = inlineFlakeDef;};
-  };
+  outputs = fixtures.harnessOutputs;
+  testFlakeWithDocs = fixtures.emptyDocumentsOutputs;
 in {
   # Test: Quickstart example produces expected outputs
   testQuickstartExampleWorks = {
