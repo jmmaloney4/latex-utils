@@ -151,6 +151,21 @@ in {
 - For tests that should only run on Linux (not Darwin), use a conditional on `pkgs.stdenv.isDarwin`.
 - If you need to test a function that expects a flake-parts context, always go through the test harness flake outputs using the helper.
 
+### 5. **Coverage for Public Interfaces**
+
+Use `nix-unit`'s coverage helper to assert that each public attribute has a corresponding test namespace:
+
+```nix
+let
+  public = import ../lib/default.nix { inherit pkgs; };
+in
+  nixUnitLib.addCoverage public {
+    findLatexPackages.testExposed = builtins.isFunction public.findLatexPackages;
+  }
+```
+
+This appends a `coverage` test group (for example, `coverage.testFindLatexPackages`) and fails when a public attribute is missing from your test suite.
+
 ## Running Tests
 
 Run all tests with:
