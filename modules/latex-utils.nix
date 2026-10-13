@@ -16,6 +16,7 @@
   # Get module-level configuration
   documents = config.latex-utils.documents;
   moduleExtraTexPackages = config.latex-utils.extraTexPackages;
+  moduleCommonAdditionalSources = config.latex-utils.commonAdditionalSources;
   enableVSCode = config.latex-utils.enableVSCode;
   flakeCheck = config.latex-utils.flakeCheck;
   engine = config.latex-utils.latexmk.engine or "lualatex";
@@ -37,7 +38,7 @@ in {
     }: let
       # Import document processing logic
       documentProcessing = import ./latex-utils/document-processing.nix {
-        inherit pkgs lib documents moduleExtraTexPackages;
+        inherit pkgs lib documents moduleExtraTexPackages moduleCommonAdditionalSources;
         engine = engine;
       };
 

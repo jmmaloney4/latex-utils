@@ -35,6 +35,25 @@
         '';
       };
 
+      commonAdditionalSources = lib.mkOption {
+        type = types.additionalSourcesType;
+        default = [];
+        description = ''
+          Additional source directories to make available from every document's
+          working directory.
+
+          Useful for repository-wide shared LaTeX resources such as document
+          classes, style files, bibliographies, and assets that should be
+          available to every configured document.
+        '';
+        example = lib.literalExpression ''
+          [
+            ./templates
+            ./shared-bibliography
+          ]
+        '';
+      };
+
       enableVSCode = lib.mkOption {
         type = lib.types.bool;
         default = true;
