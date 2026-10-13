@@ -2,21 +2,10 @@
   pkgs,
   lib,
   system,
-  inputs,
+  fixtures,
   ...
 }: let
-  flake = import ./flake.nix;
-  testHarnessOutputsArgs = {
-    self = flake;
-    nixpkgs = inputs.nixpkgs;
-    flake-parts = inputs.flake-parts;
-    latex-utils = inputs.latex-utils;
-    inherit system;
-  };
-  outputs = import ./test-flake-helpers.nix {
-    flakeDef = flake;
-    outputsArgs = testHarnessOutputsArgs;
-  };
+  outputs = fixtures.harnessOutputs;
 
   # According to ADR 005, shells should be available as:
   # outputs.latex-utils.${system}.unifiedTexShell

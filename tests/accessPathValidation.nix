@@ -2,79 +2,11 @@
   pkgs,
   lib,
   system,
-  inputs,
+  fixtures,
   ...
 }: let
-  # Import test harness helpers
-  flake = import ./flake.nix;
-  testHarnessOutputsArgs = {
-    self = flake;
-    nixpkgs = inputs.nixpkgs;
-    flake-parts = inputs.flake-parts;
-    latex-utils = inputs.latex-utils;
-    inherit system;
-  };
-  outputs = import ./test-flake-helpers.nix {
-    flakeDef = flake;
-    outputsArgs = testHarnessOutputsArgs;
-  };
-
-  # Helper to create a minimal TeX source for testing
-  minimalTexSrc = pkgs.writeTextDir "main.tex" ''
-    \documentclass{article}
-    \usepackage{amsmath}
-    \begin{document}
-    Hello, world!
-    \end{document}
-  '';
-
-  # Create a test flake with documents to ensure perSystem outputs exist
-  inlineFlakeDef = {
-    inputs = {
-      nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-      flake-parts.url = "github:hercules-ci/flake-parts";
-    };
-    outputs = outputsArgs @ {
-      flake-parts,
-      nixpkgs,
-      system ? builtins.currentSystem or "x86_64-linux",
-      ...
-    }:
-      flake-parts.lib.mkFlake {
-        # Override self.inputs to contain resolved flake objects.
-        # The raw self has URL-string inputs which crash when flake-parts
-        # computes inputs' (it iterates self.inputs expecting flake objects).
-        self =
-          outputsArgs.self
-          // {
-            inputs = {inherit (outputsArgs) nixpkgs flake-parts;};
-          };
-        inputs = {
-          inherit (outputsArgs) nixpkgs flake-parts;
-        };
-      } {
-        systems = [system];
-        imports = [../modules/latex-utils.nix];
-        latex-utils.documents = [
-          {
-            name = "test.pdf";
-            src = minimalTexSrc;
-          }
-        ];
-        perSystem = {config, ...}: {
-          # This should make the documented access paths available
-        };
-      };
-  };
-  testFlakeWithDocs = import ./test-flake-helpers.nix {
-    flakeDef = inlineFlakeDef;
-    outputsArgs =
-      testHarnessOutputsArgs
-      // {
-        inherit system;
-        self = inlineFlakeDef;
-      };
-  };
+  outputs = fixtures.harnessOutputs;
+  testFlakeWithDocs = fixtures.singleDocumentOutputs;
 in {
   # Test: config.latex-utils.unifiedTexShell exists (documented in README)
   testUnifiedTexShellPath = {
