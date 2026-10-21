@@ -24,7 +24,7 @@ jobs:
        !contains(github.event.comment.body, 'no claude review') &&
        !contains(github.event.comment.body, 'disable claude review') &&
        !contains(github.event.comment.body, 'claude review is not needed'))
-    uses: jmmaloney4/sector7/.github/workflows/claude-review.yml@main
+    uses: jmmaloney4/sector7/.github/workflows/claude-review.yml@a4c1d45bb364510a5f471e7975c4b122da23798a # main
     with:
       runs-on: self-hosted
       repository: ${{ github.repository }}
