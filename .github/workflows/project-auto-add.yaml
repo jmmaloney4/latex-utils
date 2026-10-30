@@ -8,6 +8,6 @@ permissions:
   contents: read
 jobs:
   add-to-project:
-    uses: jmmaloney4/sector7/.github/workflows/add-to-project.yml@main
+    uses: jmmaloney4/sector7/.github/workflows/add-to-project.yml@4d7b4d4e0c7044a69e44049e32725fb113078147 # main
     with:
       runs-on: self-hosted
