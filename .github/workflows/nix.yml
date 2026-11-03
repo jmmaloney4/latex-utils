@@ -11,9 +11,9 @@ permissions:
   packages: write
 jobs:
   nix:
-    uses: jmmaloney4/sector7/.github/workflows/nix.yml@c873a6e39457fd735c7f2e03c56b46ab723e6efb # main
+    uses: jmmaloney4/sector7/.github/workflows/nix.yml@4aaf1f4ea87a5ed8f5392c40c57281d831c5f1fe # main
     with:
-      runs-on: self-hosted
+      runs-on: '["self-hosted","heavy"]'
       repository: ${{ github.repository }}
       ref: ${{ github.ref }}
       binary-cache-url: ${{ vars.ATTIC_CACHE_URL }}
