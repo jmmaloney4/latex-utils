@@ -92,6 +92,10 @@
                 inherit pkgs lib;
                 findLatexPackages = import ./lib/findLatexPackages.nix {inherit pkgs lib;};
               };
+              nixUnitCoverage = import ./tests/nixUnitCoverage.nix {
+                inherit pkgs;
+                nixUnitLib = flakeInputs.nix-unit.lib;
+              };
               extraTexPackages = import ./tests/extraTexPackages.nix {
                 inherit pkgs lib;
               };
