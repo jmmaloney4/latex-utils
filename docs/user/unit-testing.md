@@ -148,7 +148,7 @@ in {
 - Place all tests in the `tests/` directory.
 - **Use test names that start with "test"** - this is required for nix-unit to recognize them.
 - Use descriptive attribute names for each test after the "test" prefix (e.g., `testBasicPackageExtraction`).
-- For tests that should only run on Linux (not Darwin), use a conditional on `pkgs.stdenv.isDarwin`.
+- For tests that should only run on Linux (not Darwin), use a conditional on `pkgs.stdenv.hostPlatform.isDarwin`.
 - If you need to test a function that expects a flake-parts context, always go through the test harness flake outputs using the helper.
 
 ## Running Tests

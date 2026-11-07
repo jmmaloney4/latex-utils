@@ -359,7 +359,7 @@ Specify TeX Live packages once for all documents.
   latex-utils.extraTexPackages = discovered: [
     "amsmath"
     "amssymb"
-  ] ++ lib.optionals (pkgs.stdenv.isDarwin) [
+  ] ++ lib.optionals (pkgs.stdenv.hostPlatform.isDarwin) [
     "darwin-specific-package"
   ];
 }
