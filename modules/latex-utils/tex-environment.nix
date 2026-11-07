@@ -45,7 +45,7 @@
   # Wrap ltex-ls-plus (ltex-ls is archived upstream, gone from nixpkgs) to only see the unified TeX Live binaries
   ltexLsWrapped = pkgs.writeShellScriptBin "ltex-ls" ''
     export PATH=${lib.makeBinPath [unifiedTexEnv]}
-    exec ${pkgs.ltex-ls-plus}/bin/ltex-ls-plus "\$@"
+    exec ${pkgs.ltex-ls-plus}/bin/ltex-ls-plus "$@"
   '';
 
   engineCommand = "${lib.getExe' unifiedTexEnv engine} -interaction=nonstopmode -file-line-error -synctex=1 %O %S";
@@ -91,7 +91,7 @@
     texlive = unifiedTexEnv;
     latexmk = latexmkWrapper;
     latexindent = pkgs.writeShellScriptBin "latexindent" ''
-      exec ${lib.getExe' unifiedTexEnv "latexindent"} "\$@"
+      exec ${lib.getExe' unifiedTexEnv "latexindent"} "$@"
     '';
   };
 
