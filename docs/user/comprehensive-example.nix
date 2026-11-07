@@ -35,7 +35,7 @@
           "hyperref"
           "biblatex"
         ]
-        ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
+        ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
           # Platform-specific packages
           "darwin-tex-utils" # hypothetical package
         ];
