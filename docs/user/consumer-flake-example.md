@@ -24,7 +24,7 @@
       let
         # Manual path configuration
         latexmkPath = "${pkgs.texlive.combined.scheme-full}/bin/latexmk";
-        ltexlsPath = "${pkgs.ltex-ls}/bin/ltex-ls";
+        ltexlsPath = "${pkgs.ltex-ls-plus}/bin/ltex-ls-plus";
 
         # Custom VSCode settings generation
         vscodeSettingsJson = import ./nix/vscode-settings.nix {
@@ -46,7 +46,7 @@
           ] ++ builtins.map (x: self'.packages.${x}) (builtins.attrNames self'.packages);
           
           buildInputs = with pkgs; [
-            ltex-ls
+            ltex-ls-plus
             (texlive.combine {
               inherit (texlive) scheme-medium enumitem tikz-cd;
             })
