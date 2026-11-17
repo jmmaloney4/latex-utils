@@ -49,7 +49,11 @@
   '';
 
   engineCommand = "${lib.getExe' unifiedTexEnv engine} -interaction=nonstopmode -file-line-error -synctex=1 %O %S";
-  engineFlag = "-pdflatex=${lib.escapeShellArg engineCommand}";
+  # One latexmk argv. Do not escapeShellArg `engineCommand` before wrapping it
+  # in `-pdflatex=...`: that bakes literal quotes into the value, and latexmk
+  # then treats the whole command line as argv[0]:
+  #   sh: /nix/store/.../lualatex -interaction=...: No such file or directory
+  engineFlag = "-pdflatex=${engineCommand}";
   defaultLatexmkArgs = [
     "-pdf"
     "-interaction=nonstopmode"
@@ -61,8 +65,11 @@
     "-output-directory=.latex-build"
     engineFlag
   ];
-  defaultLatexmkArgsString = lib.concatStringsSep " " defaultLatexmkArgs;
-  defaultLatexmkArgsShell = lib.concatMapStringsSep "\n" (arg: "      \"${arg}\"") defaultLatexmkArgs;
+  # LATEXMK_OPTS is eval'd into a bash array; each element must be a
+  # separately escaped word so the engine flag stays one argv.
+  defaultLatexmkArgsString = lib.concatMapStringsSep " " lib.escapeShellArg defaultLatexmkArgs;
+  # Wrapper DEFAULT_ARGS=( ... ): same per-element escaping, one per line.
+  defaultLatexmkArgsShell = lib.concatMapStringsSep "\n" (arg: "      ${lib.escapeShellArg arg}") defaultLatexmkArgs;
 
   # Thin latexmk wrapper with shared defaults
   latexmkWrapper = pkgs.writeShellScriptBin "latexmk" ''

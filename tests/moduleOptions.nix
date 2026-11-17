@@ -206,4 +206,21 @@ in {
     expr = lib.hasInfix "pdflatex" wrapper.text;
     expected = true;
   };
+
+  # Nested quotes around -pdflatex make latexmk treat the whole command as
+  # argv[0] (`sh: /nix/store/.../lualatex -interaction=...: No such file`).
+  testEngineFlagNotNestedQuotedInWrapper = {
+    expr = lib.hasInfix ''"-pdflatex='"'' defaultOutputs.texEnvironment.latexmkWrapper.text;
+    expected = false;
+  };
+
+  testEngineFlagIsSingleQuotedArrayElement = {
+    expr = lib.hasInfix "'-pdflatex=" defaultOutputs.texEnvironment.latexmkWrapper.text;
+    expected = true;
+  };
+
+  testLatexmkOptsEscapesEngineFlag = {
+    expr = lib.hasInfix "'-pdflatex=" defaultOutputs.texEnvironment.unifiedTexShell.shellHook;
+    expected = true;
+  };
 }

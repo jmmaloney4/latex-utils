@@ -74,6 +74,13 @@ in {
       set -euo pipefail
       grep -q 'xelatex' "${latexmkPackage}/bin/latexmk"
       grep -q -- '-output-directory=.latex-build' "${latexmkPackage}/bin/latexmk"
+      # Nested quotes around -pdflatex make latexmk treat the whole command
+      # as argv[0] (`sh: .../xelatex -interaction=...: No such file`).
+      if grep -F -- '"-pdflatex='"'" "${latexmkPackage}/bin/latexmk"; then
+        echo "latexmk wrapper still nests quotes around -pdflatex" >&2
+        exit 1
+      fi
+      grep -q -- "'-pdflatex=" "${latexmkPackage}/bin/latexmk"
       touch "$out"
     '');
     expected = true;
