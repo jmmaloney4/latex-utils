@@ -52,7 +52,7 @@
 
         nodejs = {
           enable = true;
-          pnpmDepsHash = "sha256-OWd3e4BBWJBCmZBNz1MWxcpl6GDFElZKAWUsp+eg1rA=";
+          pnpmDepsHash = "sha256-SDoMHojV87gvftOr4fKsTLk4tchpbyWKrenXUAkhMEY=";
         };
 
         pulumi = {
