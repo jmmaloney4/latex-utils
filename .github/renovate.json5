@@ -3,4 +3,27 @@
   extends: [
     'github>jmmaloney4/sector7//renovate/all.json',
   ],
+  packageRules: [
+    {
+      // Automerge for this repository only (seven ADR 036). Placed last on purpose:
+      // renovate/all.json ends with a kill-switch rule (automerge: false for every
+      // package), and a repository's own rules are applied after its extends, so
+      // this one wins. Do not move it into a shared preset: that would turn
+      // automerge on for every consumer. Safe because `main` requires
+      // `nix / ✅ nix gate` (branch protection), so GitHub refuses a merge until the
+      // build is green. platformAutomerge is off so Renovate itself merges, and
+      // only after renovate/stability-days (not a required check) is green.
+      description: 'Automerge non-major updates once the nix gate is green. Majors keep a human.',
+      matchUpdateTypes: ['patch', 'minor', 'digest', 'pin', 'pinDigest'],
+      automerge: true,
+      platformAutomerge: false,
+    },
+    {
+      // Docker and Helm bumps only take effect at deploy time, so merging them
+      // unattended proves nothing the gate checks. Keep them manual.
+      description: 'Docker and Helm updates stay manual.',
+      matchDatasources: ['docker', 'helm'],
+      automerge: false,
+    },
+  ],
 }
