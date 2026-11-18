@@ -209,8 +209,15 @@ in {
 
   # Nested quotes around -pdflatex make latexmk treat the whole command as
   # argv[0] (`sh: /nix/store/.../lualatex -interaction=...: No such file`).
+  # Needle is `"-pdflatex='` (the buggy DEFAULT_ARGS form). A trailing `"`
+  # after the inner `'` never appears in the wrapper, so that needle is vacuous.
+  testNestedQuoteNeedleMatchesBuggyForm = {
+    expr = lib.hasInfix "\"-pdflatex='" ''"-pdflatex='/nix/store/fake/bin/lualatex %O %S'"'';
+    expected = true;
+  };
+
   testEngineFlagNotNestedQuotedInWrapper = {
-    expr = lib.hasInfix ''"-pdflatex='"'' defaultOutputs.texEnvironment.latexmkWrapper.text;
+    expr = lib.hasInfix "\"-pdflatex='" defaultOutputs.texEnvironment.latexmkWrapper.text;
     expected = false;
   };
 
